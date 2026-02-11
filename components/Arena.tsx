@@ -209,15 +209,15 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
                   </div>
               </div>
 
-              <div className={`text-3xl lg:text-5xl font-mono font-bold tracking-tighter ${market.lastChangePct >= 0 ? 'text-white' : 'text-white'} flex items-center gap-2 lg:gap-4`}>
+              <div className="text-3xl lg:text-5xl font-mono font-bold tracking-tighter text-white">
                 ${market.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                <span className={`text-xs lg:text-sm px-2 py-1 rounded-md font-bold tracking-wider bg-black/40 border ${market.lastChangePct >= 0 ? 'border-[#00FF9D]/30 text-[#00FF9D] shadow-[0_0_10px_rgba(0,255,157,0.2)]' : 'border-[#FF0055]/30 text-[#FF0055] shadow-[0_0_10px_rgba(255,0,85,0.2)]'}`}>
-                  {market.lastChangePct >= 0 ? '▲' : '▼'} {Math.abs(market.lastChangePct).toFixed(2)}%
-                </span>
               </div>
             </div>
-            
-            <div className="relative z-10 text-right">
+
+            <div className="relative z-10 text-right flex flex-col items-end gap-2">
+               <span className={`text-xs lg:text-sm px-2 py-1 rounded-md font-bold tracking-wider bg-black/40 border ${market.lastChangePct >= 0 ? 'border-[#00FF9D]/30 text-[#00FF9D] shadow-[0_0_10px_rgba(0,255,157,0.2)]' : 'border-[#FF0055]/30 text-[#FF0055] shadow-[0_0_10px_rgba(255,0,85,0.2)]'}`}>
+                 {market.lastChangePct >= 0 ? '▲' : '▼'} {Math.abs(market.lastChangePct).toFixed(2)}%
+               </span>
                <div className="h-[40px] w-[80px] lg:h-[60px] lg:w-[120px]">
                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={market.history}>
