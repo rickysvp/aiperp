@@ -468,306 +468,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </div>
          )}
 
-         {/* SCENARIO B: DEPLOYMENT CONSOLE (IDLE AGENT) - Optimized */}
-         {selectedAgent && selectedAgent.status === 'IDLE' && (
-             <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
-                 {/* Agent Header Card */}
-                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-6">
-                     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-                         {/* Avatar */}
-                         <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg shrink-0 mx-auto lg:mx-0">
-                             <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
-                         </div>
-                         
-                         {/* Info */}
-                         <div className="flex-1 text-center lg:text-left">
-                             <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-2 justify-center lg:justify-start">
-                                 <h2 className="text-xl lg:text-2xl font-display font-bold text-white">{selectedAgent.name}</h2>
-                                 {selectedAgent.twitterHandle && (
-                                     <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full border border-blue-500/20 inline-flex items-center gap-1 w-fit mx-auto lg:mx-0">
-                                         <AtSign size={10} /> {selectedAgent.twitterHandle}
-                                     </span>
-                                 )}
-                             </div>
-                             <p className="text-sm text-slate-400 italic mb-3">"{selectedAgent.bio}"</p>
-                             <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                                 <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
-                                     {selectedAgent.strategy}
-                                 </span>
-                                 <span className="px-3 py-1.5 bg-amber-500/10 text-amber-500 rounded-lg text-xs border border-amber-500/20 font-medium">
-                                     {t('standby')}
-                                 </span>
-                             </div>
-                         </div>
-                         
-                         {/* Balance */}
-                         <div className="text-center lg:text-right pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-800 lg:pl-6">
-                             <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">{t('net_balance')}</p>
-                             <p className="text-2xl font-mono font-bold text-white">{walletBalance.toLocaleString()}</p>
-                             <p className="text-xs text-slate-500">$MON</p>
-                         </div>
-                     </div>
-                 </div>
-                 
-                 {/* Tabs - Modern Style */}
-                 <div className="flex gap-2 mb-6 bg-black/40 p-1.5 rounded-2xl w-fit mx-auto lg:mx-0 border border-slate-800">
-                    <button 
-                        onClick={() => setActiveTab('DEPLOY')}
-                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'DEPLOY' ? 'bg-[#836EF9] text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        <Rocket size={16} /> {t('deploy_unit')}
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('CHAT')}
-                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'CHAT' ? 'bg-[#00FF9D] text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        <MessageSquare size={16} /> {t('neural_link')}
-                    </button>
-                 </div>
-
-                 {/* TAB CONTENT: DEPLOYMENT - Optimized Layout */}
-                 {activeTab === 'DEPLOY' && (
-                    <div className="flex-1 animate-fade-in">
-                        {/* Direction Selection - Compact */}
-                        <div className="mb-6">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
-                                <Crosshair size={14} /> {t('strategy_vector')}
-                            </label>
-                            
-                            <div className="grid grid-cols-3 gap-3">
-                                {/* Auto */}
-                                <button 
-                                    onClick={() => setDeployDirection('AUTO')}
-                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                        deployDirection === 'AUTO'
-                                        ? 'bg-[#836EF9]/20 border-[#836EF9] shadow-[0_0_20px_rgba(131,110,249,0.2)]'
-                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                    }`}
-                                >
-                                    <Brain size={20} className={deployDirection === 'AUTO' ? 'text-[#836EF9]' : 'text-slate-500'} />
-                                    <span className={`text-sm font-bold ${deployDirection === 'AUTO' ? 'text-white' : 'text-slate-400'}`}>{t('auto')}</span>
-                                </button>
-                                
-                                {/* Long */}
-                                <button 
-                                    onClick={() => setDeployDirection('LONG')}
-                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                        deployDirection === 'LONG'
-                                        ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                    }`}
-                                >
-                                    <TrendingUp size={20} className={deployDirection === 'LONG' ? 'text-emerald-400' : 'text-slate-500'} />
-                                    <span className={`text-sm font-bold ${deployDirection === 'LONG' ? 'text-white' : 'text-slate-400'}`}>{t('long')}</span>
-                                </button>
-                                
-                                {/* Short */}
-                                <button 
-                                    onClick={() => setDeployDirection('SHORT')}
-                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                        deployDirection === 'SHORT'
-                                        ? 'bg-rose-500/10 border-rose-500 shadow-[0_0_20px_rgba(251,113,133,0.2)]'
-                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                    }`}
-                                >
-                                    <TrendingDown size={20} className={deployDirection === 'SHORT' ? 'text-rose-400' : 'text-slate-500'} />
-                                    <span className={`text-sm font-bold ${deployDirection === 'SHORT' ? 'text-white' : 'text-slate-400'}`}>{t('short')}</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Sliders Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                            {/* Leverage */}
-                            <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4">
-                                <div className="flex justify-between items-center mb-3">
-                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                                        <Zap size={14} /> Leverage
-                                    </label>
-                                    <span className={`text-xl font-mono font-bold ${deployLeverage > 10 ? 'text-rose-400' : deployLeverage > 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                        {deployLeverage}x
-                                    </span>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="1" 
-                                    max="20" 
-                                    step="1"
-                                    value={deployLeverage} 
-                                    onChange={(e) => setDeployLeverage(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#836EF9]"
-                                />
-                                <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                                    <span>1x</span>
-                                    <span>10x</span>
-                                    <span>20x</span>
-                                </div>
-                            </div>
-
-                            {/* Margin */}
-                            <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4">
-                                <div className="flex justify-between items-center mb-3">
-                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                                        <Coins size={14} /> Margin
-                                    </label>
-                                    <span className="text-xl font-mono font-bold text-white">{deployCollateral.toLocaleString()}</span>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min={MIN_COLLATERAL} 
-                                    max={Math.max(MIN_COLLATERAL, walletBalance)} 
-                                    step="10"
-                                    value={deployCollateral} 
-                                    onChange={(e) => setDeployCollateral(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#836EF9]"
-                                />
-                                <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                                    <span>{MIN_COLLATERAL}</span>
-                                    <span>Available: {walletBalance.toLocaleString()}</span>
-                                </div>
-                                {walletBalance < MIN_COLLATERAL && (
-                                    <p className="text-xs text-red-500 mt-2">{t('min_funds')}</p>
-                                )}
-                            </div>
-                        </div>
-                        
-                        {/* Summary Card */}
-                        <div className="bg-gradient-to-br from-[#0f111a] to-black border border-slate-800 rounded-2xl p-5 mb-6">
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Position Summary</h3>
-                            
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
-                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Direction</p>
-                                    <p className={`text-lg font-bold ${deployDirection === 'AUTO' ? 'text-violet-400' : deployDirection === 'LONG' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                        {deployDirection}
-                                    </p>
-                                </div>
-                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
-                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Leverage</p>
-                                    <p className="text-lg font-bold text-white">{deployLeverage}x</p>
-                                </div>
-                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
-                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Margin</p>
-                                    <p className="text-lg font-bold text-white">{deployCollateral.toLocaleString()} $MON</p>
-                                </div>
-                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
-                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Position Size</p>
-                                    <p className="text-lg font-bold text-[#836EF9]">{(deployCollateral * deployLeverage).toLocaleString()} $MON</p>
-                                </div>
-                            </div>
-                            
-                            {/* Liquidation Warning */}
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                                <div className="flex items-center gap-2 text-rose-400">
-                                    <AlertTriangle size={14} />
-                                    <span className="text-xs font-bold uppercase">Est. Liquidation</span>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-white font-mono font-bold">${liqPrice.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
-                                    <p className={`text-[10px] ${distToLiq < 2 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>
-                                        {distToLiq.toFixed(2)}% {t('away')}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Deploy Button */}
-                        <Button 
-                            onClick={() => handleDeployClick(selectedAgent.id)}
-                            disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
-                            className="w-full py-4 text-lg font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black font-bold disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
-                        >
-                            {walletBalance < deployCollateral ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <AlertTriangle size={20} /> Insufficient Balance
-                                </span>
-                            ) : deployCollateral < MIN_COLLATERAL ? (
-                                <span>Minimum {MIN_COLLATERAL} $MON Required</span>
-                            ) : (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Rocket size={20} /> {t('deploy_unit')}
-                                </span>
-                            )}
-                        </Button>
-                    </div>
-                 )}
-
-                 {/* TAB CONTENT: NEURAL LINK (CHAT) */}
-                 {activeTab === 'CHAT' && (
-                     <div className="flex-1 flex flex-col h-full overflow-hidden animate-fade-in bg-black/40 rounded-xl border border-slate-800">
-                        {/* Chat Header */}
-                        <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-                            <h3 className="text-xs font-bold text-[#00FF9D] uppercase tracking-widest flex items-center gap-2">
-                                <Activity size={12} /> {t('strategy_console')}
-                            </h3>
-                            <div className="bg-[#0f111a] px-3 py-1 rounded border border-slate-700">
-                                <span className="text-[10px] text-slate-500 mr-2 uppercase">{t('current_strategy')}</span>
-                                <span className="text-xs font-bold text-white">{selectedAgent.strategy}</span>
-                            </div>
-                        </div>
-
-                        {/* Chat History */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
-                             {chatHistory.length === 0 && (
-                                 <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
-                                     <Bot size={48} className="mb-2" />
-                                     <p className="text-sm">Link Established. Awaiting Input.</p>
-                                 </div>
-                             )}
-                             {chatHistory.map((msg, i) => (
-                                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                     <div className={`max-w-[80%] rounded-xl p-3 text-sm ${
-                                         msg.role === 'user' 
-                                         ? 'bg-[#836EF9]/20 border border-[#836EF9]/40 text-white rounded-tr-none' 
-                                         : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none font-mono'
-                                     }`}>
-                                         {msg.text}
-                                     </div>
-                                 </div>
-                             ))}
-                             {isChatLoading && (
-                                 <div className="flex justify-start">
-                                     <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 rounded-tl-none flex items-center gap-2">
-                                         <div className="w-2 h-2 bg-[#00FF9D] rounded-full animate-bounce"></div>
-                                         <div className="w-2 h-2 bg-[#00FF9D] rounded-full animate-bounce delay-75"></div>
-                                         <div className="w-2 h-2 bg-[#00FF9D] rounded-full animate-bounce delay-150"></div>
-                                         <span className="text-xs text-[#00FF9D] ml-2">{t('agent_typing')}</span>
-                                     </div>
-                                 </div>
-                             )}
-                             <div ref={chatEndRef} />
-                        </div>
-
-                        {/* Input Area */}
-                        <div className="p-4 border-t border-slate-800 bg-[#0f111a]">
-                            <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    value={chatInput}
-                                    onChange={(e) => setChatInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleStrategyChat()}
-                                    placeholder={t('chat_placeholder')}
-                                    className="flex-1 bg-black border border-slate-700 rounded-lg px-4 py-3 text-sm text-white focus:border-[#00FF9D] focus:outline-none transition-colors"
-                                />
-                                <button 
-                                    onClick={handleStrategyChat}
-                                    disabled={isChatLoading || !chatInput.trim()}
-                                    className="px-4 bg-[#00FF9D] hover:bg-[#00cc7d] text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    <Send size={18} />
-                                </button>
-                            </div>
-                            <div className="text-[10px] text-slate-600 mt-2 text-center flex items-center justify-center gap-1">
-                                <Bot size={10} /> AI can update the strategy protocol based on your commands.
-                            </div>
-                        </div>
-                     </div>
-                 )}
-             </div>
-         )}
-
-         {/* UNIFIED AGENT DETAIL PAGE - All statuses in one module (exclude IDLE with no trades - they use deployment console) */}
-         {selectedAgent && !(selectedAgent.status === 'IDLE' && selectedAgent.wins === 0 && selectedAgent.losses === 0) && (
+         {/* UNIFIED AGENT DETAIL PAGE - All statuses in one module */}
+         {selectedAgent && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
                  {/* Back Button */}
                  <button
@@ -1009,6 +711,96 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      </div>
                  </div>
 
+                 {/* IDLE Agent: Deploy Section */}
+                 {selectedAgent.status === 'IDLE' && (
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
+                         <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                             <Rocket size={18} className="text-[#836EF9]" />
+                             Deploy to Arena
+                         </h3>
+
+                         {/* Direction Selection */}
+                         <div className="mb-4">
+                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
+                                 <Crosshair size={14} /> Direction
+                             </label>
+                             <div className="grid grid-cols-3 gap-3">
+                                 <button
+                                     onClick={() => setDeployDirection('AUTO')}
+                                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                         deployDirection === 'AUTO'
+                                         ? 'bg-[#836EF9]/20 border-[#836EF9]'
+                                         : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                     }`}
+                                 >
+                                     <Brain size={18} className={deployDirection === 'AUTO' ? 'text-[#836EF9]' : 'text-slate-500'} />
+                                     <span className={`text-xs font-bold ${deployDirection === 'AUTO' ? 'text-white' : 'text-slate-400'}`}>AUTO</span>
+                                 </button>
+                                 <button
+                                     onClick={() => setDeployDirection('LONG')}
+                                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                         deployDirection === 'LONG'
+                                         ? 'bg-emerald-500/10 border-emerald-500'
+                                         : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                     }`}
+                                 >
+                                     <TrendingUp size={18} className={deployDirection === 'LONG' ? 'text-emerald-400' : 'text-slate-500'} />
+                                     <span className={`text-xs font-bold ${deployDirection === 'LONG' ? 'text-white' : 'text-slate-400'}`}>LONG</span>
+                                 </button>
+                                 <button
+                                     onClick={() => setDeployDirection('SHORT')}
+                                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                         deployDirection === 'SHORT'
+                                         ? 'bg-rose-500/10 border-rose-500'
+                                         : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                     }`}
+                                 >
+                                     <TrendingDown size={18} className={deployDirection === 'SHORT' ? 'text-rose-400' : 'text-slate-500'} />
+                                     <span className={`text-xs font-bold ${deployDirection === 'SHORT' ? 'text-white' : 'text-slate-400'}`}>SHORT</span>
+                                 </button>
+                             </div>
+                         </div>
+
+                         {/* Leverage & Collateral */}
+                         <div className="grid grid-cols-2 gap-4 mb-4">
+                             <div>
+                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Leverage</label>
+                                 <input
+                                     type="range"
+                                     min="1"
+                                     max="20"
+                                     value={deployLeverage}
+                                     onChange={(e) => setDeployLeverage(parseInt(e.target.value))}
+                                     className="w-full h-2 bg-slate-800 rounded-lg accent-[#836EF9]"
+                                 />
+                                 <p className="text-center text-sm font-mono text-white mt-1">{deployLeverage}x</p>
+                             </div>
+                             <div>
+                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Collateral</label>
+                                 <input
+                                     type="range"
+                                     min={MIN_COLLATERAL}
+                                     max={Math.max(MIN_COLLATERAL, walletBalance)}
+                                     step="10"
+                                     value={deployCollateral}
+                                     onChange={(e) => setDeployCollateral(parseInt(e.target.value))}
+                                     className="w-full h-2 bg-slate-800 rounded-lg accent-[#836EF9]"
+                                 />
+                                 <p className="text-center text-sm font-mono text-white mt-1">{deployCollateral} $MON</p>
+                             </div>
+                         </div>
+
+                         {/* Deploy Button */}
+                         <Button
+                             onClick={() => handleDeployClick(selectedAgent.id)}
+                             disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
+                             className="w-full py-3 text-base font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black disabled:opacity-50 rounded-xl"
+                         >
+                             {walletBalance < deployCollateral ? 'Insufficient Balance' : `Deploy with ${deployCollateral} $MON`}
+                         </Button>
+                     </div>
+                 )}
+
                  {/* Actions - Different for each status */}
                  <div className="mt-auto grid grid-cols-2 gap-3">
                      <Button
@@ -1016,7 +808,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          variant="secondary"
                          className="h-12"
                      >
-                         {selectedAgent.status === 'ACTIVE' ? 'Share Status' : 'Share Report'}
+                         {selectedAgent.status === 'ACTIVE' ? 'Share Status' : selectedAgent.status === 'IDLE' ? 'Share Agent' : 'Share Report'}
                      </Button>
                      {selectedAgent.status === 'ACTIVE' ? (
                          <Button
@@ -1024,6 +816,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                              className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
                          >
                              Withdraw
+                         </Button>
+                     ) : selectedAgent.status === 'IDLE' ? (
+                         <Button
+                             onClick={() => setSelection('FABRICATE')}
+                             className="h-12 bg-slate-700 hover:bg-slate-600"
+                         >
+                             Back to List
                          </Button>
                      ) : (
                          <Button
