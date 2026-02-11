@@ -181,13 +181,13 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-1 lg:mb-2">
                   <div className="relative">
-                      <button 
+                      <button
                         onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
-                        className="flex items-center gap-2 text-slate-300 text-[10px] font-bold uppercase tracking-[0.2em] hover:text-white transition-colors py-1 px-2 rounded hover:bg-white/5 border border-transparent hover:border-white/10"
+                        className="flex items-center gap-2.5 text-slate-300 text-xs font-bold uppercase tracking-wider hover:text-white transition-colors py-2 px-4 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10"
                       >
-                          <Activity className="w-3 h-3 text-[#836EF9]" /> 
+                          <Activity className="w-4 h-4 text-[#836EF9]" />
                           {selectedAsset}{t('asset_perp')}
-                          <ChevronDown size={12} />
+                          <ChevronDown size={14} />
                       </button>
 
                       {assetDropdownOpen && (
@@ -215,9 +215,6 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
             </div>
 
             <div className="relative z-10 text-right flex flex-col items-end gap-2">
-               <span className={`text-xs lg:text-sm px-2 py-1 rounded-md font-bold tracking-wider bg-black/40 border ${market.lastChangePct >= 0 ? 'border-[#00FF9D]/30 text-[#00FF9D] shadow-[0_0_10px_rgba(0,255,157,0.2)]' : 'border-[#FF0055]/30 text-[#FF0055] shadow-[0_0_10px_rgba(255,0,85,0.2)]'}`}>
-                 {market.lastChangePct >= 0 ? '▲' : '▼'} {Math.abs(market.lastChangePct).toFixed(2)}%
-               </span>
                <div className="h-[40px] w-[80px] lg:h-[60px] lg:w-[120px]">
                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={market.history}>
@@ -239,9 +236,14 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
                     </AreaChart>
                  </ResponsiveContainer>
                </div>
-               <p className={`text-[10px] lg:text-xs font-bold tracking-widest mt-1 ${market.trend === 'UP' ? 'text-[#00FF9D]' : market.trend === 'DOWN' ? 'text-[#FF0055]' : 'text-slate-400'}`}>
-                 {market.trend === 'UP' ? t('bullish') : market.trend === 'DOWN' ? t('bearish') : t('flat')}
-               </p>
+               <div className="flex items-center gap-2">
+                 <span className={`text-xs lg:text-sm px-2 py-1 rounded-md font-bold tracking-wider bg-black/40 border ${market.lastChangePct >= 0 ? 'border-[#00FF9D]/30 text-[#00FF9D] shadow-[0_0_10px_rgba(0,255,157,0.2)]' : 'border-[#FF0055]/30 text-[#FF0055] shadow-[0_0_10px_rgba(255,0,85,0.2)]'}`}>
+                   {market.lastChangePct >= 0 ? '▲' : '▼'} {Math.abs(market.lastChangePct).toFixed(2)}%
+                 </span>
+                 <p className={`text-[10px] lg:text-xs font-bold tracking-widest ${market.trend === 'UP' ? 'text-[#00FF9D]' : market.trend === 'DOWN' ? 'text-[#FF0055]' : 'text-slate-400'}`}>
+                   {market.trend === 'UP' ? t('bullish') : market.trend === 'DOWN' ? t('bearish') : t('flat')}
+                 </p>
+               </div>
             </div>
         </div>
 
