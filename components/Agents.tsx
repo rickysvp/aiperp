@@ -138,13 +138,18 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     // Simulate processing delay for better UX
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // Close modal first
+    setWithdrawModalOpen(false);
+    
+    // Immediately clear selection to close detail view BEFORE calling onWithdraw
+    // This prevents the exited agent page from showing
+    setSelection('FABRICATE');
+    setWithdrawingAgent(null);
+    
+    // Then execute the withdraw
     await onWithdraw(withdrawingAgent.id);
     
     setWithdrawLoading(false);
-    setWithdrawModalOpen(false);
-    
-    // Clear selected agent to close detail view
-    setSelection('FABRICATE');
     
     // Show success toast briefly
     setWithdrawSuccess({show: true, amount: withdrawAmount, agentName});
@@ -152,7 +157,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     // Hide success toast after delay
     setTimeout(() => {
       setWithdrawSuccess({show: false, amount: 0, agentName: ''});
-      setWithdrawingAgent(null);
     }, 2000);
   };
 
