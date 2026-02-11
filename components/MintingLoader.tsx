@@ -52,7 +52,7 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
   // Typing animation
   useEffect(() => {
     const startTime = performance.now();
-    
+
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progressPercent = Math.min((elapsed / TOTAL_DURATION) * 100, 100);
@@ -62,9 +62,14 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
       const targetLine = Math.floor(lineProgress);
       const charProgress = lineProgress - targetLine;
 
-      if (targetLine < CODE_LINES.length) {
+      if (targetLine < CODE_LINES.length && targetLine >= 0) {
         setCurrentLineIndex(targetLine);
-        const currentLine = CODE_LINES[targetLine].text;
+        const lineObj = CODE_LINES[targetLine];
+        if (!lineObj) {
+          requestAnimationFrame(animate);
+          return;
+        }
+        const currentLine = lineObj.text;
         const charsToShow = Math.floor(currentLine.length * charProgress);
         setCurrentCharIndex(charsToShow);
 
@@ -73,7 +78,7 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
           newDisplayedLines.push(currentLine.slice(0, charsToShow));
         }
         setDisplayedLines(newDisplayedLines);
-      } else {
+      } else if (targetLine >= CODE_LINES.length) {
         setDisplayedLines(CODE_LINES.map(l => l.text));
         setIsComplete(true);
         setTimeout(() => onCompleteRef.current?.(), 500);
