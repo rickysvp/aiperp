@@ -175,7 +175,41 @@ export const translations = {
     ob_step3_text: "Watch the battle live. Winning sides loot the losers. Manage your fleet to dominate the leaderboard.",
     ob_next: "Next",
     ob_finish: "Enter Arena",
-    ob_skip: "Skip Tutorial"
+    ob_skip: "Skip Tutorial",
+
+    // MintingLoader
+    minting_title: "AIperp Agent Fabrication Engine v2.0",
+    minting_init: "Initializing neural synthesis protocol...",
+    minting_target: "Target",
+    minting_success: "[SUCCESS] Agent fabrication complete!",
+    minting_ready: "Ready for deployment to arena...",
+    minting_sys_online: "SYS: ONLINE",
+    minting_mem: "MEM: 64TB",
+    minting_net: "NET: SECURE",
+    minting_status_ready: "STATUS: READY",
+    minting_executing: "EXECUTING",
+
+    // AIGenerating
+    ai_synthesis: "AI Synthesis",
+    ai_generating: "Generating neural agent...",
+    ai_ready: "Ready to mint",
+    ai_processing: "Processing...",
+    ai_synthesis_complete: "Synthesis complete",
+
+    // NFTReveal
+    nft_legendary: "Legendary",
+    nft_strategy: "Strategy",
+    nft_deploy_arena: "Deploy to Arena",
+
+    // PnLChart
+    no_data: "No data available",
+    time_24h_ago: "24h ago",
+    time_now: "Now",
+
+    // VersionInfo
+    version: "Version",
+    prod: "Prod",
+    dev: "DEV"
   },
   zh: {
     app_title_root: "AIperp",
@@ -336,7 +370,41 @@ export const translations = {
     ob_step3_text: "实时观看战斗。获胜方掠夺失败方。管理您的舰队以统领排行榜。",
     ob_next: "下一步",
     ob_finish: "进入竞技场",
-    ob_skip: "跳过教程"
+    ob_skip: "跳过教程",
+
+    // MintingLoader
+    minting_title: "AIperp 特工制造引擎 v2.0",
+    minting_init: "初始化神经合成协议...",
+    minting_target: "目标",
+    minting_success: "[成功] 特工制造完成!",
+    minting_ready: "准备部署到竞技场...",
+    minting_sys_online: "系统: 在线",
+    minting_mem: "内存: 64TB",
+    minting_net: "网络: 安全",
+    minting_status_ready: "状态: 就绪",
+    minting_executing: "执行中",
+
+    // AIGenerating
+    ai_synthesis: "AI 合成",
+    ai_generating: "生成神经特工...",
+    ai_ready: "准备铸造",
+    ai_processing: "处理中...",
+    ai_synthesis_complete: "合成完成",
+
+    // NFTReveal
+    nft_legendary: "传说",
+    nft_strategy: "策略",
+    nft_deploy_arena: "部署到竞技场",
+
+    // PnLChart
+    no_data: "暂无数据",
+    time_24h_ago: "24小时前",
+    time_now: "现在",
+
+    // VersionInfo
+    version: "版本",
+    prod: "生产",
+    dev: "开发"
   }
 };
 

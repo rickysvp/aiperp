@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Terminal, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MintingLoaderProps {
   onComplete?: () => void;
@@ -24,6 +25,7 @@ const CODE_LINES = [
 const TOTAL_DURATION = 3000;
 
 export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentName }) => {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [displayedLines, setDisplayedLines] = useState<string[]>([]);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
@@ -150,9 +152,9 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
         <div className="p-3 font-mono text-xs overflow-y-auto h-full" style={{ scrollbarWidth: 'thin', scrollbarColor: '#00FF41 #0a0a0a' }}>
           {/* Welcome Message */}
           <div className="text-[#00FF41]/50 mb-3 space-y-0.5">
-            <div>{`>`} AIperp Agent Fabrication Engine v2.0</div>
-            <div>{`>`} Initializing neural synthesis protocol...</div>
-            <div>{`>`} Target: {agentName || 'Neural Agent'}</div>
+            <div>{`>`} {t('minting_title')}</div>
+            <div>{`>`} {t('minting_init')}</div>
+            <div>{`>`} {t('minting_target')}: {agentName || 'Neural Agent'}</div>
             <div className="text-[#00FF41]/30">{'─'.repeat(50)}</div>
           </div>
 
@@ -189,9 +191,9 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
               <div className="text-[#00FF41]/30">{'─'.repeat(50)}</div>
               <div className="flex items-center gap-2 text-[#00FF41]">
                 <CheckCircle2 size={16} />
-                <span className="font-bold">[SUCCESS] Agent fabrication complete!</span>
+                <span className="font-bold">{t('minting_success')}</span>
               </div>
-              <div className="text-[#00FF41]/70">{`>`} Ready for deployment to arena...</div>
+              <div className="text-[#00FF41]/70">{`>`} {t('minting_ready')}</div>
             </div>
           )}
         </div>
@@ -200,14 +202,14 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
       {/* Footer Status */}
       <div className="relative z-10 mt-3 flex items-center justify-between text-[10px] font-mono shrink-0">
         <div className="flex items-center gap-2 text-[#00FF41]/60">
-          <span>SYS: ONLINE</span>
+          <span>{t('minting_sys_online')}</span>
           <span className="text-[#00FF41]/30">|</span>
-          <span>MEM: 64TB</span>
+          <span>{t('minting_mem')}</span>
           <span className="text-[#00FF41]/30">|</span>
-          <span>NET: SECURE</span>
+          <span>{t('minting_net')}</span>
         </div>
         <div className="text-[#00FF41]">
-          {isComplete ? 'STATUS: READY' : `EXECUTING: ${currentLineIndex + 1}/${CODE_LINES.length}`}
+          {isComplete ? t('minting_status_ready') : `${t('minting_executing')}: ${currentLineIndex + 1}/${CODE_LINES.length}`}
         </div>
       </div>
     </div>

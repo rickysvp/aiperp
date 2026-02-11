@@ -1,6 +1,7 @@
 import React from 'react';
 import { Agent } from '../types';
 import { Sparkles, Rocket, Crown, AtSign, TrendingUp, TrendingDown, Brain } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface NFTRevealProps {
   agent: Agent;
@@ -23,9 +24,10 @@ const strategyDescriptions: Record<string, string> = {
 };
 
 export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
+  const { t } = useLanguage();
   const strategyColor = agent.direction === 'LONG' ? 'text-emerald-400' : agent.direction === 'SHORT' ? 'text-rose-400' : 'text-violet-400';
   const strategyBg = agent.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30' : agent.direction === 'SHORT' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-violet-500/10 border-violet-500/30';
-  
+
   const strategyDesc = strategyDescriptions[agent.strategy];
   
   return (
@@ -41,7 +43,7 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
         {/* 稀有度徽章 */}
         <div className="absolute top-3 right-3 flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/40 px-2 py-1 rounded-full">
           <Crown size={10} className="text-amber-400" />
-          <span className="text-[10px] font-bold text-amber-400 uppercase">Legendary</span>
+          <span className="text-[10px] font-bold text-amber-400 uppercase">{t('nft_legendary')}</span>
         </div>
 
         {/* 图像区域 */}
@@ -94,7 +96,7 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
             <div className="flex items-start gap-2">
               <Brain size={14} className={`${strategyColor} mt-0.5 flex-shrink-0`} />
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] text-slate-400 uppercase tracking-wider">Strategy</p>
+                <p className="text-[9px] text-slate-400 uppercase tracking-wider">{t('nft_strategy')}</p>
                 <p className="text-xs font-bold text-white truncate">{agent.strategy}</p>
                 {strategyDesc && (
                   <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{strategyDesc}</p>
@@ -111,12 +113,12 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
           </div>
 
           {/* Deploy按钮 */}
-          <button 
+          <button
             onClick={onDeployNow}
             className="w-full py-3 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-lg text-sm font-bold text-black flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#836EF9]/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
           >
             <Rocket size={16} />
-            Deploy to Arena
+            {t('nft_deploy_arena')}
           </button>
         </div>
 

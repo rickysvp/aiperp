@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Cpu, Activity, Database, Shield, Zap, Brain, Terminal } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AIGeneratingProps {
   logs: string[];
 }
 
 export const AIGenerating: React.FC<AIGeneratingProps> = ({ logs }) => {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   
   useEffect(() => {
@@ -54,9 +56,9 @@ export const AIGenerating: React.FC<AIGeneratingProps> = ({ logs }) => {
       {/* 标题 */}
       <h3 className="text-xl font-bold text-white mb-2">
         <span className="text-[#836EF9]">AI</span>
-        <span className="text-[#00FF9D]"> Synthesis</span>
+        <span className="text-[#00FF9D]"> {t('ai_synthesis')}</span>
       </h3>
-      <p className="text-xs text-slate-400 mb-6">Generating neural agent...</p>
+      <p className="text-xs text-slate-400 mb-6">{t('ai_generating')}</p>
 
       {/* 进度条 */}
       <div className="w-full max-w-[280px] h-1.5 bg-slate-800 rounded-full overflow-hidden mb-6">
@@ -97,7 +99,7 @@ export const AIGenerating: React.FC<AIGeneratingProps> = ({ logs }) => {
             <div className="flex items-center gap-3 text-[11px] pt-2 border-t border-[#836EF9]/10">
               <span className="text-[#836EF9]/40 font-mono w-5">11</span>
               <span className="text-[#00FF9D]">✓</span>
-              <span className="text-[#00FF9D] font-mono">Synthesis complete</span>
+              <span className="text-[#00FF9D] font-mono">{t('ai_synthesis_complete')}</span>
             </div>
           )}
         </div>
@@ -107,7 +109,7 @@ export const AIGenerating: React.FC<AIGeneratingProps> = ({ logs }) => {
       <div className="mt-4 flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${logs.length >= 10 ? 'bg-[#00FF9D]' : 'bg-[#836EF9] animate-pulse'}`}></div>
         <span className="text-xs text-slate-400">
-          {logs.length >= 10 ? 'Ready to mint' : 'Processing...'}
+          {logs.length >= 10 ? t('ai_ready') : t('ai_processing')}
         </span>
       </div>
     </div>

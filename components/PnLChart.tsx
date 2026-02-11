@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PnLChartProps {
   data: { time: string; value: number }[];
@@ -7,13 +8,14 @@ interface PnLChartProps {
 }
 
 export const PnLChart: React.FC<PnLChartProps> = ({ data, width = 280, height = 80 }) => {
+  const { t } = useLanguage();
   if (!data || data.length === 0) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center bg-black/20 rounded-lg border border-white/5"
         style={{ width, height }}
       >
-        <span className="text-xs text-slate-500">No data available</span>
+        <span className="text-xs text-slate-500">{t('no_data')}</span>
       </div>
     );
   }
@@ -75,8 +77,8 @@ export const PnLChart: React.FC<PnLChartProps> = ({ data, width = 280, height = 
       
       {/* Time labels */}
       <div className="flex justify-between text-[9px] text-slate-500 mt-1 px-1">
-        <span>24h ago</span>
-        <span>Now</span>
+        <span>{t('time_24h_ago')}</span>
+        <span>{t('time_now')}</span>
       </div>
     </div>
   );
