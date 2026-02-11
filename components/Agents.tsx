@@ -799,20 +799,138 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </div>
          )}
 
-         {/* SCENARIO D: EXITED (IDLE after active) */}
+         {/* SCENARIO D: EXITED (IDLE after active) - Show Deploy Page */}
          {selectedAgent && selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0) && (
-             <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-10 animate-fade-in text-center">
-                 <div className="w-24 h-24 bg-emerald-900/20 rounded-full border border-emerald-500/30 flex items-center justify-center mb-6">
-                     <CheckCircle2 size={48} className="text-emerald-500" />
+             <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
+                 {/* Agent Header Card */}
+                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-6">
+                     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                         {/* Avatar */}
+                         <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg shrink-0 mx-auto lg:mx-0">
+                             <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
+                         </div>
+                         
+                         {/* Info */}
+                         <div className="flex-1 text-center lg:text-left">
+                             <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-2 justify-center lg:justify-start">
+                                 <h2 className="text-xl lg:text-2xl font-display font-bold text-white">{selectedAgent.name}</h2>
+                                 {selectedAgent.twitterHandle && (
+                                     <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full border border-blue-500/20 inline-flex items-center gap-1 w-fit mx-auto lg:mx-0">
+                                         <AtSign size={10} /> {selectedAgent.twitterHandle}
+                                     </span>
+                                 )}
+                             </div>
+                             <p className="text-sm text-slate-400 italic mb-3">"{selectedAgent.bio}"</p>
+                             <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                                 <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
+                                     {selectedAgent.strategy}
+                                 </span>
+                                 <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg text-xs border border-emerald-500/20 font-medium">
+                                     Exited Arena
+                                 </span>
+                             </div>
+                         </div>
+                         
+                         {/* PnL Display */}
+                         <div className="text-center lg:text-right shrink-0">
+                             <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">Final PnL</p>
+                             <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                 {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
+                             </p>
+                         </div>
+                     </div>
                  </div>
-                 <h2 className="text-3xl font-display font-bold text-white mb-2">Agent Exited</h2>
-                 <p className="text-slate-500 max-w-md mb-8">
-                     Agent <span className="text-white font-bold">{selectedAgent.name}</span> has exited the arena.<br/>
-                     Final PnL: <span className={selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON</span>
-                 </p>
-                 <Button onClick={() => handleSocialShare(selectedAgent)} variant="secondary">
-                     Share Results
-                 </Button>
+
+                 {/* Deploy Configuration */}
+                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 flex-1">
+                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                         <Rocket size={20} className="text-[#00FF9D]" />
+                         Redeploy to Arena
+                     </h3>
+                     
+                     {/* Direction Selection */}
+                     <div className="mb-6">
+                         <label className="text-xs text-slate-500 uppercase tracking-wider mb-3 block">Direction</label>
+                         <div className="grid grid-cols-3 gap-2">
+                             {(['AUTO', 'LONG', 'SHORT'] as Direction[]).map((dir) => (
+                                 <button
+                                     key={dir}
+                                     onClick={() => setDeployDirection(dir)}
+                                     className={`py-3 px-4 rounded-xl text-sm font-bold transition-all ${
+                                         deployDirection === dir
+                                             ? dir === 'LONG' ? 'bg-emerald-500 text-black' : dir === 'SHORT' ? 'bg-rose-500 text-white' : 'bg-[#836EF9] text-white'
+                                             : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                     }`}
+                                 >
+                                     {dir}
+                                 </button>
+                             ))}
+                         </div>
+                     </div>
+                     
+                     {/* Leverage Slider */}
+                     <div className="mb-6">
+                         <div className="flex justify-between items-center mb-3">
+                             <label className="text-xs text-slate-500 uppercase tracking-wider">Leverage</label>
+                             <span className="text-lg font-mono font-bold text-[#00FF9D]">{deployLeverage}X</span>
+                         </div>
+                         <input
+                             type="range"
+                             min="1"
+                             max="100"
+                             value={deployLeverage}
+                             onChange={(e) => setDeployLeverage(Number(e.target.value))}
+                             className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#00FF9D]"
+                         />
+                         <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+                             <span>1X</span>
+                             <span>50X</span>
+                             <span>100X</span>
+                         </div>
+                     </div>
+                     
+                     {/* Collateral Input */}
+                     <div className="mb-6">
+                         <div className="flex justify-between items-center mb-3">
+                             <label className="text-xs text-slate-500 uppercase tracking-wider">Collateral</label>
+                             <span className="text-xs text-slate-500">Balance: {walletBalance} $MON</span>
+                         </div>
+                         <div className="relative">
+                             <input
+                                 type="number"
+                                 value={deployCollateral}
+                                 onChange={(e) => setDeployCollateral(Math.max(0, Number(e.target.value)))}
+                                 className="w-full bg-black border border-slate-700 rounded-xl px-4 py-3 text-white font-mono focus:border-[#00FF9D] focus:outline-none transition-colors"
+                             />
+                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$MON</span>
+                         </div>
+                     </div>
+                     
+                     {/* Deploy Button */}
+                     <Button
+                         onClick={() => handleDeployClick(selectedAgent.id)}
+                         disabled={deployCollateral < 50 || deployCollateral > walletBalance}
+                         className="w-full h-14 text-base uppercase tracking-wider bg-gradient-to-r from-[#836EF9] to-[#00FF9D] text-black font-bold hover:opacity-90 disabled:opacity-50"
+                     >
+                         <Rocket size={18} className="mr-2" />
+                         Deploy to Arena
+                     </Button>
+                     
+                     {deployCollateral < 50 && (
+                         <p className="text-xs text-rose-500 mt-2 text-center">Minimum collateral is 50 $MON</p>
+                     )}
+                     
+                     {/* Share Button */}
+                     <div className="mt-4 flex gap-2">
+                         <Button 
+                             onClick={() => handleSocialShare(selectedAgent)} 
+                             variant="secondary"
+                             className="flex-1 h-12 text-sm"
+                         >
+                             Share Results
+                         </Button>
+                     </div>
+                 </div>
              </div>
          )}
 
