@@ -7,6 +7,7 @@ import { refineAgentStrategy } from '../services/kimiService';
 import { AgentCard } from './AgentCard';
 import { MintingLoader } from './MintingLoader';
 import { NFT3DCard } from './NFT3DCard';
+import { AgentsDashboard } from './AgentsDashboard';
 
 interface AgentsProps {
   agents: Agent[];
@@ -345,16 +346,30 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
       {/* RIGHT PANEL: COMMAND CONSOLE (DETAILS) */}
       <div className={`${showDetailOnMobile ? 'flex' : 'hidden lg:flex'} flex-1 bg-[#050508] border border-slate-800 rounded-2xl lg:overflow-hidden relative flex-col shadow-2xl mb-20 lg:mb-0`}>
-         
+
          {/* Background Grid FX */}
          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(rgba(131, 110, 249, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(131, 110, 249, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-         
+
          {/* Mobile Back Button */}
          <div className="lg:hidden p-4 border-b border-slate-800 z-20">
              <button onClick={handleBackToList} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold uppercase tracking-wider">
                  <ArrowLeft size={16} /> {t('back_to_fleet')}
              </button>
          </div>
+
+         {/* SCENARIO D: DASHBOARD OVERVIEW - Default view when no agent selected */}
+         {selection !== 'FABRICATE' && !selectedAgent && (
+             <div className="flex-1 relative z-10">
+                 <AgentsDashboard
+                     agents={agents.filter(a => a.owner === 'USER')}
+                     onSelectAgent={(id) => {
+                         setSelection(id);
+                         setShowDetailOnMobile(true);
+                     }}
+                     onMintNew={handleStartFabrication}
+                 />
+             </div>
+         )}
 
          {/* SCENARIO A: FABRICATION TERMINAL - Compact Single Screen */}
          {selection === 'FABRICATE' && (
@@ -979,7 +994,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
       {/* Withdraw Success Toast - Enhanced with Transfer Animation */}
       {withdrawSuccess.show && (
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+        <div className="fixed top-20 right-4 z-[100] animate-fade-in">
           <div className="bg-[#0f111a] border border-emerald-500/50 rounded-xl p-4 shadow-2xl shadow-emerald-500/20 min-w-[320px]">
             {/* Header */}
             <div className="flex items-center gap-3 mb-3">
