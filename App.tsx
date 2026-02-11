@@ -9,6 +9,7 @@ import { Leaderboard } from './components/Leaderboard';
 import { AuthModal } from './components/AuthModal';
 import { Onboarding } from './components/Onboarding';
 import { LegalModal } from './components/LegalModal';
+import { VersionInfo } from './components/VersionInfo';
 import { LayoutDashboard, Users, Wallet as WalletIcon, BrainCircuit, Trophy, Globe } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -545,6 +546,9 @@ const AppContent: React.FC = () => {
       {!isAuthenticated && <AuthModal onLogin={handleLogin} />}
       {showOnboarding && <Onboarding onFinish={handleFinishOnboarding} />}
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
+      
+      {/* Version Info */}
+      <VersionInfo />
 
       {/* Top Header - Modern Design */}
       <nav className="border-b border-white/5 bg-[#030305]/90 backdrop-blur-xl sticky top-0 z-50 shrink-0">
