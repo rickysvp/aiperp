@@ -25,9 +25,16 @@ const MIN_COLLATERAL = 100;
 
 export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, onAddAgent, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
-  // Check if user has any agents
-  const userAgents = useMemo(() => agents.filter(a => a.owner === 'USER'), [agents]);
-  const hasAgents = userAgents.length > 0;
+  // Group Agents
+  const { activeAgents, idleAgents, deadAgents, hasAgents } = useMemo(() => {
+    const userAgents = agents.filter(a => a.owner === 'USER');
+    return {
+        activeAgents: userAgents.filter(a => a.status === 'ACTIVE'),
+        idleAgents: userAgents.filter(a => a.status === 'IDLE'),
+        deadAgents: userAgents.filter(a => a.status === 'LIQUIDATED').reverse(),
+        hasAgents: userAgents.length > 0
+    };
+  }, [agents]);
 
   // Selection State: 'FABRICATE' or agentId or '' (dashboard)
   // Default to dashboard if user has agents, otherwise show FABRICATE page
@@ -63,16 +70,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
   // Withdraw State - Simple toast notification
   const [withdrawToast, setWithdrawToast] = useState<{show: boolean; agentName: string; amount: number}>({show: false, agentName: '', amount: 0});
-
-  // Group Agents
-  const { activeAgents, idleAgents, deadAgents } = useMemo(() => {
-    const userAgents = agents.filter(a => a.owner === 'USER');
-    return {
-        activeAgents: userAgents.filter(a => a.status === 'ACTIVE'),
-        idleAgents: userAgents.filter(a => a.status === 'IDLE'),
-        deadAgents: userAgents.filter(a => a.status === 'LIQUIDATED').reverse(), // Most recent deaths first
-    };
-  }, [agents]);
 
   const selectedAgent = agents.find(a => a.id === selection);
 
