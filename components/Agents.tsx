@@ -397,7 +397,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  {/* Step 2: Minting Loading with Progress */}
                  {fabricationStep === 'GENERATING' && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <MintingLoader onComplete={handleMintingComplete} />
+                         <MintingLoader onComplete={handleMintingComplete} agentName={nameHint || 'Neural Agent'} />
                      </div>
                  )}
 
