@@ -374,19 +374,19 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                             {/* Compact Form Card */}
                             <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 space-y-3 shadow-xl">
                                 {/* Agent Name Input */}
-                                <div className="space-y-1">
-                                    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                                        <Sparkles size={12} className="text-[#836EF9]" />
-                                        Agent Name
-                                    </label>
-                                    <div className="relative">
-                                        <input 
-                                            type="text"
-                                            value={nameHint}
-                                            onChange={(e) => setNameHint(e.target.value)}
-                                            placeholder="e.g. CyberWolf..."
-                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
-                                        />
+                                 <div className="space-y-1">
+                                     <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                                         <Sparkles size={12} className="text-[#836EF9]" />
+                                         {t('agent_name')}
+                                     </label>
+                                     <div className="relative">
+                                         <input
+                                             type="text"
+                                             value={nameHint}
+                                             onChange={(e) => setNameHint(e.target.value)}
+                                             placeholder={t('agent_name_placeholder')}
+                                             className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
+                                         />
                                         {nameHint && (
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                                 <CheckCircle2 size={16} className="text-[#00FF9D]" />
@@ -396,49 +396,49 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                 </div>
 
                                 {/* Twitter Handle Input */}
-                                <div className="space-y-1">
-                                    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                                        <AtSign size={12} className="text-[#836EF9]" />
-                                        Twitter (Optional)
-                                    </label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">@</span>
-                                        <input 
-                                            type="text"
-                                            value={twitterHandle}
-                                            onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
-                                            placeholder="username"
-                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 pl-7 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
+                                 <div className="space-y-1">
+                                     <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                                         <AtSign size={12} className="text-[#836EF9]" />
+                                         {t('twitter_optional')}
+                                     </label>
+                                     <div className="relative">
+                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">@</span>
+                                         <input
+                                             type="text"
+                                             value={twitterHandle}
+                                             onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
+                                             placeholder={t('twitter_placeholder')}
+                                             className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 pl-7 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
+                                         />
+                                     </div>
+                                 </div>
 
                                 {/* Cost & Action - Compact */}
-                                <div className="pt-3 border-t border-slate-800 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-slate-400">Cost</span>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-lg font-mono font-bold text-white">{FABRICATION_COST}</span>
-                                            <span className="text-xs text-slate-500">$MON</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <Button
-                                        onClick={handleConfirmFabrication}
-                                        disabled={walletBalance < FABRICATION_COST}
-                                        className="w-full py-3 text-sm font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg"
-                                    >
-                                        {walletBalance < FABRICATION_COST ? (
-                                            <span className="flex items-center justify-center gap-1.5">
-                                                <AlertTriangle size={16} /> Insufficient
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-1.5">
-                                                <Zap size={16} /> Mint Agent
-                                            </span>
-                                        )}
-                                    </Button>
-                                </div>
+                                 <div className="pt-3 border-t border-slate-800 space-y-3">
+                                     <div className="flex items-center justify-between">
+                                         <span className="text-xs text-slate-400">{t('cost')}</span>
+                                         <div className="flex items-center gap-1">
+                                             <span className="text-lg font-mono font-bold text-white">{FABRICATION_COST}</span>
+                                             <span className="text-xs text-slate-500">$MON</span>
+                                         </div>
+                                     </div>
+
+                                     <Button
+                                         onClick={handleConfirmFabrication}
+                                         disabled={walletBalance < FABRICATION_COST}
+                                         className="w-full py-3 text-sm font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg"
+                                     >
+                                         {walletBalance < FABRICATION_COST ? (
+                                             <span className="flex items-center justify-center gap-1.5">
+                                                 <AlertTriangle size={16} /> {t('insufficient')}
+                                             </span>
+                                         ) : (
+                                             <span className="flex items-center justify-center gap-1.5">
+                                                 <Zap size={16} /> {t('mint_agent')}
+                                             </span>
+                                         )}
+                                     </Button>
+                                 </div>
                             </div>
                         </div>
                     </div>
@@ -705,13 +705,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
                          <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                              <Rocket size={18} className="text-[#836EF9]" />
-                             Deploy to Arena
+                             {t('deploy_section')}
                          </h3>
 
                          {/* Direction Selection */}
                          <div className="mb-4">
                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
-                                 <Crosshair size={14} /> Direction
+                                 <Crosshair size={14} /> {t('direction')}
                              </label>
                              <div className="grid grid-cols-3 gap-3">
                                  <button
@@ -753,7 +753,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          {/* Leverage & Collateral */}
                          <div className="grid grid-cols-2 gap-4 mb-4">
                              <div>
-                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Leverage</label>
+                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">{t('leverage')}</label>
                                  <input
                                      type="range"
                                      min="1"
@@ -765,7 +765,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  <p className="text-center text-sm font-mono text-white mt-1">{deployLeverage}x</p>
                              </div>
                              <div>
-                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Collateral</label>
+                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">{t('collateral')}</label>
                                  <input
                                      type="range"
                                      min={MIN_COLLATERAL}
@@ -785,7 +785,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                              disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
                              className="w-full py-3 text-base font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black disabled:opacity-50 rounded-xl"
                          >
-                             {walletBalance < deployCollateral ? 'Insufficient Balance' : `Deploy with ${deployCollateral} $MON`}
+                             {walletBalance < deployCollateral ? t('insufficient_balance') : `${t('deploy_with')} ${deployCollateral} $MON`}
                          </Button>
                      </div>
                  )}
@@ -863,28 +863,21 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          variant="secondary"
                          className="h-12"
                      >
-                         {selectedAgent.status === 'ACTIVE' ? 'Share Status' : selectedAgent.status === 'IDLE' ? 'Share Agent' : 'Share Report'}
+                         {selectedAgent.status === 'ACTIVE' ? t('share_status') : selectedAgent.status === 'IDLE' ? t('share_agent') : t('share_report')}
                      </Button>
                      {selectedAgent.status === 'ACTIVE' ? (
                          <Button
                              onClick={() => handleWithdrawClick(selectedAgent)}
                              className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
                          >
-                             Withdraw
-                         </Button>
-                     ) : selectedAgent.status === 'IDLE' ? (
-                         <Button
-                             onClick={() => setSelection('FABRICATE')}
-                             className="h-12 bg-slate-700 hover:bg-slate-600"
-                         >
-                             Back to List
+                             {t('withdraw')}
                          </Button>
                      ) : (
                          <Button
                              onClick={() => setSelection('FABRICATE')}
                              className="h-12 bg-slate-700 hover:bg-slate-600"
                          >
-                             Back to List
+                             {t('back_to_list')}
                          </Button>
                      )}
                  </div>
@@ -903,7 +896,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                 <Wallet size={24} className="text-emerald-500" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Confirm Withdraw</h3>
+                <h3 className="text-lg font-bold text-white">{t('confirm_withdraw')}</h3>
                 <p className="text-sm text-slate-400">{withdrawingAgent.name}</p>
               </div>
             </div>
@@ -912,7 +905,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             <div className="bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-800">
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Current Balance</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{t('current_balance')}</p>
                   <p className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} $MON</p>
                 </div>
                 <div>
@@ -924,7 +917,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{t('win_rate')}</p>
                   <p className="text-sm font-mono font-bold text-white">
                     {withdrawingAgent.wins + withdrawingAgent.losses > 0
                       ? Math.round((withdrawingAgent.wins / (withdrawingAgent.wins + withdrawingAgent.losses)) * 100)
@@ -932,7 +925,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{t('total_trades')}</p>
                   <p className="text-sm font-mono font-bold text-white">{withdrawingAgent.wins + withdrawingAgent.losses}</p>
                 </div>
               </div>
@@ -940,7 +933,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
             {/* Amount to Receive */}
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
-              <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">To Receive</p>
+              <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">{t('to_receive')}</p>
               <p className="text-3xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} $MON</p>
             </div>
 
@@ -948,7 +941,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             <div className="flex items-start gap-2 mb-6 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-500/80">
-                Withdrawing will exit your agent from the arena. You can redeploy later with new collateral.
+                {t('withdraw_warning')}
               </p>
             </div>
 
@@ -960,7 +953,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                 className="flex-1 h-12"
                 disabled={withdrawLoading}
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 onClick={handleConfirmWithdraw}
@@ -970,10 +963,10 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                 {withdrawLoading ? (
                   <span className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                    Processing...
+                    {t('processing')}
                   </span>
                 ) : (
-                  'Confirm Withdraw'
+                  t('confirm')
                 )}
               </Button>
             </div>
@@ -989,7 +982,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
               <CheckCircle2 size={20} className="text-emerald-500" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Withdrawal Successful!</p>
+              <p className="text-sm font-bold text-white">{t('withdraw_success')}</p>
               <p className="text-xs text-slate-400">
                 {withdrawSuccess.agentName} exited with {withdrawSuccess.amount.toFixed(2)} $MON
               </p>

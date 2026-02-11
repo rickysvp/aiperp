@@ -209,7 +209,48 @@ export const translations = {
     // VersionInfo
     version: "Version",
     prod: "Prod",
-    dev: "DEV"
+    dev: "DEV",
+
+    // Agents Page - Fabrication
+    agent_name: "Agent Name",
+    agent_name_placeholder: "e.g. CyberWolf...",
+    twitter_optional: "Twitter (Optional)",
+    twitter_placeholder: "username",
+    cost: "Cost",
+    insufficient: "Insufficient",
+    mint_agent: "Mint Agent",
+    enter_name: "Enter Name",
+
+    // Agent Detail
+    live_pnl: "Live PnL",
+    final_status: "Final Status",
+    final_pnl: "Final PnL",
+    collateral_health: "Collateral Health",
+    agent_config: "Agent Configuration",
+    risk_level: "Risk Level",
+    total_trades: "Total Trades",
+    exited_arena: "Exited Arena",
+    deploy_section: "Deploy to Arena",
+    direction: "Direction",
+    leverage: "Leverage",
+    collateral: "Collateral",
+    insufficient_balance: "Insufficient Balance",
+    deploy_with: "Deploy",
+    share_status: "Share Status",
+    share_agent: "Share Agent",
+    share_report: "Share Report",
+    withdraw: "Withdraw",
+    back_to_list: "Back to List",
+
+    // Withdraw Modal
+    confirm_withdraw: "Confirm Withdraw",
+    current_balance: "Current Balance",
+    to_receive: "To Receive",
+    withdraw_warning: "Withdrawing will exit your agent from the arena. You can redeploy later.",
+    cancel: "Cancel",
+    confirm: "Confirm",
+    processing: "Processing...",
+    withdraw_success: "Withdrawal Successful!"
   },
   zh: {
     app_title_root: "AIperp",
@@ -404,7 +445,48 @@ export const translations = {
     // VersionInfo
     version: "版本",
     prod: "生产",
-    dev: "开发"
+    dev: "开发",
+
+    // Agents Page - Fabrication
+    agent_name: "特工名称",
+    agent_name_placeholder: "例如: CyberWolf...",
+    twitter_optional: "推特 (可选)",
+    twitter_placeholder: "用户名",
+    cost: "费用",
+    insufficient: "余额不足",
+    mint_agent: "铸造特工",
+    enter_name: "输入名称",
+
+    // Agent Detail
+    live_pnl: "实时盈亏",
+    final_status: "最终状态",
+    final_pnl: "最终盈亏",
+    collateral_health: "抵押健康度",
+    agent_config: "特工配置",
+    risk_level: "风险等级",
+    total_trades: "总交易数",
+    exited_arena: "已退出竞技场",
+    deploy_section: "部署到竞技场",
+    direction: "方向",
+    leverage: "杠杆",
+    collateral: "抵押物",
+    insufficient_balance: "余额不足",
+    deploy_with: "部署",
+    share_status: "分享状态",
+    share_agent: "分享特工",
+    share_report: "分享战报",
+    withdraw: "收回",
+    back_to_list: "返回列表",
+
+    // Withdraw Modal
+    confirm_withdraw: "确认收回",
+    current_balance: "当前余额",
+    to_receive: "将收到",
+    withdraw_warning: "收回将让您的特工退出竞技场。您可以稍后重新部署。",
+    cancel: "取消",
+    confirm: "确认",
+    processing: "处理中...",
+    withdraw_success: "收回成功!"
   }
 };
 
