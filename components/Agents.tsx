@@ -124,8 +124,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
   const handleConfirmFabrication = async () => {
     setFabricationStep('GENERATING');
-    // 缩短等待时间到800ms，更快的体验
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // 等待日志动画完成（约1.2秒）
+    await new Promise(resolve => setTimeout(resolve, 1200));
     
     // We pass the user-defined name here
     const newAgent = await onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");

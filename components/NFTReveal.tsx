@@ -1,6 +1,6 @@
 import React from 'react';
 import { Agent } from '../types';
-import { Sparkles, Zap, Brain, Rocket, Crown, AtSign } from 'lucide-react';
+import { Sparkles, Rocket, Crown, AtSign, TrendingUp, TrendingDown, Brain } from 'lucide-react';
 
 interface NFTRevealProps {
   agent: Agent;
@@ -11,39 +11,35 @@ interface NFTRevealProps {
 }
 
 export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
+  const strategyColor = agent.direction === 'LONG' ? 'text-emerald-400' : agent.direction === 'SHORT' ? 'text-rose-400' : 'text-violet-400';
+  const strategyBg = agent.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30' : agent.direction === 'SHORT' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-violet-500/10 border-violet-500/30';
+  
   return (
-    <div className="relative w-full max-w-[260px] mx-auto">
-      {/* 背景光效 */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#836EF9]/20 via-transparent to-[#00FF9D]/20 blur-2xl"></div>
+    <div className="relative w-full max-w-[320px] mx-auto">
+      {/* 外层光晕 */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-[#836EF9] via-[#00FF9D] to-[#836EF9] rounded-2xl blur opacity-30 animate-pulse"></div>
       
-      {/* NFT卡片容器 */}
-      <div className="relative bg-gradient-to-b from-[#1a1d2d] to-[#0f111a] rounded-xl border-2 border-[#836EF9]/50 p-0.5 shadow-[0_0_40px_rgba(131,110,249,0.3)]">
-        {/* 内边框装饰 */}
-        <div className="absolute inset-0 rounded-xl border border-white/10"></div>
+      {/* NFT卡片主体 */}
+      <div className="relative bg-[#0a0b14] rounded-xl overflow-hidden border border-[#836EF9]/40">
+        {/* 顶部稀有度条 */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#836EF9] via-[#00FF9D] to-[#836EF9]"></div>
         
-        {/* 顶部装饰条 */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-transparent via-[#836EF9] to-transparent"></div>
-        
-        {/* 卡片内容 */}
-        <div className="relative p-3">
-          {/* 稀有度标识 */}
-          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] px-2.5 py-0.5 rounded-full shadow-lg">
-            <Crown size={10} className="text-white" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Legendary</span>
-          </div>
+        {/* 稀有度徽章 */}
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/40 px-2 py-1 rounded-full">
+          <Crown size={10} className="text-amber-400" />
+          <span className="text-[10px] font-bold text-amber-400 uppercase">Legendary</span>
+        </div>
 
-          {/* NFT图像区域 */}
-          <div className="relative mt-3 mb-3">
-            {/* 外发光 */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#836EF9]/40 to-[#00FF9D]/40 rounded-lg blur-lg"></div>
-            
-            {/* 图像容器 */}
-            <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-[#836EF9]/30 bg-black">
+        {/* 图像区域 */}
+        <div className="relative p-4 pb-0">
+          {/* 图像外框 */}
+          <div className="relative aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-[#836EF9]/20 to-[#00FF9D]/20 p-[2px]">
+            <div className="relative w-full h-full rounded-lg overflow-hidden bg-[#0f111a]">
               {/* 角落装饰 */}
-              <div className="absolute top-1.5 left-1.5 w-3 h-3 border-l border-t border-[#836EF9]"></div>
-              <div className="absolute top-1.5 right-1.5 w-3 h-3 border-r border-t border-[#836EF9]"></div>
-              <div className="absolute bottom-1.5 left-1.5 w-3 h-3 border-l border-b border-[#836EF9]"></div>
-              <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-r border-b border-[#836EF9]"></div>
+              <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-[#836EF9]/60 z-10"></div>
+              <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-[#836EF9]/60 z-10"></div>
+              <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-[#836EF9]/60 z-10"></div>
+              <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-[#836EF9]/60 z-10"></div>
               
               {/* Agent图像 */}
               <img 
@@ -52,63 +48,70 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
                 className="w-full h-full object-cover"
               />
               
-              {/* 扫描线效果 */}
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#836EF9]/10 to-transparent animate-[scan_2s_ease-in-out_infinite]"></div>
+              {/* 扫描线 */}
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#836EF9]/5 to-transparent animate-[scan_3s_ease-in-out_infinite]"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* 信息区域 */}
+        <div className="p-4 pt-3">
+          {/* 名称和编号 */}
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-1.5">
+                <Sparkles size={14} className="text-[#00FF9D]" />
+                {userName || agent.name}
+              </h3>
+              <p className="text-[10px] text-slate-500 font-mono mt-0.5">AIperp Agent #{String(nftNumber).padStart(4, '0')}</p>
             </div>
           </div>
 
-          {/* Agent名称 - 使用用户输入的名称 */}
-          <div className="text-center mb-2">
-            <h3 className="text-lg font-bold text-white mb-0.5 flex items-center justify-center gap-1.5">
-              <Sparkles size={12} className="text-[#00FF9D]" />
-              {userName || agent.name}
-            </h3>
-          </div>
-
-          {/* NFT编号 */}
-          <div className="text-center mb-3">
-            <span className="text-[10px] text-slate-400 font-mono">#{String(nftNumber).padStart(4, '0')}</span>
-          </div>
-
-          {/* 初始化策略偏好 */}
-          <div className="bg-black/40 rounded-md p-2 border border-white/5 mb-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Brain size={10} className="text-[#836EF9]" />
-              <span className="text-[9px] text-slate-400 uppercase">Strategy Preference</span>
+          {/* 策略偏好 */}
+          <div className={`rounded-lg p-2.5 mb-3 border ${strategyBg}`}>
+            <div className="flex items-center gap-2">
+              <Brain size={14} className={strategyColor} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] text-slate-400 uppercase tracking-wider">Strategy</p>
+                <p className="text-xs font-bold text-white truncate">{agent.strategy}</p>
+              </div>
+              {agent.direction === 'LONG' ? (
+                <TrendingUp size={16} className="text-emerald-400" />
+              ) : agent.direction === 'SHORT' ? (
+                <TrendingDown size={16} className="text-rose-400" />
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-violet-500/30 border border-violet-400/50"></div>
+              )}
             </div>
-            <p className="text-xs font-bold text-white truncate">{agent.strategy}</p>
           </div>
 
-          {/* 铸造者推特 */}
+          {/* 铸造者信息 */}
           {minterTwitter && (
-            <div className="flex items-center justify-center gap-1 mb-2 text-[10px] text-slate-400">
-              <AtSign size={10} className="text-[#836EF9]" />
-              <span>{minterTwitter}</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-3">
+              <div className="w-5 h-5 rounded-full bg-[#836EF9]/20 flex items-center justify-center">
+                <AtSign size={10} className="text-[#836EF9]" />
+              </div>
+              <span>Minted by @{minterTwitter}</span>
             </div>
           )}
 
-          {/* 底部AIperp.fun标识 */}
-          <div className="flex items-center justify-center text-[9px] text-slate-500 border-t border-white/10 pt-2">
-            <span className="flex items-center gap-1">
-              <Zap size={8} className="text-[#836EF9]" />
-              AIperp.fun
-            </span>
-          </div>
+          {/* Deploy按钮 */}
+          <button 
+            onClick={onDeployNow}
+            className="w-full py-3 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-lg text-sm font-bold text-black flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#836EF9]/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <Rocket size={16} />
+            Deploy to Arena
+          </button>
         </div>
+
+        {/* 底部装饰线 */}
+        <div className="h-0.5 bg-gradient-to-r from-transparent via-[#836EF9]/50 to-transparent"></div>
       </div>
 
-      {/* 立刻部署按钮 */}
-      <button 
-        onClick={onDeployNow}
-        className="w-full mt-3 py-2.5 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-lg text-sm font-bold text-black flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-[#836EF9]/30 hover:shadow-[#836EF9]/50 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-      >
-        <Rocket size={16} />
-        Deploy Now
-      </button>
-
-      {/* 装饰粒子 */}
-      <div className="absolute -top-3 -right-3 w-6 h-6 bg-[#00FF9D]/20 rounded-full blur-lg animate-pulse"></div>
-      <div className="absolute -bottom-3 -left-3 w-5 h-5 bg-[#836EF9]/20 rounded-full blur-lg animate-pulse delay-300"></div>
+      {/* 外发光装饰 */}
+      <div className="absolute -top-2 -right-2 w-4 h-4 bg-[#00FF9D] rounded-full blur-md opacity-50"></div>
+      <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-[#836EF9] rounded-full blur-md opacity-50"></div>
     </div>
   );
 };
