@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Agent, Direction, MarketState } from '../types';
 import { Button } from './Button';
-import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain } from 'lucide-react';
+import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain, Sparkles, Rocket } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { refineAgentStrategy } from '../services/geminiService';
 import { AgentCard } from './AgentCard';
@@ -11,6 +11,7 @@ interface AgentsProps {
   market: MarketState;
   onMint: (twitterHandle?: string, nameHint?: string) => Promise<Agent | null>;
   onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number) => Promise<void>;
+  onWithdraw: (agentId: string) => Promise<void>;
   walletBalance: number;
   shouldHighlightFab?: boolean;
 }
@@ -18,7 +19,7 @@ interface AgentsProps {
 const FABRICATION_COST = 100;
 const MIN_COLLATERAL = 100;
 
-export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, walletBalance, shouldHighlightFab }) => {
+export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
   // Selection State: 'FABRICATE' or agentId
   const [selection, setSelection] = useState<string>('FABRICATE');
@@ -316,219 +317,317 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </button>
          </div>
 
-         {/* SCENARIO A: FABRICATION TERMINAL */}
+         {/* SCENARIO A: FABRICATION TERMINAL - Optimized */}
          {selection === 'FABRICATE' && (
-             <div className="flex-1 flex flex-col p-4 lg:p-8 relative z-10">
+             <div className="flex-1 flex flex-col p-4 lg:p-8 relative z-10 overflow-y-auto">
+                 {/* Progress Steps */}
+                 <div className="flex items-center justify-center gap-4 mb-8">
+                     <div className={`flex items-center gap-2 ${fabricationStep === 'IDLE' || fabricationStep === 'CONFIG' ? 'text-[#836EF9]' : 'text-slate-600'}`}>
+                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${fabricationStep === 'IDLE' || fabricationStep === 'CONFIG' ? 'bg-[#836EF9] text-white' : 'bg-slate-800 text-slate-500'}`}>1</div>
+                         <span className="text-xs font-bold uppercase hidden sm:block">Configure</span>
+                     </div>
+                     <div className="w-12 h-px bg-slate-800"></div>
+                     <div className={`flex items-center gap-2 ${fabricationStep === 'GENERATING' ? 'text-[#00FF9D]' : 'text-slate-600'}`}>
+                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${fabricationStep === 'GENERATING' ? 'bg-[#00FF9D] text-black' : 'bg-slate-800 text-slate-500'}`}>2</div>
+                         <span className="text-xs font-bold uppercase hidden sm:block">Generate</span>
+                     </div>
+                     <div className="w-12 h-px bg-slate-800"></div>
+                     <div className={`flex items-center gap-2 ${fabricationStep === 'REVEAL' ? 'text-[#00FF9D]' : 'text-slate-600'}`}>
+                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${fabricationStep === 'REVEAL' ? 'bg-[#00FF9D] text-black' : 'bg-slate-800 text-slate-500'}`}>3</div>
+                         <span className="text-xs font-bold uppercase hidden sm:block">Reveal</span>
+                     </div>
+                 </div>
+
                  {/* Step 1: Config */}
                  {(fabricationStep === 'IDLE' || fabricationStep === 'CONFIG') && (
-                    <div className="h-full flex flex-col items-center justify-center animate-fade-in">
-                        <div className="max-w-md w-full">
-                            <div className="text-center mb-8 lg:mb-10">
-                                <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto bg-[#0f111a] rounded-full border border-[#836EF9] flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(131,110,249,0.3)]">
-                                    <Bot size={40} className="text-[#836EF9]" />
+                    <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
+                        <div className="max-w-lg w-full">
+                            {/* Header */}
+                            <div className="text-center mb-8">
+                                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#836EF9] to-[#00FF9D] rounded-2xl flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(131,110,249,0.4)]">
+                                    <Bot size={32} className="text-white" />
                                 </div>
-                                <h2 className="text-2xl lg:text-3xl font-display font-bold text-white mb-2">{t('neural_foundry')}</h2>
-                                <p className="text-sm lg:text-base text-slate-400">{t('config_desc')}</p>
+                                <h2 className="text-2xl font-display font-bold text-white mb-2">{t('neural_foundry')}</h2>
+                                <p className="text-sm text-slate-400">Configure your AI agent parameters</p>
                             </div>
 
-                            <div className="bg-[#0f111a]/80 backdrop-blur border border-slate-700 rounded-xl p-6 space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">{t('codename_hint')}</label>
-                                    <input 
-                                        type="text"
-                                        value={nameHint}
-                                        onChange={(e) => setNameHint(e.target.value)}
-                                        placeholder="e.g. CyberWolf"
-                                        className="w-full bg-black/50 border border-slate-700 rounded-lg py-3 px-4 text-white focus:border-[#836EF9] focus:outline-none transition-colors"
-                                    />
+                            {/* Form Card */}
+                            <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-6 space-y-6 shadow-2xl">
+                                {/* Agent Name Input */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase">
+                                        <Sparkles size={14} className="text-[#836EF9]" />
+                                        Agent Name
+                                    </label>
+                                    <div className="relative">
+                                        <input 
+                                            type="text"
+                                            value={nameHint}
+                                            onChange={(e) => setNameHint(e.target.value)}
+                                            placeholder="e.g. CyberWolf, AlphaBot, NeuralX..."
+                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-xl py-4 px-4 text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
+                                        />
+                                        {nameHint && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <CheckCircle2 size={20} className="text-[#00FF9D]" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500">This will be your agent's identity in the arena</p>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">{t('social_link')}</label>
+                                {/* Twitter Handle Input */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase">
+                                        <AtSign size={14} className="text-[#836EF9]" />
+                                        Twitter Handle (Optional)
+                                    </label>
                                     <div className="relative">
-                                        <AtSign className="absolute left-3 top-3 text-slate-500" size={16} />
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">@</span>
                                         <input 
                                             type="text"
                                             value={twitterHandle}
-                                            onChange={(e) => setTwitterHandle(e.target.value)}
-                                            placeholder="TwitterHandle"
-                                            className="w-full bg-black/50 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white focus:border-[#836EF9] focus:outline-none transition-colors"
+                                            onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
+                                            placeholder="username"
+                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-xl py-4 pl-8 pr-4 text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-500 mt-2 ml-1">{t('verify_tip')}</p>
+                                    <p className="text-[10px] text-slate-500">Link your Twitter for verification and social features</p>
                                 </div>
 
-                                <div className="flex justify-between items-center text-sm border-t border-slate-800 pt-4">
-                                    <span className="text-slate-400">{t('fabrication_cost')}</span>
-                                    <span className="font-mono font-bold text-white">{FABRICATION_COST} $MON</span>
-                                </div>
+                                {/* Cost & Action */}
+                                <div className="pt-4 border-t border-slate-800 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-slate-400">Fabrication Cost</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-mono font-bold text-white">{FABRICATION_COST}</span>
+                                            <span className="text-sm text-slate-500">$MON</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-500">Your Balance</span>
+                                        <span className={`font-mono ${walletBalance < FABRICATION_COST ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            {walletBalance.toLocaleString()} $MON
+                                        </span>
+                                    </div>
 
-                                <Button 
-                                    onClick={handleConfirmFabrication}
-                                    disabled={walletBalance < FABRICATION_COST || !nameHint.trim()}
-                                    className="w-full py-4 text-lg tracking-widest font-display"
-                                >
-                                    {walletBalance < FABRICATION_COST ? t('insufficient_funds') : t('init_fabrication')}
-                                </Button>
+                                    <Button 
+                                        onClick={handleConfirmFabrication}
+                                        disabled={walletBalance < FABRICATION_COST || !nameHint.trim()}
+                                        className="w-full py-4 text-lg font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        {walletBalance < FABRICATION_COST ? (
+                                            <span className="flex items-center gap-2">
+                                                <AlertTriangle size={20} /> Insufficient Funds
+                                            </span>
+                                        ) : !nameHint.trim() ? (
+                                            <span>Enter Agent Name</span>
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <Zap size={20} /> Initialize Fabrication
+                                            </span>
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
                  )}
 
-                 {/* Step 2: Generating */}
+                 {/* Step 2: Generating - Enhanced */}
                  {fabricationStep === 'GENERATING' && (
-                     <div className="h-full flex flex-col items-center justify-center animate-fade-in">
-                         <div className="max-w-md w-full bg-black border border-slate-800 rounded-xl p-6 font-mono text-sm shadow-2xl">
-                             <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-2">
-                                 <Terminal size={16} className="text-[#00FF9D]" />
-                                 <span className="text-slate-400">{t('gemini_terminal')}</span>
+                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
+                         <div className="max-w-md w-full text-center">
+                             {/* Animated Icon */}
+                             <div className="relative w-24 h-24 mx-auto mb-6">
+                                 <div className="absolute inset-0 bg-[#836EF9] rounded-full animate-ping opacity-20"></div>
+                                 <div className="absolute inset-2 bg-[#836EF9]/30 rounded-full animate-pulse"></div>
+                                 <div className="relative w-full h-full bg-gradient-to-br from-[#836EF9] to-[#00FF9D] rounded-full flex items-center justify-center">
+                                     <Brain size={40} className="text-white animate-pulse" />
+                                 </div>
                              </div>
-                             <div className="space-y-2 h-48 overflow-hidden">
-                                 {logs.map((log, i) => (
-                                     <div key={i} className="text-[#00FF9D] animate-pulse">
-                                         <span className="opacity-50 mr-2">{'>'}</span>{log}
+                             
+                             <h3 className="text-xl font-bold text-white mb-2">Generating Agent</h3>
+                             <p className="text-sm text-slate-400 mb-6">AI is crafting your unique agent...</p>
+                             
+                             {/* Terminal Logs */}
+                             <div className="bg-black border border-slate-800 rounded-xl p-4 font-mono text-left">
+                                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
+                                     <Terminal size={14} className="text-[#00FF9D]" />
+                                     <span className="text-xs text-slate-500">Neural Network Terminal</span>
+                                 </div>
+                                 <div className="space-y-2 h-32 overflow-hidden">
+                                     {logs.map((log, i) => (
+                                         <div key={i} className="text-xs text-[#00FF9D] animate-fade-in">
+                                             <span className="text-slate-600 mr-2">[{i + 1}]</span>{log}
+                                         </div>
+                                     ))}
+                                     <div className="flex items-center gap-2 mt-2">
+                                         <div className="w-2 h-2 bg-[#836EF9] rounded-full animate-bounce"></div>
+                                         <div className="w-2 h-2 bg-[#836EF9] rounded-full animate-bounce delay-75"></div>
+                                         <div className="w-2 h-2 bg-[#836EF9] rounded-full animate-bounce delay-150"></div>
                                      </div>
-                                 ))}
-                                 <div className="text-[#836EF9] animate-bounce mt-4">{t('processing')}</div>
+                                 </div>
                              </div>
                          </div>
                      </div>
                  )}
 
-                 {/* Step 3: Reveal */}
+                 {/* Step 3: Reveal - Enhanced */}
                  {fabricationStep === 'REVEAL' && generatedAgent && (
-                     <div className="h-full flex flex-col items-center justify-center animate-fade-in">
-                         <div className="max-w-md w-full text-center">
-                             <div className="mb-6 relative inline-block">
-                                 <div className="absolute inset-0 bg-[#00FF9D] blur-xl opacity-30 animate-pulse"></div>
-                                 {/* Use AgentCard for Reveal for consistency, even if not used in layout elsewhere */}
-                                 <div className="transform scale-110">
-                                     <AgentCard agent={generatedAgent} />
+                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
+                         <div className="max-w-md w-full">
+                             {/* Success Header */}
+                             <div className="text-center mb-6">
+                                 <div className="w-16 h-16 mx-auto bg-[#00FF9D] rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(0,255,157,0.4)]">
+                                     <CheckCircle2 size={32} className="text-black" />
                                  </div>
+                                 <h3 className="text-xl font-bold text-white mb-1">Agent Created!</h3>
+                                 <p className="text-sm text-slate-400">Your NFT agent is ready for deployment</p>
                              </div>
                              
-                             <div className="bg-[#0f111a] p-4 rounded-xl border border-slate-800 mb-8 inline-block mt-8">
-                                 <p className="text-xs text-slate-500 uppercase mb-1">{t('generated_strategy')}</p>
-                                 <p className="font-bold text-[#836EF9]">{generatedAgent.strategy}</p>
+                             {/* Agent Card */}
+                             <div className="mb-6">
+                                 <AgentCard agent={generatedAgent} showChart={false} />
                              </div>
-
-                             <Button onClick={handleAcceptAgent} className="w-full py-4 text-lg">
-                                 <CheckCircle2 className="mr-2" /> {t('add_to_fleet')}
-                             </Button>
+                             
+                             {/* Actions */}
+                             <div className="space-y-3">
+                                 <Button onClick={handleAcceptAgent} className="w-full py-4 text-lg bg-[#00FF9D] hover:bg-[#00cc7d] text-black font-bold">
+                                     <Rocket size={20} className="mr-2" /> Add to Fleet
+                                 </Button>
+                                 <Button 
+                                    onClick={() => {setFabricationStep('CONFIG'); setGeneratedAgent(null);}}
+                                    variant="secondary"
+                                    className="w-full py-3"
+                                 >
+                                    Create Another
+                                 </Button>
+                             </div>
                          </div>
                      </div>
                  )}
              </div>
          )}
 
-         {/* SCENARIO B: DEPLOYMENT CONSOLE (IDLE AGENT) */}
+         {/* SCENARIO B: DEPLOYMENT CONSOLE (IDLE AGENT) - Optimized */}
          {selectedAgent && selectedAgent.status === 'IDLE' && (
-             <div className="flex-1 flex flex-col p-4 lg:p-8 relative z-10 animate-fade-in">
-                 {/* IDLE Header - Reverted to Standard Layout */}
-                 <div className="flex flex-col lg:flex-row lg:items-start justify-between mb-6 pb-6 border-b border-slate-800 gap-4">
-                     <div className="flex items-center gap-6">
-                         <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border border-slate-700 overflow-hidden shadow-lg shrink-0">
+             <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
+                 {/* Agent Header Card */}
+                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-6">
+                     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                         {/* Avatar */}
+                         <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg shrink-0 mx-auto lg:mx-0">
                              <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
                          </div>
-                         <div>
-                             <div className="flex items-center gap-2 mb-1">
-                                 <h2 className="text-2xl lg:text-3xl font-display font-bold text-white">{selectedAgent.name}</h2>
-                                 {selectedAgent.twitterHandle && <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">@{selectedAgent.twitterHandle}</span>}
+                         
+                         {/* Info */}
+                         <div className="flex-1 text-center lg:text-left">
+                             <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-2 justify-center lg:justify-start">
+                                 <h2 className="text-xl lg:text-2xl font-display font-bold text-white">{selectedAgent.name}</h2>
+                                 {selectedAgent.twitterHandle && (
+                                     <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full border border-blue-500/20 inline-flex items-center gap-1 w-fit mx-auto lg:mx-0">
+                                         <AtSign size={10} /> {selectedAgent.twitterHandle}
+                                     </span>
+                                 )}
                              </div>
-                             <p className="text-sm lg:text-base text-slate-400 italic mb-2">"{selectedAgent.bio}"</p>
-                             <div className="flex gap-2">
-                                 <span className="px-2 py-1 bg-slate-800 rounded text-[10px] text-slate-400 uppercase tracking-wider font-bold">{selectedAgent.strategy}</span>
-                                 <span className="px-2 py-1 bg-amber-500/10 text-amber-500 rounded text-[10px] uppercase tracking-wider font-bold border border-amber-500/20">{t('standby')}</span>
+                             <p className="text-sm text-slate-400 italic mb-3">"{selectedAgent.bio}"</p>
+                             <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                                 <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
+                                     {selectedAgent.strategy}
+                                 </span>
+                                 <span className="px-3 py-1.5 bg-amber-500/10 text-amber-500 rounded-lg text-xs border border-amber-500/20 font-medium">
+                                     {t('standby')}
+                                 </span>
                              </div>
                          </div>
-                     </div>
-                     <div className="text-left lg:text-right bg-slate-900/50 p-3 rounded lg:bg-transparent lg:p-0">
-                         <p className="text-[10px] text-slate-500 uppercase font-bold">{t('net_balance')}</p>
-                         <p className="text-xl lg:text-2xl font-mono font-bold text-white">{walletBalance.toLocaleString()} $MON</p>
+                         
+                         {/* Balance */}
+                         <div className="text-center lg:text-right pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-800 lg:pl-6">
+                             <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">{t('net_balance')}</p>
+                             <p className="text-2xl font-mono font-bold text-white">{walletBalance.toLocaleString()}</p>
+                             <p className="text-xs text-slate-500">$MON</p>
+                         </div>
                      </div>
                  </div>
                  
-                 {/* Tabs */}
-                 <div className="flex gap-1 mb-6 bg-slate-900/50 p-1 rounded-xl w-fit">
+                 {/* Tabs - Modern Style */}
+                 <div className="flex gap-2 mb-6 bg-black/40 p-1.5 rounded-2xl w-fit mx-auto lg:mx-0 border border-slate-800">
                     <button 
                         onClick={() => setActiveTab('DEPLOY')}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'DEPLOY' ? 'bg-[#836EF9] text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'DEPLOY' ? 'bg-[#836EF9] text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
-                        {t('deploy_unit')}
+                        <Rocket size={16} /> {t('deploy_unit')}
                     </button>
                     <button 
                         onClick={() => setActiveTab('CHAT')}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'CHAT' ? 'bg-[#00FF9D] text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'CHAT' ? 'bg-[#00FF9D] text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
-                        <MessageSquare size={14} /> {t('neural_link')}
+                        <MessageSquare size={16} /> {t('neural_link')}
                     </button>
                  </div>
 
-                 {/* TAB CONTENT: DEPLOYMENT */}
+                 {/* TAB CONTENT: DEPLOYMENT - Optimized Layout */}
                  {activeTab === 'DEPLOY' && (
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start lg:items-center overflow-y-auto animate-fade-in">
-                        {/* Direction */}
-                        <div className="space-y-4">
-                            <label className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <Crosshair size={16} /> {t('strategy_vector')}
+                    <div className="flex-1 animate-fade-in">
+                        {/* Direction Selection - Compact */}
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
+                                <Crosshair size={14} /> {t('strategy_vector')}
                             </label>
                             
-                            {/* Auto Selector */}
-                            <button 
-                                onClick={() => setDeployDirection('AUTO')}
-                                className={`w-full p-4 rounded-xl border-2 transition-all flex items-center justify-between gap-3 mb-4 ${
-                                    deployDirection === 'AUTO'
-                                    ? 'bg-[#836EF9]/20 border-[#836EF9] shadow-[0_0_20px_rgba(131,110,249,0.2)]'
-                                    : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-lg ${deployDirection === 'AUTO' ? 'bg-[#836EF9] text-white' : 'bg-slate-800 text-slate-400'}`}>
-                                        <Brain size={24} />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className={`font-display font-bold ${deployDirection === 'AUTO' ? 'text-white' : 'text-slate-400'}`}>{t('auto')}</div>
-                                        <div className="text-[10px] text-slate-500">{t('auto_desc')}</div>
-                                    </div>
-                                </div>
-                                {deployDirection === 'AUTO' && <div className="w-3 h-3 bg-[#836EF9] rounded-full animate-pulse shadow-[0_0_10px_#836EF9]" />}
-                            </button>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-3">
+                                {/* Auto */}
+                                <button 
+                                    onClick={() => setDeployDirection('AUTO')}
+                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                        deployDirection === 'AUTO'
+                                        ? 'bg-[#836EF9]/20 border-[#836EF9] shadow-[0_0_20px_rgba(131,110,249,0.2)]'
+                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <Brain size={20} className={deployDirection === 'AUTO' ? 'text-[#836EF9]' : 'text-slate-500'} />
+                                    <span className={`text-sm font-bold ${deployDirection === 'AUTO' ? 'text-white' : 'text-slate-400'}`}>{t('auto')}</span>
+                                </button>
+                                
+                                {/* Long */}
                                 <button 
                                     onClick={() => setDeployDirection('LONG')}
-                                    className={`p-4 lg:p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${
+                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                                         deployDirection === 'LONG'
-                                        ? 'bg-[#00FF9D]/5 border-[#00FF9D] shadow-[0_0_20px_rgba(0,255,157,0.1)]'
-                                        : 'bg-slate-900 border-slate-700 opacity-50 hover:opacity-100'
+                                        ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
                                     }`}
                                 >
-                                    <TrendingUp size={24} lg:size={32} className={deployDirection === 'LONG' ? 'text-[#00FF9D]' : 'text-slate-500'} />
-                                    <span className={`text-lg lg:text-xl font-display font-bold ${deployDirection === 'LONG' ? 'text-white' : 'text-slate-500'}`}>{t('long')}</span>
+                                    <TrendingUp size={20} className={deployDirection === 'LONG' ? 'text-emerald-400' : 'text-slate-500'} />
+                                    <span className={`text-sm font-bold ${deployDirection === 'LONG' ? 'text-white' : 'text-slate-400'}`}>{t('long')}</span>
                                 </button>
+                                
+                                {/* Short */}
                                 <button 
                                     onClick={() => setDeployDirection('SHORT')}
-                                    className={`p-4 lg:p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${
+                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                                         deployDirection === 'SHORT'
-                                        ? 'bg-[#FF0055]/5 border-[#FF0055] shadow-[0_0_20px_rgba(255,0,85,0.1)]'
-                                        : 'bg-slate-900 border-slate-700 opacity-50 hover:opacity-100'
+                                        ? 'bg-rose-500/10 border-rose-500 shadow-[0_0_20px_rgba(251,113,133,0.2)]'
+                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
                                     }`}
                                 >
-                                    <TrendingDown size={24} lg:size={32} className={deployDirection === 'SHORT' ? 'text-[#FF0055]' : 'text-slate-500'} />
-                                    <span className={`text-lg lg:text-xl font-display font-bold ${deployDirection === 'SHORT' ? 'text-white' : 'text-slate-500'}`}>{t('short')}</span>
+                                    <TrendingDown size={20} className={deployDirection === 'SHORT' ? 'text-rose-400' : 'text-slate-500'} />
+                                    <span className={`text-sm font-bold ${deployDirection === 'SHORT' ? 'text-white' : 'text-slate-400'}`}>{t('short')}</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Leverage & Funding */}
-                        <div className="space-y-6">
-                            {/* Leverage Slider */}
-                            <div>
-                                <div className="flex justify-between items-end mb-2">
-                                    <label className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Zap size={16} /> {t('power_multiplier')}
+                        {/* Sliders Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            {/* Leverage */}
+                            <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <Zap size={14} /> Leverage
                                     </label>
-                                    <span className={`text-2xl font-mono font-bold ${deployLeverage > 10 ? 'text-[#FF0055]' : deployLeverage > 5 ? 'text-amber-400' : 'text-[#00FF9D]'}`}>
+                                    <span className={`text-xl font-mono font-bold ${deployLeverage > 10 ? 'text-rose-400' : deployLeverage > 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
                                         {deployLeverage}x
                                     </span>
                                 </div>
@@ -541,18 +640,20 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                     onChange={(e) => setDeployLeverage(parseInt(e.target.value))}
                                     className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#836EF9]"
                                 />
+                                <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+                                    <span>1x</span>
+                                    <span>10x</span>
+                                    <span>20x</span>
+                                </div>
                             </div>
 
-                            {/* Funding Slider */}
-                            <div>
-                                <div className="flex justify-between items-end mb-2">
-                                    <label className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Coins size={16} /> {t('assign_funds')}
+                            {/* Margin */}
+                            <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <Coins size={14} /> Margin
                                     </label>
-                                    <div className="text-right">
-                                        <span className="block text-xl font-mono font-bold text-white">{deployCollateral.toLocaleString()} $MON</span>
-                                        <span className="text-[10px] text-slate-500">{t('available_balance')}: {walletBalance.toLocaleString()}</span>
-                                    </div>
+                                    <span className="text-xl font-mono font-bold text-white">{deployCollateral.toLocaleString()}</span>
                                 </div>
                                 <input 
                                     type="range" 
@@ -563,42 +664,74 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                     onChange={(e) => setDeployCollateral(parseInt(e.target.value))}
                                     className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#836EF9]"
                                 />
+                                <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+                                    <span>{MIN_COLLATERAL}</span>
+                                    <span>Available: {walletBalance.toLocaleString()}</span>
+                                </div>
                                 {walletBalance < MIN_COLLATERAL && (
-                                    <p className="text-xs text-red-500 mt-1">{t('min_funds')}</p>
+                                    <p className="text-xs text-red-500 mt-2">{t('min_funds')}</p>
                                 )}
                             </div>
+                        </div>
+                        
+                        {/* Summary Card */}
+                        <div className="bg-gradient-to-br from-[#0f111a] to-black border border-slate-800 rounded-2xl p-5 mb-6">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Position Summary</h3>
                             
-                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800 space-y-3">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-400">{t('total_collateral')}</span>
-                                    <span className="text-white font-bold">{deployCollateral.toLocaleString()} $MON</span>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
+                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Direction</p>
+                                    <p className={`text-lg font-bold ${deployDirection === 'AUTO' ? 'text-violet-400' : deployDirection === 'LONG' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {deployDirection}
+                                    </p>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-400">{t('total_buying_power')}</span>
-                                    <span className="text-[#836EF9] font-bold">{(deployCollateral * deployLeverage).toLocaleString()} $MON</span>
+                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
+                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Leverage</p>
+                                    <p className="text-lg font-bold text-white">{deployLeverage}x</p>
                                 </div>
-                                <div className="w-full h-[1px] bg-slate-800 my-2"></div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-red-400 font-bold uppercase flex items-center gap-1">
-                                        <AlertTriangle size={12} /> {t('est_liquidation')}
-                                    </span>
-                                    <div className="text-right">
-                                        <span className="block text-white font-mono font-bold">${liqPrice.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
-                                        <span className={`text-[10px] ${distToLiq < 2 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>
-                                            ({distToLiq.toFixed(2)}% {t('away')})
-                                        </span>
-                                    </div>
+                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
+                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Margin</p>
+                                    <p className="text-lg font-bold text-white">{deployCollateral.toLocaleString()} $MON</p>
+                                </div>
+                                <div className="bg-black/50 rounded-xl p-3 border border-slate-800">
+                                    <p className="text-[10px] text-slate-500 uppercase mb-1">Position Size</p>
+                                    <p className="text-lg font-bold text-[#836EF9]">{(deployCollateral * deployLeverage).toLocaleString()} $MON</p>
                                 </div>
                             </div>
-
-                            <Button 
-                                onClick={() => handleDeployClick(selectedAgent.id)}
-                                disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
-                                className="w-full py-4 text-xl font-display tracking-widest bg-white text-black hover:bg-slate-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] border-none disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {t('deploy_unit')}
-                            </Button>
+                            
+                            {/* Liquidation Warning */}
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+                                <div className="flex items-center gap-2 text-rose-400">
+                                    <AlertTriangle size={14} />
+                                    <span className="text-xs font-bold uppercase">Est. Liquidation</span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-white font-mono font-bold">${liqPrice.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                                    <p className={`text-[10px] ${distToLiq < 2 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>
+                                        {distToLiq.toFixed(2)}% {t('away')}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Deploy Button */}
+                        <Button 
+                            onClick={() => handleDeployClick(selectedAgent.id)}
+                            disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
+                            className="w-full py-4 text-lg font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black font-bold disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
+                        >
+                            {walletBalance < deployCollateral ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <AlertTriangle size={20} /> Insufficient Balance
+                                </span>
+                            ) : deployCollateral < MIN_COLLATERAL ? (
+                                <span>Minimum {MIN_COLLATERAL} $MON Required</span>
+                            ) : (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Rocket size={20} /> {t('deploy_unit')}
+                                </span>
+                            )}
+                        </Button>
                     </div>
                  )}
 
@@ -757,11 +890,34 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      >
                          {t('share_status')}
                      </Button>
+                     <Button 
+                        onClick={() => onWithdraw(selectedAgent.id)}
+                        className="h-14 text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-black"
+                     >
+                        Withdraw & Exit Arena
+                     </Button>
                  </div>
              </div>
          )}
 
-         {/* SCENARIO D: GRAVEYARD (LIQUIDATED) */}
+         {/* SCENARIO D: EXITED (IDLE after active) */}
+         {selectedAgent && selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0) && (
+             <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-10 animate-fade-in text-center">
+                 <div className="w-24 h-24 bg-emerald-900/20 rounded-full border border-emerald-500/30 flex items-center justify-center mb-6">
+                     <CheckCircle2 size={48} className="text-emerald-500" />
+                 </div>
+                 <h2 className="text-3xl font-display font-bold text-white mb-2">Agent Exited</h2>
+                 <p className="text-slate-500 max-w-md mb-8">
+                     Agent <span className="text-white font-bold">{selectedAgent.name}</span> has exited the arena.<br/>
+                     Final PnL: <span className={selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON</span>
+                 </p>
+                 <Button onClick={() => handleSocialShare(selectedAgent)} variant="secondary">
+                     Share Results
+                 </Button>
+             </div>
+         )}
+
+         {/* SCENARIO E: GRAVEYARD (LIQUIDATED) - Deprecated */}
          {selectedAgent && selectedAgent.status === 'LIQUIDATED' && (
              <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-10 animate-fade-in text-center">
                  <div className="w-24 h-24 bg-red-900/20 rounded-full border border-red-500/30 flex items-center justify-center mb-6">

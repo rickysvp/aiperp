@@ -1,6 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize AI service only if API key is provided
+let ai: GoogleGenAI | null = null;
+if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_api_key_here') {
+  ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+} else {
+  console.warn('No Gemini API key provided, using fallback responses');
+}
 
 export interface AgentPersona {
   name: string;
@@ -10,6 +16,17 @@ export interface AgentPersona {
 }
 
 export const generateAgentPersona = async (direction: string, nameHint?: string): Promise<AgentPersona> => {
+  // Use fallback if no AI service initialized
+  if (!ai) {
+    console.warn('Using fallback for agent persona generation');
+    return {
+      name: nameHint || `Unit-${Math.floor(Math.random() * 9999)}`,
+      bio: "An autonomous trading unit.",
+      strategy: "Momentum Scalping",
+      visualTrait: "Steel"
+    };
+  }
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -55,6 +72,15 @@ export const generateAgentPersona = async (direction: string, nameHint?: string)
 };
 
 export const refineAgentStrategy = async (currentStrategy: string, userMessage: string, agentName: string): Promise<{ reply: string, newStrategy: string }> => {
+  // Use fallback if no AI service initialized
+  if (!ai) {
+    console.warn('Using fallback for strategy refinement');
+    return {
+      reply: "Connection unstable. Keeping current protocols.",
+      newStrategy: currentStrategy
+    };
+  }
+
   try {
      const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",

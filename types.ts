@@ -7,6 +7,7 @@ export interface Agent {
   id: string;
   owner: AgentOwner;
   minter: string; // Wallet address or 'Protocol'
+  minterTwitter?: string; // Twitter handle of the minter
   name: string;
   bio: string;
   avatarSeed: string; // For generating unique avatar images
@@ -14,6 +15,7 @@ export interface Agent {
   leverage: number;
   balance: number; // The collateral assigned to this agent
   pnl: number;
+  pnlHistory: { time: string; value: number }[]; // 24h PnL history for charts
   wins: number;
   losses: number;
   status: 'IDLE' | 'ACTIVE' | 'LIQUIDATED';
@@ -45,7 +47,7 @@ export interface BattleLog {
   id: string;
   timestamp: number;
   message: string;
-  type: 'WIN' | 'LOSS' | 'LIQUIDATION' | 'MINT' | 'SOCIAL';
+  type: 'WIN' | 'LOSS' | 'LIQUIDATION' | 'MINT' | 'SOCIAL' | 'EXIT';
   amount?: number;
 }
 

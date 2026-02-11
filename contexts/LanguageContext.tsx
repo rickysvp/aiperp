@@ -140,9 +140,13 @@ export const translations = {
     unrealized_pnl: "Unrealized PnL",
     recruit: "Recruit",
     deactivate: "Deactivate Unit",
+    withdraw_exit: "Withdraw & Exit",
     you: "YOU",
     minted_by: "MINTED BY",
     edition: "EDITION",
+    agent_exited: "Agent Exited",
+    final_pnl: "Final PnL",
+    share_results: "Share Results",
 
     // Roster
     roi_24h: "24h ROI",
@@ -300,9 +304,13 @@ export const translations = {
     unrealized_pnl: "未实现盈亏",
     recruit: "招募",
     deactivate: "停用单位",
+    withdraw_exit: "收回并退出",
     you: "你",
     minted_by: "铸造者",
     edition: "版本",
+    agent_exited: "特工已退出",
+    final_pnl: "最终盈亏",
+    share_results: "分享结果",
 
     roi_24h: "24H 收益率",
     session_pnl: "本局盈亏",

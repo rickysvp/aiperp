@@ -162,6 +162,7 @@ const AppContent: React.FC = () => {
             leverage: Math.floor(Math.random() * 19) + 1,
             balance: MINT_COST + (Math.random() * 500),
             pnl: 0,
+            pnlHistory: [],
             wins: 0,
             losses: 0,
             status: 'ACTIVE'
@@ -315,6 +316,16 @@ const AppContent: React.FC = () => {
           agent.pnl += tickPnl;
           agent.balance += tickPnl;
           
+          // Record PnL history for charts (keep last 24 data points)
+          if (!agent.pnlHistory) agent.pnlHistory = [];
+          agent.pnlHistory.push({
+            time: new Date().toISOString(),
+            value: agent.pnl
+          });
+          if (agent.pnlHistory.length > 24) {
+            agent.pnlHistory.shift();
+          }
+          
           if (tickPnl > 0) agent.wins++;
           else agent.losses++;
 
@@ -358,14 +369,21 @@ const AppContent: React.FC = () => {
             }
         }
 
-        // --- C. Liquidation Check ---
+        // --- C. Exit Arena Check (Auto-withdraw when balance is low) ---
         for (const agent of activeAgents) {
              if (agent.balance <= 50) {
-                 agent.status = 'LIQUIDATED';
-                 agent.balance = 0;
+                 // Return remaining balance to user
+                 const remainingBalance = agent.balance;
                  if (agent.owner === 'USER') {
-                     addLog(`${agent.name} eliminated on ${currentAsset}.`, 'LIQUIDATION');
+                     userBalanceChange += remainingBalance;
+                     addLog(`${agent.name} exited arena with ${remainingBalance.toFixed(0)} $MON remaining.`, 'EXIT');
                  }
+                 // Reset agent to IDLE state
+                 agent.status = 'IDLE';
+                 agent.balance = 0;
+                 agent.pnl = 0;
+                 agent.leverage = 1;
+                 agent.direction = 'LONG';
              }
         }
 
@@ -433,6 +451,7 @@ const AppContent: React.FC = () => {
         id: uuidv4(),
         owner: 'USER',
         minter: wallet.address,
+        minterTwitter: twitterHandle && twitterHandle.startsWith('@') ? twitterHandle : twitterHandle ? `@${twitterHandle}` : undefined,
         name: finalName,
         bio: persona.bio,
         strategy: persona.strategy,
@@ -441,6 +460,7 @@ const AppContent: React.FC = () => {
         leverage: 1, 
         balance: 0, 
         pnl: 0,
+        pnlHistory: [],
         wins: 0,
         losses: 0,
         status: 'IDLE',
@@ -483,6 +503,33 @@ const AppContent: React.FC = () => {
     setActiveTab(Tab.ARENA);
   };
 
+  const handleWithdrawAgent = async (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent || agent.status !== 'ACTIVE') return;
+
+    const withdrawAmount = agent.balance;
+    
+    // Return balance to wallet
+    setWallet(prev => ({ ...prev, balance: prev.balance + withdrawAmount }));
+    
+    // Reset agent to IDLE state
+    setAgents(prev => prev.map(a => {
+        if (a.id === agentId) {
+            return {
+                ...a,
+                status: 'IDLE',
+                balance: 0,
+                pnl: 0,
+                leverage: 1,
+                direction: 'LONG'
+            };
+        }
+        return a;
+    }));
+
+    addLog(`${agent.name} withdrawn with ${withdrawAmount.toFixed(0)} $MON returned.`, 'EXIT');
+  };
+
   const tabs = [
     { id: Tab.ARENA, icon: LayoutDashboard, label: t('tab_arena') },
     { id: Tab.AGENTS, icon: Users, label: t('tab_agents') },
@@ -499,19 +546,24 @@ const AppContent: React.FC = () => {
       {showOnboarding && <Onboarding onFinish={handleFinishOnboarding} />}
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
 
-      {/* Top Header - Simplified */}
-      <nav className="border-b border-white/5 bg-[#030305]/80 backdrop-blur-md sticky top-0 z-50 shrink-0">
+      {/* Top Header - Modern Design */}
+      <nav className="border-b border-white/5 bg-[#030305]/90 backdrop-blur-xl sticky top-0 z-50 shrink-0">
         <div className="max-w-full mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* Logo Container with enhanced glow */}
             <div className="relative group">
-                <div className="absolute inset-0 bg-[#836EF9] blur-md opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative w-10 h-10 bg-[#0f111a] border border-[#836EF9] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(131,110,249,0.3)]">
-                    <Logo size={24} />
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-cyan-500 to-emerald-500 blur-lg opacity-60 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative w-11 h-11 bg-[#0f111a] border border-white/10 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] group-hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300">
+                    <Logo size={28} />
                 </div>
             </div>
+            {/* Title with modern typography */}
             <div className="flex flex-col">
-                 <span className="font-display font-bold text-xl tracking-widest text-white leading-none">{t('app_title_root')}<span className="text-[#836EF9]">{t('app_title_suffix')}</span></span>
-                 <span className="text-[9px] text-slate-500 uppercase tracking-[0.3em] pl-0.5">{t('nav_subtitle')}</span>
+                 <span className="font-display font-black text-2xl tracking-tight text-white leading-none">
+                   {t('app_title_root')}
+                   <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">{t('app_title_suffix')}</span>
+                 </span>
+                 <span className="text-[10px] text-slate-400 uppercase tracking-[0.25em] pl-0.5 font-medium">{t('nav_subtitle')}</span>
             </div>
           </div>
 
@@ -557,7 +609,8 @@ const AppContent: React.FC = () => {
                 agents={agents} 
                 market={market}
                 onMint={handleMintAgent} 
-                onDeploy={handleDeployAgent} 
+                onDeploy={handleDeployAgent}
+                onWithdraw={handleWithdrawAgent}
                 walletBalance={wallet.balance} 
                 shouldHighlightFab={highlightMint}
             />
