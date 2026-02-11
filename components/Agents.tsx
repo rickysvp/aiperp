@@ -118,7 +118,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
   const handleConfirmFabrication = async () => {
     setFabricationStep('GENERATING');
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // 缩短等待时间到800ms，更快的体验
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     // We pass the user-defined name here
     const newAgent = await onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
@@ -317,46 +318,45 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </button>
          </div>
 
-         {/* SCENARIO A: FABRICATION TERMINAL - Optimized */}
+         {/* SCENARIO A: FABRICATION TERMINAL - Compact Single Screen */}
          {selection === 'FABRICATE' && (
-             <div className="flex-1 flex flex-col p-4 lg:p-8 relative z-10 overflow-y-auto">
-                 {/* Progress Steps */}
-                 <div className="flex items-center justify-center gap-4 mb-8">
-                     <div className={`flex items-center gap-2 ${fabricationStep === 'IDLE' || fabricationStep === 'CONFIG' ? 'text-[#836EF9]' : 'text-slate-600'}`}>
-                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${fabricationStep === 'IDLE' || fabricationStep === 'CONFIG' ? 'bg-[#836EF9] text-white' : 'bg-slate-800 text-slate-500'}`}>1</div>
-                         <span className="text-xs font-bold uppercase hidden sm:block">Configure</span>
-                     </div>
-                     <div className="w-12 h-px bg-slate-800"></div>
-                     <div className={`flex items-center gap-2 ${fabricationStep === 'GENERATING' ? 'text-[#00FF9D]' : 'text-slate-600'}`}>
-                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${fabricationStep === 'GENERATING' ? 'bg-[#00FF9D] text-black' : 'bg-slate-800 text-slate-500'}`}>2</div>
-                         <span className="text-xs font-bold uppercase hidden sm:block">Generate</span>
-                     </div>
-                     <div className="w-12 h-px bg-slate-800"></div>
-                     <div className={`flex items-center gap-2 ${fabricationStep === 'REVEAL' ? 'text-[#00FF9D]' : 'text-slate-600'}`}>
-                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${fabricationStep === 'REVEAL' ? 'bg-[#00FF9D] text-black' : 'bg-slate-800 text-slate-500'}`}>3</div>
-                         <span className="text-xs font-bold uppercase hidden sm:block">Reveal</span>
-                     </div>
+             <div className="flex-1 flex flex-col p-3 lg:p-4 relative z-10 overflow-hidden">
+                 {/* Compact Progress Steps */}
+                 <div className="flex items-center justify-center gap-2 mb-4">
+                     {['CONFIG', 'GENERATING', 'REVEAL'].map((step, idx) => (
+                         <div key={step} className="flex items-center gap-2">
+                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                                 (fabricationStep === step) || 
+                                 (step === 'CONFIG' && (fabricationStep === 'IDLE' || fabricationStep === 'CONFIG')) ||
+                                 (step === 'GENERATING' && fabricationStep === 'REVEAL')
+                                 ? 'bg-[#836EF9] text-white' 
+                                 : 'bg-slate-800 text-slate-500'
+                             }`}>
+                                 {idx + 1}
+                             </div>
+                             {idx < 2 && <div className="w-6 h-px bg-slate-800"></div>}
+                         </div>
+                     ))}
                  </div>
 
-                 {/* Step 1: Config */}
+                 {/* Step 1: Config - Compact Layout */}
                  {(fabricationStep === 'IDLE' || fabricationStep === 'CONFIG') && (
                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                        <div className="max-w-lg w-full">
-                            {/* Header */}
-                            <div className="text-center mb-8">
-                                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#836EF9] to-[#00FF9D] rounded-2xl flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(131,110,249,0.4)]">
-                                    <Bot size={32} className="text-white" />
+                        <div className="max-w-md w-full">
+                            {/* Compact Header */}
+                            <div className="text-center mb-4">
+                                <div className="w-12 h-12 mx-auto bg-gradient-to-br from-[#836EF9] to-[#00FF9D] rounded-xl flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(131,110,249,0.4)]">
+                                    <Bot size={24} className="text-white" />
                                 </div>
-                                <h2 className="text-2xl font-display font-bold text-white mb-2">{t('neural_foundry')}</h2>
-                                <p className="text-sm text-slate-400">Configure your AI agent parameters</p>
+                                <h2 className="text-xl font-display font-bold text-white">{t('neural_foundry')}</h2>
                             </div>
 
-                            {/* Form Card */}
-                            <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-6 space-y-6 shadow-2xl">
+                            {/* Compact Form Card */}
+                            <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 space-y-3 shadow-xl">
                                 {/* Agent Name Input */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase">
-                                        <Sparkles size={14} className="text-[#836EF9]" />
+                                <div className="space-y-1">
+                                    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                                        <Sparkles size={12} className="text-[#836EF9]" />
                                         Agent Name
                                     </label>
                                     <div className="relative">
@@ -364,68 +364,59 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                             type="text"
                                             value={nameHint}
                                             onChange={(e) => setNameHint(e.target.value)}
-                                            placeholder="e.g. CyberWolf, AlphaBot, NeuralX..."
-                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-xl py-4 px-4 text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
+                                            placeholder="e.g. CyberWolf..."
+                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
                                         />
                                         {nameHint && (
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                <CheckCircle2 size={20} className="text-[#00FF9D]" />
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                <CheckCircle2 size={16} className="text-[#00FF9D]" />
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-[10px] text-slate-500">This will be your agent's identity in the arena</p>
                                 </div>
 
                                 {/* Twitter Handle Input */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase">
-                                        <AtSign size={14} className="text-[#836EF9]" />
-                                        Twitter Handle (Optional)
+                                <div className="space-y-1">
+                                    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                                        <AtSign size={12} className="text-[#836EF9]" />
+                                        Twitter (Optional)
                                     </label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">@</span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">@</span>
                                         <input 
                                             type="text"
                                             value={twitterHandle}
                                             onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
                                             placeholder="username"
-                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-xl py-4 pl-8 pr-4 text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
+                                            className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 pl-7 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-500">Link your Twitter for verification and social features</p>
                                 </div>
 
-                                {/* Cost & Action */}
-                                <div className="pt-4 border-t border-slate-800 space-y-4">
+                                {/* Cost & Action - Compact */}
+                                <div className="pt-3 border-t border-slate-800 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-slate-400">Fabrication Cost</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-mono font-bold text-white">{FABRICATION_COST}</span>
-                                            <span className="text-sm text-slate-500">$MON</span>
+                                        <span className="text-xs text-slate-400">Cost</span>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-lg font-mono font-bold text-white">{FABRICATION_COST}</span>
+                                            <span className="text-xs text-slate-500">$MON</span>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-slate-500">Your Balance</span>
-                                        <span className={`font-mono ${walletBalance < FABRICATION_COST ? 'text-red-400' : 'text-emerald-400'}`}>
-                                            {walletBalance.toLocaleString()} $MON
-                                        </span>
-                                    </div>
-
                                     <Button 
                                         onClick={handleConfirmFabrication}
                                         disabled={walletBalance < FABRICATION_COST || !nameHint.trim()}
-                                        className="w-full py-4 text-lg font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        className="w-full py-3 text-sm font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg"
                                     >
                                         {walletBalance < FABRICATION_COST ? (
-                                            <span className="flex items-center gap-2">
-                                                <AlertTriangle size={20} /> Insufficient Funds
+                                            <span className="flex items-center justify-center gap-1.5">
+                                                <AlertTriangle size={16} /> Insufficient
                                             </span>
                                         ) : !nameHint.trim() ? (
-                                            <span>Enter Agent Name</span>
+                                            <span>Enter Name</span>
                                         ) : (
-                                            <span className="flex items-center gap-2">
-                                                <Zap size={20} /> Initialize Fabrication
+                                            <span className="flex items-center justify-center gap-1.5">
+                                                <Zap size={16} /> Create Agent
                                             </span>
                                         )}
                                     </Button>
@@ -435,72 +426,64 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                     </div>
                  )}
 
-                 {/* Step 2: Generating - Enhanced */}
+                 {/* Step 2: Generating - Fast & Compact */}
                  {fabricationStep === 'GENERATING' && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <div className="max-w-md w-full text-center">
-                             {/* Animated Icon */}
-                             <div className="relative w-24 h-24 mx-auto mb-6">
-                                 <div className="absolute inset-0 bg-[#836EF9] rounded-full animate-ping opacity-20"></div>
-                                 <div className="absolute inset-2 bg-[#836EF9]/30 rounded-full animate-pulse"></div>
+                         <div className="max-w-sm w-full text-center">
+                             {/* Fast Animation */}
+                             <div className="relative w-16 h-16 mx-auto mb-3">
+                                 <div className="absolute inset-0 bg-[#836EF9] rounded-full animate-ping opacity-30"></div>
                                  <div className="relative w-full h-full bg-gradient-to-br from-[#836EF9] to-[#00FF9D] rounded-full flex items-center justify-center">
-                                     <Brain size={40} className="text-white animate-pulse" />
+                                     <Brain size={28} className="text-white animate-pulse" />
                                  </div>
                              </div>
                              
-                             <h3 className="text-xl font-bold text-white mb-2">Generating Agent</h3>
-                             <p className="text-sm text-slate-400 mb-6">AI is crafting your unique agent...</p>
+                             <h3 className="text-lg font-bold text-white mb-1">Creating...</h3>
+                             <p className="text-xs text-slate-400 mb-3">AI generating your agent</p>
                              
-                             {/* Terminal Logs */}
-                             <div className="bg-black border border-slate-800 rounded-xl p-4 font-mono text-left">
-                                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
-                                     <Terminal size={14} className="text-[#00FF9D]" />
-                                     <span className="text-xs text-slate-500">Neural Network Terminal</span>
-                                 </div>
-                                 <div className="space-y-2 h-32 overflow-hidden">
-                                     {logs.map((log, i) => (
-                                         <div key={i} className="text-xs text-[#00FF9D] animate-fade-in">
-                                             <span className="text-slate-600 mr-2">[{i + 1}]</span>{log}
-                                         </div>
-                                     ))}
-                                     <div className="flex items-center gap-2 mt-2">
-                                         <div className="w-2 h-2 bg-[#836EF9] rounded-full animate-bounce"></div>
-                                         <div className="w-2 h-2 bg-[#836EF9] rounded-full animate-bounce delay-75"></div>
-                                         <div className="w-2 h-2 bg-[#836EF9] rounded-full animate-bounce delay-150"></div>
+                             {/* Fast Progress Bar */}
+                             <div className="bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                 <div className="h-full bg-gradient-to-r from-[#836EF9] to-[#00FF9D] animate-[loading_0.8s_ease-in-out]"></div>
+                             </div>
+                             
+                             {/* Quick Logs */}
+                             <div className="mt-3 space-y-1">
+                                 {logs.slice(-2).map((log, i) => (
+                                     <div key={i} className="text-[10px] text-[#00FF9D]">
+                                         {log}
                                      </div>
-                                 </div>
+                                 ))}
                              </div>
                          </div>
                      </div>
                  )}
 
-                 {/* Step 3: Reveal - Enhanced */}
+                 {/* Step 3: Reveal - Compact */}
                  {fabricationStep === 'REVEAL' && generatedAgent && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <div className="max-w-md w-full">
-                             {/* Success Header */}
-                             <div className="text-center mb-6">
-                                 <div className="w-16 h-16 mx-auto bg-[#00FF9D] rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(0,255,157,0.4)]">
-                                     <CheckCircle2 size={32} className="text-black" />
+                         <div className="max-w-sm w-full">
+                             {/* Compact Success */}
+                             <div className="text-center mb-3">
+                                 <div className="w-10 h-10 mx-auto bg-[#00FF9D] rounded-full flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(0,255,157,0.4)]">
+                                     <CheckCircle2 size={20} className="text-black" />
                                  </div>
-                                 <h3 className="text-xl font-bold text-white mb-1">Agent Created!</h3>
-                                 <p className="text-sm text-slate-400">Your NFT agent is ready for deployment</p>
+                                 <h3 className="text-lg font-bold text-white">Created!</h3>
                              </div>
                              
-                             {/* Agent Card */}
-                             <div className="mb-6">
+                             {/* Compact Agent Card */}
+                             <div className="mb-3 scale-90 origin-center">
                                  <AgentCard agent={generatedAgent} showChart={false} />
                              </div>
                              
-                             {/* Actions */}
-                             <div className="space-y-3">
-                                 <Button onClick={handleAcceptAgent} className="w-full py-4 text-lg bg-[#00FF9D] hover:bg-[#00cc7d] text-black font-bold">
-                                     <Rocket size={20} className="mr-2" /> Add to Fleet
+                             {/* Compact Actions */}
+                             <div className="space-y-2">
+                                 <Button onClick={handleAcceptAgent} className="w-full py-3 text-sm bg-[#00FF9D] hover:bg-[#00cc7d] text-black font-bold rounded-lg">
+                                     <Rocket size={16} className="mr-1.5" /> Add to Fleet
                                  </Button>
                                  <Button 
                                     onClick={() => {setFabricationStep('CONFIG'); setGeneratedAgent(null);}}
                                     variant="secondary"
-                                    className="w-full py-3"
+                                    className="w-full py-2 text-xs"
                                  >
                                     Create Another
                                  </Button>
