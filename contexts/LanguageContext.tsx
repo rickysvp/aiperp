@@ -250,7 +250,11 @@ export const translations = {
     cancel: "Cancel",
     confirm: "Confirm",
     processing: "Processing...",
-    withdraw_success: "Withdrawal Successful!"
+    withdraw_success: "Withdrawal Successful!",
+
+    // NFT3DCard - Deploy Page
+    strategy: "Strategy",
+    deploy_to_arena: "Deploy to Arena"
   },
   zh: {
     app_title_root: "AIperp",
@@ -486,7 +490,11 @@ export const translations = {
     cancel: "取消",
     confirm: "确认",
     processing: "处理中...",
-    withdraw_success: "收回成功!"
+    withdraw_success: "收回成功!",
+
+    // NFT3DCard - Deploy Page
+    strategy: "策略",
+    deploy_to_arena: "部署到竞技场"
   }
 };
 

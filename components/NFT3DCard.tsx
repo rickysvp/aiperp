@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Agent } from '../types';
 import { Sparkles, Rocket, AtSign, TrendingUp, TrendingDown, Brain } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface NFT3DCardProps {
   agent: Agent;
@@ -50,6 +51,7 @@ const rarityConfig = {
 };
 
 export const NFT3DCard: React.FC<NFT3DCardProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
+  const { t } = useLanguage();
   const [isFlipping, setIsFlipping] = useState(true);
   const [showContent, setShowContent] = useState(false);
 
@@ -153,7 +155,7 @@ export const NFT3DCard: React.FC<NFT3DCardProps> = ({ agent, userName, nftNumber
               <div className="flex items-start gap-3">
                 <Brain size={16} className={`${strategyColor} mt-0.5 flex-shrink-0`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-0.5">Strategy</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-0.5">{t('strategy')}</p>
                   <p className="text-sm font-bold text-white truncate">{agent.strategy}</p>
                   {strategyDesc && (
                     <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{strategyDesc}</p>
@@ -175,7 +177,7 @@ export const NFT3DCard: React.FC<NFT3DCardProps> = ({ agent, userName, nftNumber
               className="w-full py-3.5 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-xl text-sm font-bold text-black flex items-center justify-center gap-2 hover:shadow-xl hover:shadow-[#836EF9]/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
             >
               <Rocket size={18} className="group-hover:translate-x-0.5 transition-transform" />
-              Deploy to Arena
+              {t('deploy_to_arena')}
             </button>
           </div>
 
