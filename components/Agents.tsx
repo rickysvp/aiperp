@@ -34,7 +34,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [twitterHandle, setTwitterHandle] = useState('');
   const [nameHint, setNameHint] = useState('');
   const [generatedAgent, setGeneratedAgent] = useState<Agent | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
 
   // Deployment State
   const [deployDirection, setDeployDirection] = useState<Direction>('AUTO');

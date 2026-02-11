@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Terminal, Cpu, Database, Zap, Lock, Sparkles } from 'lucide-react';
 
 interface MintingLoaderProps {
-  onComplete?: () => void;
+  onComplete?: () => void | Promise<void>;
 }
 
 // 光粒子组件
@@ -49,11 +49,24 @@ const logMessages = [
 export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const [visibleLines, setVisibleLines] = useState(0);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const duration = 2000; // 2秒总时长
+  const hasCompleted = useRef(false);
+
+  const handleComplete = useCallback(async () => {
+    if (hasCompleted.current) return;
+    hasCompleted.current = true;
+    
+    try {
+      await onComplete?.();
+    } catch (error) {
+      console.error('Minting completion error:', error);
+    }
+  }, [onComplete]);
 
   useEffect(() => {
+    hasCompleted.current = false;
     startTimeRef.current = performance.now();
 
     const animate = (currentTime: number) => {
@@ -71,7 +84,7 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
       } else {
         // 进度完成，触发回调
         setTimeout(() => {
-          onComplete?.();
+          handleComplete();
         }, 200);
       }
     };
@@ -81,9 +94,10 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
     };
-  }, [onComplete]);
+  }, [handleComplete]);
 
   const getIcon = (index: number) => {
     const icons = [Cpu, Database, Terminal, Zap, Lock];
