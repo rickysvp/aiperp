@@ -143,16 +143,17 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     setWithdrawLoading(false);
     setWithdrawModalOpen(false);
     
-    // Show success toast
+    // Clear selected agent to close detail view
+    setSelection('FABRICATE');
+    
+    // Show success toast briefly
     setWithdrawSuccess({show: true, amount: withdrawAmount, agentName});
     
-    // Hide success toast and return to list after delay
+    // Hide success toast after delay
     setTimeout(() => {
       setWithdrawSuccess({show: false, amount: 0, agentName: ''});
       setWithdrawingAgent(null);
-      // Return to agent list view
-      setSelection('FABRICATE');
-    }, 2500);
+    }, 2000);
   };
 
   const handleCancelWithdraw = () => {
