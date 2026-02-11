@@ -51,6 +51,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [withdrawingAgent, setWithdrawingAgent] = useState<Agent | null>(null);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<{show: boolean; amount: number; agentName: string}>({show: false, amount: 0, agentName: ''});
 
   // Group Agents
   const { activeAgents, idleAgents, deadAgents } = useMemo(() => {
@@ -129,16 +130,29 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const handleConfirmWithdraw = async () => {
     if (!withdrawingAgent) return;
     
+    const withdrawAmount = withdrawingAgent.balance;
+    const agentName = withdrawingAgent.name;
+    
     setWithdrawLoading(true);
     
     // Simulate processing delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     await onWithdraw(withdrawingAgent.id);
     
     setWithdrawLoading(false);
     setWithdrawModalOpen(false);
-    setWithdrawingAgent(null);
+    
+    // Show success toast
+    setWithdrawSuccess({show: true, amount: withdrawAmount, agentName});
+    
+    // Hide success toast and return to list after delay
+    setTimeout(() => {
+      setWithdrawSuccess({show: false, amount: 0, agentName: ''});
+      setWithdrawingAgent(null);
+      // Return to agent list view
+      setSelection('FABRICATE');
+    }, 2500);
   };
 
   const handleCancelWithdraw = () => {
@@ -1087,6 +1101,47 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
           </div>
         </div>
       )}
+
+      {/* Withdraw Success Toast */}
+      {withdrawSuccess.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0f111a] border border-emerald-500/50 rounded-2xl p-8 max-w-sm w-full shadow-2xl shadow-emerald-500/20 animate-fade-in text-center">
+            {/* Success Icon */}
+            <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={40} className="text-emerald-500" />
+            </div>
+            
+            {/* Success Message */}
+            <h3 className="text-xl font-bold text-white mb-2">Withdrawal Successful!</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              {withdrawSuccess.agentName} has exited the arena
+            </p>
+            
+            {/* Amount Display */}
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6">
+              <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">Returned to Wallet</p>
+              <p className="text-3xl font-mono font-bold text-emerald-400">
+                {withdrawSuccess.amount.toFixed(2)} $MON
+              </p>
+            </div>
+            
+            {/* Loading Bar */}
+            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full animate-[shrink_2.5s_linear_forwards]" style={{
+                animation: 'shrink 2.5s linear forwards'
+              }} />
+            </div>
+            <p className="text-xs text-slate-500 mt-2">Returning to agent list...</p>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes shrink {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+      `}</style>
 
     </div>
   );
