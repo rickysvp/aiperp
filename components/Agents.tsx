@@ -757,8 +757,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </div>
          )}
 
-         {/* UNIFIED AGENT DETAIL PAGE - All statuses in one module */}
-         {selectedAgent && (
+         {/* UNIFIED AGENT DETAIL PAGE - All statuses in one module (exclude IDLE with no trades - they use deployment console) */}
+         {selectedAgent && !(selectedAgent.status === 'IDLE' && selectedAgent.wins === 0 && selectedAgent.losses === 0) && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
                  {/* Back Button */}
                  <button
