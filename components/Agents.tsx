@@ -3,7 +3,7 @@ import { Agent, Direction, MarketState } from '../types';
 import { Button } from './Button';
 import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain, Sparkles, Rocket, X, Wallet } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { refineAgentStrategy } from '../services/geminiService';
+import { refineAgentStrategy } from '../services/kimiService';
 import { AgentCard } from './AgentCard';
 import { MintingLoader } from './MintingLoader';
 import { NFT3DCard } from './NFT3DCard';

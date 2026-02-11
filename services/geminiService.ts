@@ -29,7 +29,7 @@ export const generateAgentPersona = async (direction: string, nameHint?: string)
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: `You are creating a persona for a user-named AI Trading Agent.
       The User's chosen name is: "${nameHint || 'Unknown'}". 
       
@@ -83,7 +83,7 @@ export const refineAgentStrategy = async (currentStrategy: string, userMessage: 
 
   try {
      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         contents: `You are ${agentName}, an autonomous AI trading agent in a cyberpunk future.
         Your current trading strategy protocol is: "${currentStrategy}".
         Your Commander (the user) has sent you a directive: "${userMessage}".

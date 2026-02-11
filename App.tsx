@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Tab, Agent, MarketState, WalletState, BattleLog, Direction, LootEvent, AssetSymbol } from './types';
 import { INITIAL_BALANCE, MINT_COST, GAME_TICK_MS } from './constants';
-import { generateAgentPersona } from './services/geminiService';
+import { generateAgentPersona } from './services/kimiService';
 import { Arena } from './components/Arena';
 import { Agents } from './components/Agents';
 import { Wallet } from './components/Wallet';
