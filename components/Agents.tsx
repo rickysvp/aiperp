@@ -757,11 +757,11 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </div>
          )}
 
-         {/* UNIFIED AGENT DETAIL PAGE (ACTIVE or EXITED) */}
-         {selectedAgent && (selectedAgent.status === 'ACTIVE' || (selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0))) && (
+         {/* UNIFIED AGENT DETAIL PAGE - All statuses in one module */}
+         {selectedAgent && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
                  {/* Back Button */}
-                 <button 
+                 <button
                      onClick={() => setSelection('FABRICATE')}
                      className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors w-fit"
                  >
@@ -769,19 +769,32 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <span className="text-sm">Back to Agents</span>
                  </button>
 
-                 {/* Agent Header Card */}
-                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
+                 {/* Agent Header Card - Different styles based on status */}
+                 <div className={`rounded-2xl p-4 lg:p-6 mb-4 border ${
+                     selectedAgent.status === 'LIQUIDATED'
+                         ? 'bg-red-900/10 border-red-500/30'
+                         : 'bg-[#0f111a] border-slate-800'
+                 }`}>
                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                          {/* Avatar */}
-                         <div className="relative w-20 h-20 lg:w-24 lg:h-24 shrink-0 mx-auto lg:mx-0">
-                             <div className="w-full h-full rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg">
+                         <div className={`relative w-20 h-20 lg:w-24 lg:h-24 shrink-0 mx-auto lg:mx-0 ${
+                             selectedAgent.status === 'LIQUIDATED' ? 'grayscale opacity-50' : ''
+                         }`}>
+                             <div className={`w-full h-full rounded-2xl bg-black border-2 overflow-hidden shadow-lg ${
+                                 selectedAgent.status === 'LIQUIDATED' ? 'border-red-500/30' : 'border-slate-700'
+                             }`}>
                                  <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
                              </div>
                              {selectedAgent.status === 'ACTIVE' && (
                                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00FF9D] border-2 border-[#050508] rounded-full animate-pulse" />
                              )}
+                             {selectedAgent.status === 'LIQUIDATED' && (
+                                 <div className="absolute inset-0 flex items-center justify-center">
+                                     <Skull size={32} className="text-red-500" />
+                                 </div>
+                             )}
                          </div>
-                         
+
                          {/* Info */}
                          <div className="flex-1 text-center lg:text-left">
                              <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-2 justify-center lg:justify-start">
@@ -797,13 +810,21 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
                                      {selectedAgent.strategy}
                                  </span>
-                                 <span className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                                     selectedAgent.status === 'ACTIVE' 
-                                         ? 'bg-[#00FF9D]/20 text-[#00FF9D] border border-[#00FF9D]/30' 
-                                         : 'bg-slate-600/20 text-slate-400 border border-slate-600/30'
-                                 }`}>
-                                     {selectedAgent.status === 'ACTIVE' ? 'Active' : 'Idle'}
-                                 </span>
+                                 {selectedAgent.status === 'ACTIVE' && (
+                                     <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#00FF9D]/20 text-[#00FF9D] border border-[#00FF9D]/30">
+                                         Active
+                                     </span>
+                                 )}
+                                 {selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0) && (
+                                     <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-600/20 text-slate-400 border border-slate-600/30">
+                                         Idle
+                                     </span>
+                                 )}
+                                 {selectedAgent.status === 'LIQUIDATED' && (
+                                     <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                                         Liquidated
+                                     </span>
+                                 )}
                                  {selectedAgent.status === 'ACTIVE' && (
                                      <span className={`text-xs font-bold px-2 py-1.5 rounded ${selectedAgent.direction === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : selectedAgent.direction === 'SHORT' ? 'bg-rose-500/20 text-rose-400' : 'bg-[#836EF9]/20 text-[#836EF9]'}`}>
                                          {selectedAgent.direction} {selectedAgent.leverage}X
@@ -811,8 +832,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  )}
                              </div>
                          </div>
-                         
-                         {/* Financial Stats */}
+
+                         {/* Financial Stats - Different for each status */}
                          <div className="text-center lg:text-right shrink-0 space-y-2">
                              {selectedAgent.status === 'ACTIVE' ? (
                                  <>
@@ -825,6 +846,19 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Balance</p>
                                          <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
+                                     </div>
+                                 </>
+                             ) : selectedAgent.status === 'LIQUIDATED' ? (
+                                 <>
+                                     <div>
+                                         <p className="text-xs text-red-400 uppercase tracking-widest">Final Status</p>
+                                         <p className="text-2xl lg:text-3xl font-mono font-bold text-red-500">
+                                             SIGNAL LOST
+                                         </p>
+                                     </div>
+                                     <div>
+                                         <p className="text-xs text-slate-500 uppercase tracking-widest">Collateral</p>
+                                         <p className="text-lg font-mono font-bold text-red-400">0 $MON</p>
                                      </div>
                                  </>
                              ) : (
@@ -845,25 +879,27 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      </div>
                  </div>
 
-                 {/* Performance Stats */}
-                 <div className="grid grid-cols-3 gap-3 mb-4">
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
-                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Wins</p>
-                         <p className="text-2xl font-bold text-emerald-400">{selectedAgent.wins}</p>
+                 {/* Performance Stats - Hidden for LIQUIDATED if no trades */}
+                 {(selectedAgent.status !== 'LIQUIDATED' || selectedAgent.wins + selectedAgent.losses > 0) && (
+                     <div className="grid grid-cols-3 gap-3 mb-4">
+                         <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Wins</p>
+                             <p className="text-2xl font-bold text-emerald-400">{selectedAgent.wins}</p>
+                         </div>
+                         <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Losses</p>
+                             <p className="text-2xl font-bold text-rose-400">{selectedAgent.losses}</p>
+                         </div>
+                         <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
+                             <p className="text-2xl font-bold text-[#836EF9]">
+                                 {selectedAgent.wins + selectedAgent.losses > 0
+                                     ? Math.round((selectedAgent.wins / (selectedAgent.wins + selectedAgent.losses)) * 100)
+                                     : 0}%
+                             </p>
+                         </div>
                      </div>
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
-                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Losses</p>
-                         <p className="text-2xl font-bold text-rose-400">{selectedAgent.losses}</p>
-                     </div>
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
-                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
-                         <p className="text-2xl font-bold text-[#836EF9]">
-                             {selectedAgent.wins + selectedAgent.losses > 0 
-                                 ? Math.round((selectedAgent.wins / (selectedAgent.wins + selectedAgent.losses)) * 100) 
-                                 : 0}%
-                         </p>
-                     </div>
-                 </div>
+                 )}
 
                  {/* Agent Configuration */}
                  <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
@@ -871,7 +907,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          <Brain size={18} className="text-[#836EF9]" />
                          Agent Configuration
                      </h3>
-                     
+
                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                          <div className="bg-slate-900/50 rounded-lg p-3">
                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Strategy</p>
@@ -892,6 +928,17 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      <p className="text-sm font-bold text-white">{selectedAgent.leverage}X</p>
                                  </div>
                              </>
+                         ) : selectedAgent.status === 'LIQUIDATED' ? (
+                             <>
+                                 <div className="bg-slate-900/50 rounded-lg p-3">
+                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
+                                     <p className="text-sm font-bold text-red-400">Destroyed</p>
+                                 </div>
+                                 <div className="bg-slate-900/50 rounded-lg p-3">
+                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
+                                     <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
+                                 </div>
+                             </>
                          ) : (
                              <>
                                  <div className="bg-slate-900/50 rounded-lg p-3">
@@ -907,24 +954,24 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      </div>
                  </div>
 
-                 {/* Actions */}
+                 {/* Actions - Different for each status */}
                  <div className="mt-auto grid grid-cols-2 gap-3">
-                     <Button 
-                         onClick={() => handleSocialShare(selectedAgent)} 
+                     <Button
+                         onClick={() => handleSocialShare(selectedAgent)}
                          variant="secondary"
                          className="h-12"
                      >
-                         {selectedAgent.status === 'ACTIVE' ? 'Share Status' : 'Share Results'}
+                         {selectedAgent.status === 'ACTIVE' ? 'Share Status' : 'Share Report'}
                      </Button>
                      {selectedAgent.status === 'ACTIVE' ? (
-                         <Button 
+                         <Button
                              onClick={() => handleWithdrawClick(selectedAgent)}
                              className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
                          >
                              Withdraw
                          </Button>
                      ) : (
-                         <Button 
+                         <Button
                              onClick={() => setSelection('FABRICATE')}
                              className="h-12 bg-slate-700 hover:bg-slate-600"
                          >
@@ -932,23 +979,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          </Button>
                      )}
                  </div>
-             </div>
-         )}
-
-         {/* SCENARIO E: GRAVEYARD (LIQUIDATED) - Deprecated */}
-         {selectedAgent && selectedAgent.status === 'LIQUIDATED' && (
-             <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-10 animate-fade-in text-center">
-                 <div className="w-24 h-24 bg-red-900/20 rounded-full border border-red-500/30 flex items-center justify-center mb-6">
-                     <Skull size={48} className="text-red-500" />
-                 </div>
-                 <h2 className="text-3xl font-display font-bold text-white mb-2">{t('signal_lost')}</h2>
-                 <p className="text-slate-500 max-w-md mb-8">
-                     Agent <span className="text-white font-bold">{selectedAgent.name}</span> {t('liquidated_msg')} <br/>
-                     {t('final_collateral')}: 0 $MON.
-                 </p>
-                 <Button onClick={() => handleSocialShare(selectedAgent)} variant="secondary">
-                     {t('share_report')}
-                 </Button>
              </div>
          )}
 
