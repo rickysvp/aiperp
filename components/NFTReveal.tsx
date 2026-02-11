@@ -10,9 +10,23 @@ interface NFTRevealProps {
   onDeployNow: () => void;
 }
 
+// 策略描述映射
+const strategyDescriptions: Record<string, string> = {
+  'Momentum Surfer': 'Rides market momentum with precision timing',
+  'Contrarian Alpha': 'Seeks value in oversold conditions',
+  'Scalping Ninja': 'High-frequency micro trades execution',
+  'Trend Follower': 'Follows established market trends',
+  'Mean Reversion': 'Capitalizes on price corrections',
+  'Breakout Hunter': 'Targets key resistance breakouts',
+  'Arbitrage Bot': 'Exploits price inefficiencies',
+  'Grid Trader': 'Systematic range-bound trading',
+};
+
 export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
   const strategyColor = agent.direction === 'LONG' ? 'text-emerald-400' : agent.direction === 'SHORT' ? 'text-rose-400' : 'text-violet-400';
   const strategyBg = agent.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30' : agent.direction === 'SHORT' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-violet-500/10 border-violet-500/30';
+  
+  const strategyDesc = strategyDescriptions[agent.strategy] || 'Advanced AI trading strategy';
   
   return (
     <div className="relative w-full max-w-[320px] mx-auto">
@@ -56,44 +70,43 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
 
         {/* 信息区域 */}
         <div className="p-4 pt-3">
-          {/* 名称和编号 */}
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-1.5">
-                <Sparkles size={14} className="text-[#00FF9D]" />
-                {userName || agent.name}
-              </h3>
-              <p className="text-[10px] text-slate-500 font-mono mt-0.5">AIperp Agent #{String(nftNumber).padStart(4, '0')}</p>
-            </div>
+          {/* 名称 */}
+          <div className="mb-2">
+            <h3 className="text-lg font-bold text-white flex items-center gap-1.5">
+              <Sparkles size={14} className="text-[#00FF9D]" />
+              {userName || agent.name}
+            </h3>
           </div>
 
-          {/* 策略偏好 */}
+          {/* 编号和MintedBy在同一行 */}
+          <div className="flex items-center justify-between text-[10px] mb-3">
+            <span className="text-slate-500 font-mono">#{String(nftNumber).padStart(4, '0')}</span>
+            {minterTwitter && (
+              <span className="text-slate-400 flex items-center gap-1">
+                <AtSign size={10} className="text-[#836EF9]" />
+                {minterTwitter}
+              </span>
+            )}
+          </div>
+
+          {/* 策略偏好 - 带详细描述 */}
           <div className={`rounded-lg p-2.5 mb-3 border ${strategyBg}`}>
-            <div className="flex items-center gap-2">
-              <Brain size={14} className={strategyColor} />
+            <div className="flex items-start gap-2">
+              <Brain size={14} className={`${strategyColor} mt-0.5 flex-shrink-0`} />
               <div className="flex-1 min-w-0">
                 <p className="text-[9px] text-slate-400 uppercase tracking-wider">Strategy</p>
                 <p className="text-xs font-bold text-white truncate">{agent.strategy}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{strategyDesc}</p>
               </div>
               {agent.direction === 'LONG' ? (
-                <TrendingUp size={16} className="text-emerald-400" />
+                <TrendingUp size={16} className="text-emerald-400 flex-shrink-0" />
               ) : agent.direction === 'SHORT' ? (
-                <TrendingDown size={16} className="text-rose-400" />
+                <TrendingDown size={16} className="text-rose-400 flex-shrink-0" />
               ) : (
-                <div className="w-4 h-4 rounded-full bg-violet-500/30 border border-violet-400/50"></div>
+                <div className="w-4 h-4 rounded-full bg-violet-500/30 border border-violet-400/50 flex-shrink-0"></div>
               )}
             </div>
           </div>
-
-          {/* 铸造者信息 */}
-          {minterTwitter && (
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-3">
-              <div className="w-5 h-5 rounded-full bg-[#836EF9]/20 flex items-center justify-center">
-                <AtSign size={10} className="text-[#836EF9]" />
-              </div>
-              <span>Minted by @{minterTwitter}</span>
-            </div>
-          )}
 
           {/* Deploy按钮 */}
           <button 
