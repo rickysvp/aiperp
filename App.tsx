@@ -441,6 +441,7 @@ const AppContent: React.FC = () => {
     const nftId = Math.floor(1000 + Math.random() * 9000);
     const finalName = `${userInputName} #${nftId}`;
 
+    // Deduct cost immediately
     setWallet(prev => ({ ...prev, balance: prev.balance - AGENT_FABRICATION_COST }));
     addLog(`Fabricating ${finalName}...`, 'MINT');
 
@@ -468,14 +469,47 @@ const AppContent: React.FC = () => {
         twitterHandle: twitterHandle
       };
 
-      setAgents(prev => [...prev, newAgent]);
-      addLog(`${newAgent.name} fabricated. Awaiting orders.`, 'MINT');
+      // Agent is returned but NOT added to list yet
+      // It will be added when user accepts in the UI
       return newAgent;
     } catch (e) {
       console.error(e);
+      // Refund on error
       setWallet(prev => ({ ...prev, balance: prev.balance + AGENT_FABRICATION_COST }));
       return null;
     }
+  };
+
+  const handleAddAgent = (agent: Agent) => {
+    setAgents(prev => [...prev, agent]);
+    addLog(`${agent.name} fabricated. Awaiting orders.`, 'MINT');
+  };
+
+  const handleWithdrawAgent = async (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent || agent.status !== 'ACTIVE') return;
+
+    const withdrawAmount = agent.balance;
+
+    // Return balance to wallet
+    setWallet(prev => ({ ...prev, balance: prev.balance + withdrawAmount }));
+
+    // Reset agent to IDLE state
+    setAgents(prev => prev.map(a => {
+        if (a.id === agentId) {
+            return {
+                ...a,
+                status: 'IDLE',
+                balance: 0,
+                pnl: 0,
+                leverage: 1,
+                direction: 'LONG'
+            };
+        }
+        return a;
+    }));
+
+    addLog(`${agent.name} withdrawn with ${withdrawAmount.toFixed(0)} $MON returned.`, 'EXIT');
   };
 
   const handleDeployAgent = async (agentId: string, direction: Direction, leverage: number, collateral: number) => {
@@ -582,12 +616,14 @@ const AppContent: React.FC = () => {
             />
           )}
           {activeTab === Tab.AGENTS && (
-            <Agents 
-                agents={agents} 
+            <Agents
+                agents={agents}
                 market={market}
-                onMint={handleMintAgent} 
+                onMint={handleMintAgent}
                 onDeploy={handleDeployAgent}
-                walletBalance={wallet.balance} 
+                onWithdraw={handleWithdrawAgent}
+                onAddAgent={handleAddAgent}
+                walletBalance={wallet.balance}
                 shouldHighlightFab={highlightMint}
             />
           )}

@@ -14,6 +14,7 @@ interface AgentsProps {
   onMint: (twitterHandle?: string, nameHint?: string) => Promise<Agent | null>;
   onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number) => Promise<void>;
   onWithdraw: (agentId: string) => Promise<void>;
+  onAddAgent: (agent: Agent) => void;
   walletBalance: number;
   shouldHighlightFab?: boolean;
 }
@@ -21,7 +22,7 @@ interface AgentsProps {
 const FABRICATION_COST = 100;
 const MIN_COLLATERAL = 100;
 
-export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, walletBalance, shouldHighlightFab }) => {
+export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, onAddAgent, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
   // Selection State: 'FABRICATE' or agentId
   const [selection, setSelection] = useState<string>('FABRICATE');
@@ -121,6 +122,9 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
   const handleAcceptAgent = () => {
       if (generatedAgent) {
+          // Add agent to list first
+          onAddAgent(generatedAgent);
+          // Then select it
           setSelection(generatedAgent.id);
           // 直接进入部署页面，不清空状态
           setFabricationStep('IDLE');
@@ -147,17 +151,16 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
   const handleConfirmWithdraw = async () => {
     if (!withdrawingAgent) return;
-    
+
     setWithdrawLoading(true);
-    
-    // Close modal and return to list immediately
+
+    // Execute withdraw immediately (synchronous state update)
+    await onWithdraw(withdrawingAgent.id);
+
+    // Close modal and stay on the same agent page
     setWithdrawModalOpen(false);
     setWithdrawingAgent(null);
-    setSelection('FABRICATE');
-    
-    // Execute withdraw in background
-    await onWithdraw(withdrawingAgent.id);
-    
+
     setWithdrawLoading(false);
   };
 
