@@ -25,7 +25,7 @@ export const translations = {
     bullish: "BULLISH",
     bearish: "BEARISH",
     flat: "FLAT",
-    plundered: "PLUNDERED",
+    looted: "LOOTED",
     asset_perp: "-USD PERP",
 
     // Agents
@@ -275,7 +275,7 @@ export const translations = {
     bullish: "看涨",
     bearish: "看跌",
     flat: "震荡",
-    plundered: "被掠夺",
+    looted: "战利品",
     asset_perp: "-USD 永续合约",
 
     my_fleet: "我的舰队",

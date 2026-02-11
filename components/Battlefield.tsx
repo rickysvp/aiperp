@@ -271,7 +271,7 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
        const battleX = (currentBattlePos / 100) * WIDTH;
        const xPos = isLongWin ? battleX - 100 : battleX + 100;
        
-       spawnText(xPos, HEIGHT/2 - 100, `+${Math.floor(lootEvent.amount).toLocaleString()} $MON`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
+       spawnText(xPos, HEIGHT/2 - 100, `+${Math.floor(lootEvent.amount).toLocaleString()} $MON`, t('looted'), isLongWin ? COLOR_LONG : COLOR_SHORT);
     }
   }, [lootEvent, t]); // Added t dependency
 
