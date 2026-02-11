@@ -1,159 +1,206 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Terminal, Cpu, Database, Zap, Lock, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Terminal, CheckCircle2 } from 'lucide-react';
 
 interface MintingLoaderProps {
   onComplete?: () => void;
 }
 
-const STEPS = [
-  { icon: Cpu, label: 'Initializing', code: 'import neural_network as nn' },
-  { icon: Database, label: 'Loading Model', code: 'agent.load_weights("gemini-v3")' },
-  { icon: Zap, label: 'Analyzing', code: 'strategy = analyze_market()' },
-  { icon: Lock, label: 'Encrypting', code: 'encrypt_identity()' },
-  { icon: Terminal, label: 'Minting', code: 'mint_nft()' },
+const CODE_SNIPPETS = [
+  { cmd: 'npm install ai-agent@latest', output: '✓ Package installed (42ms)' },
+  { cmd: 'import { NeuralAgent } from "@aiperp/core"', output: '' },
+  { cmd: 'const agent = new NeuralAgent()', output: '✓ Instance created' },
+  { cmd: 'await agent.loadModel("gemini-3-pro")', output: '✓ Model loaded (2.3GB)' },
+  { cmd: 'agent.configure({ strategy: "adaptive" })', output: '✓ Strategy configured' },
+  { cmd: 'const marketData = await fetchMarketAnalysis()', output: '✓ Data fetched (1,247 candles)' },
+  { cmd: 'agent.train(marketData)', output: '✓ Training complete (98.7% accuracy)' },
+  { cmd: 'const avatar = generatePixelAvatar()', output: '✓ Avatar rendered' },
+  { cmd: 'agent.encryptIdentity()', output: '✓ Identity encrypted (AES-256)' },
+  { cmd: 'await agent.deployToBlockchain()', output: '✓ Smart contract deployed' },
+  { cmd: 'const nft = await mintAgentNFT(agent)', output: '✓ NFT minted #0x7a3f...' },
+  { cmd: 'console.log("Agent ready for battle!")', output: 'Agent ready for battle!' },
 ];
 
 export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [currentLine, setCurrentLine] = useState(0);
+  const [displayedLines, setDisplayedLines] = useState<{ cmd: string; output: string; status: 'typing' | 'done' }[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [cursorVisible, setCursorVisible] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const runStep = useCallback((stepIndex: number) => {
-    if (stepIndex >= STEPS.length) {
+  const typeLine = useCallback(async (lineIndex: number) => {
+    if (lineIndex >= CODE_SNIPPETS.length) {
       setIsComplete(true);
-      setTimeout(() => {
-        onComplete?.();
-      }, 500);
+      setTimeout(() => onComplete?.(), 800);
       return;
     }
 
-    setCurrentStep(stepIndex);
+    const snippet = CODE_SNIPPETS[lineIndex];
+    setCurrentLine(lineIndex);
     
-    // Each step takes 400ms
-    const stepDuration = 400;
-    const startTime = Date.now();
+    // Add new line with typing status
+    setDisplayedLines(prev => [...prev, { cmd: '', output: '', status: 'typing' }]);
 
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const stepProgress = Math.min((elapsed / stepDuration) * 100, 100);
-      const totalProgress = ((stepIndex + stepProgress / 100) / STEPS.length) * 100;
-      
-      setProgress(totalProgress);
+    // Type command character by character
+    for (let i = 0; i <= snippet.cmd.length; i++) {
+      await new Promise(r => setTimeout(r, 30 + Math.random() * 40));
+      setDisplayedLines(prev => {
+        const newLines = [...prev];
+        newLines[lineIndex] = { 
+          ...newLines[lineIndex], 
+          cmd: snippet.cmd.slice(0, i),
+          status: 'typing'
+        };
+        return newLines;
+      });
+    }
 
-      if (stepProgress < 100) {
-        requestAnimationFrame(animate);
-      } else {
-        setTimeout(() => runStep(stepIndex + 1), 100);
-      }
-    };
+    // Show output after a brief pause
+    await new Promise(r => setTimeout(r, 200));
+    
+    setDisplayedLines(prev => {
+      const newLines = [...prev];
+      newLines[lineIndex] = { 
+        cmd: snippet.cmd, 
+        output: snippet.output,
+        status: 'done'
+      };
+      return newLines;
+    });
 
-    requestAnimationFrame(animate);
+    // Move to next line
+    setTimeout(() => typeLine(lineIndex + 1), 150);
   }, [onComplete]);
 
   useEffect(() => {
-    runStep(0);
-  }, [runStep]);
+    typeLine(0);
+  }, [typeLine]);
+
+  // Cursor blink effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCursorVisible(v => !v);
+    }, 530);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto scroll to bottom
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [displayedLines]);
+
+  const progress = Math.round((currentLine / CODE_SNIPPETS.length) * 100);
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-full flex flex-col items-center justify-center p-8">
-      {/* Background glow */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#836EF9]/10 to-transparent rounded-3xl" />
-      
-      {/* Header */}
-      <div className="relative z-10 text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#836EF9]/10 border border-[#836EF9]/30 mb-4">
-          <Sparkles size={14} className="text-[#00FF9D]" />
-          <span className="text-xs font-bold text-[#836EF9] uppercase tracking-wider">
-            {isComplete ? 'Complete' : 'Minting Agent'}
-          </span>
-        </div>
-        <h3 className="text-2xl font-bold text-white">
-          {isComplete ? (
-            <span className="flex items-center gap-2">
-              <CheckCircle2 size={28} className="text-[#00FF9D]" />
-              Ready!
-            </span>
-          ) : (
-            <span className="animate-pulse">Creating Agent...</span>
-          )}
-        </h3>
-      </div>
-
-      {/* Progress Steps */}
-      <div className="relative z-10 w-full max-w-[280px] space-y-3 mb-8">
-        {STEPS.map((step, index) => {
-          const Icon = step.icon;
-          const isActive = index === currentStep && !isComplete;
-          const isDone = index < currentStep || isComplete;
-          
-          return (
-            <div
-              key={index}
-              className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
-                isActive 
-                  ? 'bg-[#836EF9]/20 border border-[#836EF9]/40' 
-                  : isDone 
-                    ? 'bg-[#00FF9D]/10 border border-[#00FF9D]/30' 
-                    : 'bg-slate-800/50 border border-slate-700/50'
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                isActive 
-                  ? 'bg-[#836EF9] text-white' 
-                  : isDone 
-                    ? 'bg-[#00FF9D] text-black' 
-                    : 'bg-slate-700 text-slate-500'
-              }`}>
-                {isDone && !isActive ? (
-                  <CheckCircle2 size={16} />
-                ) : (
-                  <Icon size={16} className={isActive ? 'animate-pulse' : ''} />
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className={`text-xs font-bold uppercase tracking-wider ${
-                  isActive ? 'text-white' : isDone ? 'text-[#00FF9D]' : 'text-slate-500'
-                }`}>
-                  {step.label}
-                </div>
-                {isActive && (
-                  <div className="text-[10px] font-mono text-[#836EF9] truncate mt-0.5">
-                    {step.code}
-                  </div>
-                )}
-              </div>
-              
-              {isActive && (
-                <div className="w-4 h-4 border-2 border-[#836EF9] border-t-transparent rounded-full animate-spin" />
-              )}
+    <div className="relative w-full max-w-lg mx-auto h-full flex flex-col items-center justify-center p-6">
+      {/* Background Matrix Effect */}
+      <div className="absolute inset-0 overflow-hidden opacity-5">
+        <div className="absolute inset-0 font-mono text-[8px] text-[#00FF9D] leading-tight whitespace-pre-wrap break-all">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div key={i} className="animate-pulse" style={{ animationDelay: `${i * 0.1}s` }}>
+              {'01'.repeat(100)}
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="relative z-10 w-full max-w-[280px]">
-        <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-          <span className="font-mono">Progress</span>
-          <span className="font-mono text-[#00FF9D]">{Math.round(progress)}%</span>
+      {/* Header */}
+      <div className="relative z-10 w-full mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Terminal size={16} className="text-[#00FF9D]" />
+            <span className="text-xs font-mono text-slate-400">aiperp_terminal</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+          </div>
         </div>
-        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-[#836EF9] via-[#00FF9D] to-[#836EF9] rounded-full transition-all duration-100 ease-linear"
-            style={{ 
-              width: `${progress}%`,
-              backgroundSize: '200% 100%',
-              animation: isComplete ? 'none' : 'gradient-shift 2s linear infinite'
-            }}
+        
+        {/* Progress Bar */}
+        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-[#836EF9] to-[#00FF9D] transition-all duration-300"
+            style={{ width: `${progress}%` }}
           />
         </div>
+        <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+          <span>building_agent...</span>
+          <span>{progress}%</span>
+        </div>
       </div>
 
-      {/* Terminal decoration */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-        <Terminal size={10} />
-        <span>aiperp_engine_v2.0</span>
+      {/* Terminal Window */}
+      <div className="relative z-10 w-full bg-[#0a0b14] border border-slate-800 rounded-lg overflow-hidden shadow-2xl">
+        {/* Terminal Header */}
+        <div className="bg-[#0f111a] px-3 py-2 border-b border-slate-800 flex items-center gap-2">
+          <span className="text-[10px] text-slate-500 font-mono">~/aiperp/agents</span>
+          <span className="text-[10px] text-slate-600">—</span>
+          <span className="text-[10px] text-[#00FF9D] font-mono">zsh</span>
+        </div>
+
+        {/* Terminal Content */}
+        <div 
+          ref={containerRef}
+          className="p-4 h-[280px] overflow-y-auto font-mono text-xs space-y-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+        >
+          {/* Welcome Message */}
+          <div className="text-slate-500 mb-3">
+            <div>AIperp Agent Fabrication Engine v2.0</div>
+            <div>Initializing neural synthesis protocol...</div>
+          </div>
+
+          {displayedLines.map((line, idx) => (
+            <div key={idx} className="space-y-0.5">
+              {/* Command Line */}
+              <div className="flex items-start gap-2">
+                <span className="text-[#836EF9] shrink-0">➜</span>
+                <span className="text-slate-400 shrink-0">~</span>
+                <span className="text-white break-all">
+                  {line.cmd}
+                  {idx === currentLine && line.status === 'typing' && (
+                    <span 
+                      className={`inline-block w-2 h-4 bg-[#00FF9D] ml-0.5 align-middle ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                  )}
+                </span>
+              </div>
+              
+              {/* Output Line */}
+              {line.output && (
+                <div className="pl-4 text-[#00FF9D]/80 text-[11px]">
+                  {line.output}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Current Input Line */}
+          {isComplete && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[#836EF9]">➜</span>
+              <span className="text-slate-400">~</span>
+              <span className="text-[#00FF9D]">
+                <CheckCircle2 size={14} className="inline mr-1" />
+                Agent fabrication complete!
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Status Footer */}
+      <div className="relative z-10 mt-4 flex items-center gap-4 text-[10px] text-slate-500 font-mono">
+        <div className="flex items-center gap-1.5">
+          <div className={`w-1.5 h-1.5 rounded-full ${isComplete ? 'bg-[#00FF9D]' : 'bg-[#836EF9] animate-pulse'}`} />
+          <span>{isComplete ? 'READY' : 'COMPILING'}</span>
+        </div>
+        <div className="w-px h-3 bg-slate-700" />
+        <span>v2.0.4-stable</span>
+        <div className="w-px h-3 bg-slate-700" />
+        <span>{new Date().toLocaleTimeString()}</span>
       </div>
     </div>
   );
