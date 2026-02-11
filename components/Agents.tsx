@@ -241,30 +241,30 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const distToLiq = Math.abs((liqPrice - market.price) / market.price) * 100;
 
   // --- Render Helpers ---
-  const renderAgentListItem = (agent: Agent) => {
+  const renderAgentListItem = (agent: Agent, index: number) => {
       const totalGames = agent.wins + agent.losses;
       const winRate = totalGames > 0 ? Math.round((agent.wins / totalGames) * 100) : 0;
 
       return (
-        <div 
+        <div
             key={agent.id}
             className={`group p-3 rounded-xl border transition-all flex items-center gap-3 relative overflow-hidden mb-2 ${
-                selection === agent.id 
-                ? 'bg-[#836EF9]/10 border-[#836EF9] shadow-[0_0_15px_rgba(131,110,249,0.2)]' 
+                selection === agent.id
+                ? 'bg-[#836EF9]/10 border-[#836EF9] shadow-[0_0_15px_rgba(131,110,249,0.2)]'
                 : 'bg-[#0f111a] border-slate-800 hover:border-slate-600 hover:bg-[#151824]'
             }`}
         >
             {/* Selection Indicator */}
             {selection === agent.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#836EF9]" />}
 
-            <div 
+            <div
                 onClick={() => handleSelectAgent(agent.id)}
                 className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
             >
                 <div className={`w-10 h-10 rounded-lg bg-black shrink-0 overflow-hidden border ${agent.status === 'LIQUIDATED' ? 'border-slate-800 grayscale opacity-50' : 'border-slate-700'}`}>
                     <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
                         <h4 className={`text-xs font-bold font-display truncate ${selection === agent.id ? 'text-white' : 'text-slate-300'}`}>{agent.name}</h4>
@@ -275,16 +275,15 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                         )}
                     </div>
                     <div className="flex items-center justify-between text-[10px]">
-                        <div className="flex items-center gap-2 text-slate-500">
-                            <span className="truncate max-w-[80px]">{agent.strategy}</span>
-                            <span className="text-slate-600">|</span>
+                        <span className="text-slate-500 font-mono">#{String(index + 1).padStart(4, '0')}</span>
+                        <div className="flex items-center gap-2">
                             <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
+                            {agent.status === 'ACTIVE' && agent.balance > 0 && (
+                                <span className={agent.pnl / agent.balance >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}>
+                                    {agent.pnl / agent.balance >= 0 ? '+' : ''}{(agent.pnl / agent.balance * 100).toFixed(1)}%
+                                </span>
+                            )}
                         </div>
-                        {agent.status === 'ACTIVE' && agent.balance > 0 && (
-                            <span className={agent.pnl / agent.balance >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}>
-                                {agent.pnl / agent.balance >= 0 ? '+' : ''}{(agent.pnl / agent.balance * 100).toFixed(1)}%
-                            </span>
-                        )}
                     </div>
                 </div>
             </div>
@@ -335,7 +334,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <h3 className="text-[10px] font-bold text-[#00FF9D] uppercase tracking-widest mb-2 flex items-center gap-1">
                          <Activity size={10} /> {t('deployed')} ({activeAgents.length})
                      </h3>
-                     {activeAgents.map(renderAgentListItem)}
+                     {activeAgents.map((agent, idx) => renderAgentListItem(agent, idx))}
                  </div>
              )}
 
@@ -345,7 +344,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <h3 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-2 flex items-center gap-1">
                          <Terminal size={10} /> {t('awaiting_orders')} ({idleAgents.length})
                      </h3>
-                     {idleAgents.map(renderAgentListItem)}
+                     {idleAgents.map((agent, idx) => renderAgentListItem(agent, activeAgents.length + idx))}
                  </div>
              )}
 
@@ -355,7 +354,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <h3 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-1">
                          <Skull size={10} /> {t('decommissioned')} ({deadAgents.length})
                      </h3>
-                     {deadAgents.map(renderAgentListItem)}
+                     {deadAgents.map((agent, idx) => renderAgentListItem(agent, activeAgents.length + idleAgents.length + idx))}
                  </div>
              )}
          </div>

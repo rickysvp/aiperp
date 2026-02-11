@@ -43,7 +43,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
   const longAgents = agents.filter(a => a.direction === 'LONG').length;
   const shortAgents = agents.filter(a => a.direction === 'SHORT').length;
 
-  const StatCard = ({ title, value, subtext, icon: Icon, color, trend }: any) => (
+  const StatCard = ({ title, value, unit, subtext, icon: Icon, color, trend }: any) => (
     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-all">
       <div className="flex items-start justify-between mb-3">
         <div className={`w-10 h-10 rounded-lg ${color} bg-opacity-20 flex items-center justify-center`}>
@@ -56,7 +56,10 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-white mb-1">{value}</p>
+      <div className="flex items-baseline gap-2 mb-1">
+        <p className="text-2xl font-bold text-white">{value}</p>
+        {unit && <span className="text-sm text-slate-500 font-mono">{unit}</span>}
+      </div>
       <p className="text-xs text-slate-500">{title}</p>
       {subtext && <p className="text-[10px] text-slate-600 mt-1">{subtext}</p>}
     </div>
@@ -121,14 +124,16 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total PnL"
-          value={`${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)} $MON`}
+          value={`${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`}
+          unit="$MON"
           subtext="All time profit/loss"
           icon={totalPnl >= 0 ? TrendingUp : TrendingDown}
           color={totalPnl >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}
         />
         <StatCard
           title="Total Staked"
-          value={`${totalBalance.toFixed(2)} $MON`}
+          value={totalBalance.toFixed(2)}
+          unit="$MON"
           subtext="Active collateral"
           icon={Wallet}
           color="bg-blue-500"
