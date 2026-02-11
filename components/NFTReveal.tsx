@@ -1,15 +1,16 @@
 import React from 'react';
 import { Agent } from '../types';
-import { Sparkles, Zap, Brain, Rocket, Crown } from 'lucide-react';
+import { Sparkles, Zap, Brain, Rocket, Crown, AtSign } from 'lucide-react';
 
 interface NFTRevealProps {
   agent: Agent;
   userName: string;
   nftNumber: number;
+  minterTwitter: string;
   onDeployNow: () => void;
 }
 
-export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber, onDeployNow }) => {
+export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
   return (
     <div className="relative w-full max-w-[260px] mx-auto">
       {/* 背景光效 */}
@@ -78,11 +79,19 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
             <p className="text-xs font-bold text-white truncate">{agent.strategy}</p>
           </div>
 
-          {/* 底部NFT标识 */}
+          {/* 铸造者推特 */}
+          {minterTwitter && (
+            <div className="flex items-center justify-center gap-1 mb-2 text-[10px] text-slate-400">
+              <AtSign size={10} className="text-[#836EF9]" />
+              <span>{minterTwitter}</span>
+            </div>
+          )}
+
+          {/* 底部AIperp.fun标识 */}
           <div className="flex items-center justify-center text-[9px] text-slate-500 border-t border-white/10 pt-2">
             <span className="flex items-center gap-1">
               <Zap size={8} className="text-[#836EF9]" />
-              AI Agent NFT
+              AIperp.fun
             </span>
           </div>
         </div>
@@ -91,7 +100,7 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
       {/* 立刻部署按钮 */}
       <button 
         onClick={onDeployNow}
-        className="w-full mt-3 py-2.5 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-lg text-sm font-bold text-black flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-[#836EF9]/30 hover:shadow-[#836EF9]/50 hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full mt-3 py-2.5 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-lg text-sm font-bold text-black flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-[#836EF9]/30 hover:shadow-[#836EF9]/50 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
       >
         <Rocket size={16} />
         Deploy Now

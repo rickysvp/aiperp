@@ -35,7 +35,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [nameHint, setNameHint] = useState('');
   const [generatedAgent, setGeneratedAgent] = useState<Agent | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [nftCounter, setNftCounter] = useState(1); // NFT编号计数器
 
   // Deployment State
   const [deployDirection, setDeployDirection] = useState<Direction>('AUTO');
@@ -67,16 +66,20 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     setActiveTab('DEPLOY');
   }, [selection]);
 
-  // Terminal Log Animation
+  // Terminal Log Animation - 更快更专业的代码流
   useEffect(() => {
     if (fabricationStep === 'GENERATING') {
         const messages = [
-            "Initializing connection to Gemini-3...",
-            "Scanning blockchain for personality shards...",
-            `Analyzing market sentiment: ${market.trend}...`,
-            "Synthesizing strategy parameters...",
-            "Constructing neural pathway...",
-            "Finalizing avatar generation...",
+            "[SYSTEM] Initializing neural synthesis engine...",
+            "[CORE] Loading Gemini-3 language model weights...",
+            "[DATA] Scanning blockchain for personality shards...",
+            `[ANALYSIS] Market trend detected: ${market.trend} volatility`,
+            "[AI] Generating trading strategy matrix...",
+            "[NEURAL] Constructing synaptic pathways...",
+            "[AVATAR] Rendering pixel-art neural avatar...",
+            "[CRYPTO] Encrypting agent identity hash...",
+            "[FINAL] Binding smart contract interface...",
+            "[DONE] Agent synthesis complete ✓",
         ];
         let i = 0;
         setLogs([]);
@@ -87,7 +90,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             } else {
                 clearInterval(interval);
             }
-        }, 800);
+        }, 70); // 更快的日志输出 70ms
         return () => clearInterval(interval);
     }
   }, [fabricationStep, market.trend]);
@@ -137,11 +140,11 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const handleAcceptAgent = () => {
       if (generatedAgent) {
           setSelection(generatedAgent.id);
+          // 直接进入部署页面，不清空状态
           setFabricationStep('IDLE');
           setGeneratedAgent(null);
-          setTwitterHandle('');
           setNameHint('');
-          setNftCounter(prev => prev + 1); // 增加NFT编号
+          // twitterHandle保留，因为部署页面可能需要
       }
   };
 
@@ -443,7 +446,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          <NFTReveal 
                             agent={generatedAgent}
                             userName={nameHint}
-                            nftNumber={nftCounter}
+                            nftNumber={agents.length + 1}
+                            minterTwitter={twitterHandle}
                             onDeployNow={handleAcceptAgent}
                          />
                      </div>
