@@ -328,24 +328,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
          {/* SCENARIO A: FABRICATION TERMINAL - Compact Single Screen */}
          {selection === 'FABRICATE' && (
              <div className="flex-1 flex flex-col p-3 lg:p-4 relative z-10 overflow-hidden">
-                 {/* Compact Progress Steps */}
-                 <div className="flex items-center justify-center gap-2 mb-4">
-                     {['CONFIG', 'GENERATING', 'REVEAL'].map((step, idx) => (
-                         <div key={step} className="flex items-center gap-2">
-                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                                 (fabricationStep === step) || 
-                                 (step === 'CONFIG' && (fabricationStep === 'IDLE' || fabricationStep === 'CONFIG')) ||
-                                 (step === 'GENERATING' && fabricationStep === 'REVEAL')
-                                 ? 'bg-[#836EF9] text-white' 
-                                 : 'bg-slate-800 text-slate-500'
-                             }`}>
-                                 {idx + 1}
-                             </div>
-                             {idx < 2 && <div className="w-6 h-px bg-slate-800"></div>}
-                         </div>
-                     ))}
-                 </div>
-
                  {/* Step 1: Config - Compact Layout */}
                  {(fabricationStep === 'IDLE' || fabricationStep === 'CONFIG') && (
                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">

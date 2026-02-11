@@ -26,7 +26,7 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
   const strategyColor = agent.direction === 'LONG' ? 'text-emerald-400' : agent.direction === 'SHORT' ? 'text-rose-400' : 'text-violet-400';
   const strategyBg = agent.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30' : agent.direction === 'SHORT' ? 'bg-rose-500/10 border-rose-500/30' : 'bg-violet-500/10 border-violet-500/30';
   
-  const strategyDesc = strategyDescriptions[agent.strategy] || 'Advanced AI trading strategy';
+  const strategyDesc = strategyDescriptions[agent.strategy];
   
   return (
     <div className="relative w-full max-w-[320px] mx-auto">
@@ -96,7 +96,9 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
               <div className="flex-1 min-w-0">
                 <p className="text-[9px] text-slate-400 uppercase tracking-wider">Strategy</p>
                 <p className="text-xs font-bold text-white truncate">{agent.strategy}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{strategyDesc}</p>
+                {strategyDesc && (
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{strategyDesc}</p>
+                )}
               </div>
               {agent.direction === 'LONG' ? (
                 <TrendingUp size={16} className="text-emerald-400 flex-shrink-0" />
