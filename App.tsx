@@ -504,33 +504,6 @@ const AppContent: React.FC = () => {
     setActiveTab(Tab.ARENA);
   };
 
-  const handleWithdrawAgent = async (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent || agent.status !== 'ACTIVE') return;
-
-    const withdrawAmount = agent.balance;
-    
-    // Return balance to wallet
-    setWallet(prev => ({ ...prev, balance: prev.balance + withdrawAmount }));
-    
-    // Reset agent to IDLE state
-    setAgents(prev => prev.map(a => {
-        if (a.id === agentId) {
-            return {
-                ...a,
-                status: 'IDLE',
-                balance: 0,
-                pnl: 0,
-                leverage: 1,
-                direction: 'LONG'
-            };
-        }
-        return a;
-    }));
-
-    addLog(`${agent.name} withdrawn with ${withdrawAmount.toFixed(0)} $MON returned.`, 'EXIT');
-  };
-
   const tabs = [
     { id: Tab.ARENA, icon: LayoutDashboard, label: t('tab_arena') },
     { id: Tab.AGENTS, icon: Users, label: t('tab_agents') },
@@ -614,7 +587,6 @@ const AppContent: React.FC = () => {
                 market={market}
                 onMint={handleMintAgent} 
                 onDeploy={handleDeployAgent}
-                onWithdraw={handleWithdrawAgent}
                 walletBalance={wallet.balance} 
                 shouldHighlightFab={highlightMint}
             />

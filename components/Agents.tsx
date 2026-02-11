@@ -13,7 +13,6 @@ interface AgentsProps {
   market: MarketState;
   onMint: (twitterHandle?: string, nameHint?: string) => Promise<Agent | null>;
   onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number) => Promise<void>;
-  onWithdraw: (agentId: string) => Promise<void>;
   walletBalance: number;
   shouldHighlightFab?: boolean;
 }
@@ -21,7 +20,7 @@ interface AgentsProps {
 const FABRICATION_COST = 100;
 const MIN_COLLATERAL = 100;
 
-export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, walletBalance, shouldHighlightFab }) => {
+export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
   // Selection State: 'FABRICATE' or agentId
   const [selection, setSelection] = useState<string>('FABRICATE');
@@ -46,12 +45,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [chatHistory, setChatHistory] = useState<{role: 'user' | 'agent', text: string}[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Withdraw Modal State
-  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const [withdrawingAgent, setWithdrawingAgent] = useState<Agent | null>(null);
-  const [withdrawLoading, setWithdrawLoading] = useState(false);
-  const [withdrawSuccess, setWithdrawSuccess] = useState<{show: boolean; amount: number; agentName: string}>({show: false, amount: 0, agentName: ''});
 
   // Group Agents
   const { activeAgents, idleAgents, deadAgents } = useMemo(() => {
@@ -120,49 +113,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       }
       mintPromiseRef.current = null;
     }
-  };
-
-  const handleWithdrawClick = (agent: Agent) => {
-    setWithdrawingAgent(agent);
-    setWithdrawModalOpen(true);
-  };
-
-  const handleConfirmWithdraw = async () => {
-    if (!withdrawingAgent) return;
-    
-    const withdrawAmount = withdrawingAgent.balance;
-    const agentName = withdrawingAgent.name;
-    
-    setWithdrawLoading(true);
-    
-    // Simulate processing delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Close modal first
-    setWithdrawModalOpen(false);
-    
-    // Immediately clear selection to close detail view BEFORE calling onWithdraw
-    // This prevents the exited agent page from showing
-    setSelection('FABRICATE');
-    setWithdrawingAgent(null);
-    
-    // Then execute the withdraw
-    await onWithdraw(withdrawingAgent.id);
-    
-    setWithdrawLoading(false);
-    
-    // Show success toast briefly
-    setWithdrawSuccess({show: true, amount: withdrawAmount, agentName});
-    
-    // Hide success toast after delay
-    setTimeout(() => {
-      setWithdrawSuccess({show: false, amount: 0, agentName: ''});
-    }, 2000);
-  };
-
-  const handleCancelWithdraw = () => {
-    setWithdrawModalOpen(false);
-    setWithdrawingAgent(null);
   };
 
   const handleAcceptAgent = () => {
@@ -922,21 +872,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      >
                          {selectedAgent.status === 'ACTIVE' ? 'Share Status' : 'Share Results'}
                      </Button>
-                     {selectedAgent.status === 'ACTIVE' ? (
-                         <Button 
-                             onClick={() => handleWithdrawClick(selectedAgent)}
-                             className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
-                         >
-                             Withdraw & Exit
-                         </Button>
-                     ) : (
-                         <Button 
-                             onClick={() => setSelection('FABRICATE')}
-                             className="h-12 bg-slate-700 hover:bg-slate-600"
-                         >
-                             Back to List
-                         </Button>
-                     )}
+                     <Button 
+                         onClick={() => setSelection('FABRICATE')}
+                         className="h-12 bg-slate-700 hover:bg-slate-600"
+                     >
+                         Back to List
+                     </Button>
                  </div>
              </div>
          )}
@@ -959,126 +900,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
          )}
 
       </div>
-
-      {/* Withdraw Confirmation Modal */}
-      {withdrawModalOpen && withdrawingAgent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0f111a] border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-fade-in">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Wallet size={20} className="text-emerald-500" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Withdraw Funds</h3>
-                  <p className="text-xs text-slate-400">{withdrawingAgent.name}</p>
-                </div>
-              </div>
-              <button 
-                onClick={handleCancelWithdraw}
-                className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Amount Display */}
-            <div className="bg-slate-900/50 rounded-xl p-4 mb-6 border border-slate-800">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-400">Current Balance</span>
-                <span className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} $MON</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">PnL</span>
-                <span className={`text-sm font-mono font-bold ${withdrawingAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {withdrawingAgent.pnl >= 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} $MON
-                </span>
-              </div>
-              <div className="h-px bg-slate-800 my-3" />
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">To Receive</span>
-                <span className="text-2xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} $MON</span>
-              </div>
-            </div>
-
-            {/* Warning */}
-            <div className="flex items-start gap-2 mb-6 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-500/80">
-                Withdrawing will exit your agent from the arena. You can redeploy later with new collateral.
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                onClick={handleCancelWithdraw}
-                variant="secondary"
-                className="h-12"
-                disabled={withdrawLoading}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleConfirmWithdraw}
-                className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
-                disabled={withdrawLoading}
-              >
-                {withdrawLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                ) : (
-                  'Confirm Withdraw'
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Withdraw Success Toast */}
-      {withdrawSuccess.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#0f111a] border border-emerald-500/50 rounded-2xl p-8 max-w-sm w-full shadow-2xl shadow-emerald-500/20 animate-fade-in text-center">
-            {/* Success Icon */}
-            <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 size={40} className="text-emerald-500" />
-            </div>
-            
-            {/* Success Message */}
-            <h3 className="text-xl font-bold text-white mb-2">Withdrawal Successful!</h3>
-            <p className="text-slate-400 text-sm mb-6">
-              {withdrawSuccess.agentName} has exited the arena
-            </p>
-            
-            {/* Amount Display */}
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6">
-              <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">Returned to Wallet</p>
-              <p className="text-3xl font-mono font-bold text-emerald-400">
-                {withdrawSuccess.amount.toFixed(2)} $MON
-              </p>
-            </div>
-            
-            {/* Loading Bar */}
-            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full animate-[shrink_2.5s_linear_forwards]" style={{
-                animation: 'shrink 2.5s linear forwards'
-              }} />
-            </div>
-            <p className="text-xs text-slate-500 mt-2">Returning to agent list...</p>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes shrink {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-      `}</style>
 
     </div>
   );
