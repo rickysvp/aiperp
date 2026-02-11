@@ -66,14 +66,14 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     setActiveTab('DEPLOY');
   }, [selection]);
 
-  // Terminal Log Animation - 更快更专业的代码流
+  // Terminal Log Animation - 只执行一次
   useEffect(() => {
-    if (fabricationStep === 'GENERATING') {
+    if (fabricationStep === 'GENERATING' && logs.length === 0) {
         const messages = [
             "[SYSTEM] Initializing neural synthesis engine...",
             "[CORE] Loading Gemini-3 language model weights...",
             "[DATA] Scanning blockchain for personality shards...",
-            `[ANALYSIS] Market trend detected: ${market.trend} volatility`,
+            "[ANALYSIS] Market trend analysis complete",
             "[AI] Generating trading strategy matrix...",
             "[NEURAL] Constructing synaptic pathways...",
             "[AVATAR] Rendering pixel-art neural avatar...",
@@ -82,7 +82,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             "[DONE] Agent synthesis complete ✓",
         ];
         let i = 0;
-        setLogs([]);
         const interval = setInterval(() => {
             if (i < messages.length) {
                 setLogs(prev => [...prev, messages[i]]);
@@ -90,10 +89,10 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             } else {
                 clearInterval(interval);
             }
-        }, 70); // 更快的日志输出 70ms
+        }, 80);
         return () => clearInterval(interval);
     }
-  }, [fabricationStep, market.trend]);
+  }, [fabricationStep]);
 
   // Reset collateral when wallet balance changes
   useEffect(() => {

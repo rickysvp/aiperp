@@ -10,16 +10,16 @@ interface NFTRevealProps {
   onDeployNow: () => void;
 }
 
-// 策略描述映射
+// 策略描述映射 - 更详细的描述
 const strategyDescriptions: Record<string, string> = {
-  'Momentum Surfer': 'Rides market momentum with precision timing',
-  'Contrarian Alpha': 'Seeks value in oversold conditions',
-  'Scalping Ninja': 'High-frequency micro trades execution',
-  'Trend Follower': 'Follows established market trends',
-  'Mean Reversion': 'Capitalizes on price corrections',
-  'Breakout Hunter': 'Targets key resistance breakouts',
-  'Arbitrage Bot': 'Exploits price inefficiencies',
-  'Grid Trader': 'Systematic range-bound trading',
+  'Momentum Surfer': 'Identifies strong price movements and rides the wave with precise entry and exit timing. Best for trending markets.',
+  'Contrarian Alpha': 'Goes against the crowd, buying when others panic sell. Seeks undervalued assets in oversold conditions.',
+  'Scalping Ninja': 'Executes rapid-fire micro trades to capture small price movements. High frequency, tight stops, consistent gains.',
+  'Trend Follower': 'Analyzes market structure to follow established trends. Uses moving averages and breakout confirmations.',
+  'Mean Reversion': 'Capitalizes on price deviations from historical averages. Buys dips, sells rallies in ranging markets.',
+  'Breakout Hunter': 'Watches for key resistance/support levels. Enters positions when price breaks out with volume confirmation.',
+  'Arbitrage Bot': 'Exploits price differences across exchanges and markets. Risk-free profit from market inefficiencies.',
+  'Grid Trader': 'Places buy/sell orders at regular intervals. Profits from sideways market movements systematically.',
 };
 
 export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
