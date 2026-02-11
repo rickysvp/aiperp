@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Agent } from '../types';
-import { Sparkles, Rocket, Crown, AtSign, TrendingUp, TrendingDown, Brain } from 'lucide-react';
+import { Sparkles, Rocket, AtSign, TrendingUp, TrendingDown, Brain } from 'lucide-react';
 
 interface NFT3DCardProps {
   agent: Agent;
@@ -21,17 +21,54 @@ const strategyDescriptions: Record<string, string> = {
   'Grid Trader': 'Systematic range-bound trading',
 };
 
+// 稀有度颜色配置
+const rarityConfig = {
+  legendary: {
+    border: 'border-amber-500/50',
+    glow: 'from-amber-500/30 via-yellow-500/30 to-amber-500/30',
+    topBar: 'from-amber-500 via-yellow-400 to-amber-500',
+    shadow: 'shadow-amber-500/20',
+  },
+  epic: {
+    border: 'border-purple-500/50',
+    glow: 'from-purple-500/30 via-pink-500/30 to-purple-500/30',
+    topBar: 'from-purple-500 via-pink-400 to-purple-500',
+    shadow: 'shadow-purple-500/20',
+  },
+  rare: {
+    border: 'border-blue-500/50',
+    glow: 'from-blue-500/30 via-cyan-500/30 to-blue-500/30',
+    topBar: 'from-blue-500 via-cyan-400 to-blue-500',
+    shadow: 'shadow-blue-500/20',
+  },
+  common: {
+    border: 'border-[#836EF9]/40',
+    glow: 'from-[#836EF9]/30 via-[#00FF9D]/30 to-[#836EF9]/30',
+    topBar: 'from-[#836EF9] via-[#00FF9D] to-[#836EF9]',
+    shadow: 'shadow-[#836EF9]/20',
+  },
+};
+
 export const NFT3DCard: React.FC<NFT3DCardProps> = ({ agent, userName, nftNumber, minterTwitter, onDeployNow }) => {
   const [isFlipping, setIsFlipping] = useState(true);
   const [showContent, setShowContent] = useState(false);
 
+  // 根据NFT编号决定稀有度（示例逻辑）
+  const getRarity = (num: number) => {
+    if (num <= 100) return 'legendary';
+    if (num <= 500) return 'epic';
+    if (num <= 1000) return 'rare';
+    return 'common';
+  };
+
+  const rarity = getRarity(nftNumber);
+  const colors = rarityConfig[rarity];
+
   useEffect(() => {
-    // 开始翻转动画
     const flipTimer = setTimeout(() => {
       setIsFlipping(false);
     }, 1500);
 
-    // 翻转完成后显示内容
     const contentTimer = setTimeout(() => {
       setShowContent(true);
     }, 800);
@@ -48,8 +85,8 @@ export const NFT3DCard: React.FC<NFT3DCardProps> = ({ agent, userName, nftNumber
 
   return (
     <div className="relative w-full max-w-[320px] mx-auto perspective-1000">
-      {/* 背景光效 */}
-      <div className="absolute -inset-4 bg-gradient-to-r from-[#836EF9]/30 via-[#00FF9D]/30 to-[#836EF9]/30 rounded-3xl blur-2xl opacity-50 animate-pulse"></div>
+      {/* 背景光效 - 根据稀有度变色 */}
+      <div className={`absolute -inset-4 bg-gradient-to-r ${colors.glow} rounded-3xl blur-2xl opacity-50 animate-pulse`}></div>
 
       {/* 3D翻转容器 */}
       <div
@@ -59,16 +96,10 @@ export const NFT3DCard: React.FC<NFT3DCardProps> = ({ agent, userName, nftNumber
           transform: isFlipping ? 'rotateY(360deg)' : 'rotateY(0deg)',
         }}
       >
-        {/* NFT卡片主体 */}
-        <div className="relative bg-gradient-to-br from-[#13141f] via-[#0a0b14] to-[#13141f] rounded-2xl overflow-hidden border border-[#836EF9]/40 shadow-2xl">
-          {/* 顶部光条 */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#836EF9] via-[#00FF9D] to-[#836EF9]"></div>
-
-          {/* 稀有度徽章 */}
-          <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/40 px-2.5 py-1 rounded-full z-10">
-            <Crown size={12} className="text-amber-400" />
-            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Legendary</span>
-          </div>
+        {/* NFT卡片主体 - 根据稀有度变色 */}
+        <div className={`relative bg-gradient-to-br from-[#13141f] via-[#0a0b14] to-[#13141f] rounded-2xl overflow-hidden border-2 ${colors.border} ${colors.shadow} shadow-2xl`}>
+          {/* 顶部光条 - 根据稀有度变色 */}
+          <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${colors.topBar}`}></div>
 
           {/* 图像区域 */}
           <div className="p-5 pb-0">

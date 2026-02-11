@@ -174,76 +174,78 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
       {/* CENTER COLUMN: The Visual Arena & Mobile Lists */}
       <div className="lg:col-span-6 flex flex-col gap-4">
         {/* Price Header & Asset Selector */}
-        <div className="glass-panel p-4 lg:p-5 rounded-2xl flex justify-between items-end relative overflow-visible z-20">
+        <div className="glass-panel p-4 lg:p-5 rounded-2xl relative overflow-visible z-20">
             {/* Background Decor */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#836EF9] blur-[80px] opacity-20 pointer-events-none rounded-full" />
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-1 lg:mb-2">
-                  <div className="relative">
-                      <button
-                        onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
-                        className="flex items-center gap-2.5 text-slate-300 text-xs font-bold uppercase tracking-wider hover:text-white transition-colors py-2 px-4 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10"
-                      >
-                          <Activity className="w-4 h-4 text-[#836EF9]" />
-                          {selectedAsset}{t('asset_perp')}
-                          <ChevronDown size={14} />
-                      </button>
 
-                      {assetDropdownOpen && (
-                          <div className="absolute top-full left-0 mt-2 w-32 bg-[#0f111a] border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
-                              {ASSETS.map(asset => (
-                                  <button
-                                    key={asset}
-                                    onClick={() => {
-                                        onAssetChange(asset);
-                                        setAssetDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors ${selectedAsset === asset ? 'text-[#836EF9]' : 'text-slate-400'}`}
-                                  >
-                                      {asset}
-                                  </button>
-                              ))}
-                          </div>
-                      )}
-                  </div>
+            <div className="relative z-10 flex items-center justify-between">
+              {/* Left: Asset Selector & Price */}
+              <div>
+                <div className="relative mb-1">
+                    <button
+                      onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
+                      className="flex items-center gap-2 text-slate-400 text-[11px] font-bold uppercase tracking-wider hover:text-white transition-colors"
+                    >
+                        <Activity className="w-3.5 h-3.5 text-[#836EF9]" />
+                        {selectedAsset}{t('asset_perp')}
+                        <ChevronDown size={12} />
+                    </button>
+
+                    {assetDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-32 bg-[#0f111a] border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
+                            {ASSETS.map(asset => (
+                                <button
+                                  key={asset}
+                                  onClick={() => {
+                                      onAssetChange(asset);
+                                      setAssetDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors ${selectedAsset === asset ? 'text-[#836EF9]' : 'text-slate-400'}`}
+                                >
+                                    {asset}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="text-2xl lg:text-4xl font-mono font-bold tracking-tighter text-white">
+                  ${market.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
               </div>
 
-              <div className="text-3xl lg:text-5xl font-mono font-bold tracking-tighter text-white">
-                ${market.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {/* Right: Mini Chart & Trend */}
+              <div className="flex items-center gap-4">
+                 <div className="h-[36px] w-[70px] lg:h-[48px] lg:w-[100px]">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={market.history}>
+                          <defs>
+                          <linearGradient id="miniChart" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'} stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'} stopOpacity={0}/>
+                          </linearGradient>
+                          </defs>
+                          <YAxis domain={['auto', 'auto']} hide />
+                          <Area
+                          type="monotone"
+                          dataKey="price"
+                          stroke={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'}
+                          strokeWidth={1.5}
+                          fill="url(#miniChart)"
+                          isAnimationActive={false}
+                          />
+                      </AreaChart>
+                   </ResponsiveContainer>
+                 </div>
+                 <div className="text-right">
+                   <span className={`block text-sm lg:text-base font-mono font-bold ${market.lastChangePct >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
+                     {market.lastChangePct >= 0 ? '+' : ''}{market.lastChangePct.toFixed(2)}%
+                   </span>
+                   <span className={`text-[10px] font-bold tracking-wider uppercase ${market.trend === 'UP' ? 'text-[#00FF9D]/70' : market.trend === 'DOWN' ? 'text-[#FF0055]/70' : 'text-slate-500'}`}>
+                     {market.trend === 'UP' ? t('bullish') : market.trend === 'DOWN' ? t('bearish') : t('flat')}
+                   </span>
+                 </div>
               </div>
-            </div>
-
-            <div className="relative z-10 text-right flex flex-col items-end gap-2">
-               <div className="h-[40px] w-[80px] lg:h-[60px] lg:w-[120px]">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={market.history}>
-                        <defs>
-                        <linearGradient id="miniChart" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'} stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'} stopOpacity={0}/>
-                        </linearGradient>
-                        </defs>
-                        <YAxis domain={['auto', 'auto']} hide />
-                        <Area 
-                        type="monotone" 
-                        dataKey="price" 
-                        stroke={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'} 
-                        strokeWidth={2}
-                        fill="url(#miniChart)" 
-                        isAnimationActive={false}
-                        />
-                    </AreaChart>
-                 </ResponsiveContainer>
-               </div>
-               <div className="flex items-center gap-2">
-                 <span className={`text-xs lg:text-sm px-2 py-1 rounded-md font-bold tracking-wider bg-black/40 border ${market.lastChangePct >= 0 ? 'border-[#00FF9D]/30 text-[#00FF9D] shadow-[0_0_10px_rgba(0,255,157,0.2)]' : 'border-[#FF0055]/30 text-[#FF0055] shadow-[0_0_10px_rgba(255,0,85,0.2)]'}`}>
-                   {market.lastChangePct >= 0 ? '▲' : '▼'} {Math.abs(market.lastChangePct).toFixed(2)}%
-                 </span>
-                 <p className={`text-[10px] lg:text-xs font-bold tracking-widest ${market.trend === 'UP' ? 'text-[#00FF9D]' : market.trend === 'DOWN' ? 'text-[#FF0055]' : 'text-slate-400'}`}>
-                   {market.trend === 'UP' ? t('bullish') : market.trend === 'DOWN' ? t('bearish') : t('flat')}
-                 </p>
-               </div>
             </div>
         </div>
 
