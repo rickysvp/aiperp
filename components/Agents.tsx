@@ -440,8 +440,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in overflow-y-auto">
                          <NFTReveal 
                             agent={generatedAgent}
-                            onAddToFleet={handleAcceptAgent}
-                            onCreateAnother={() => {setFabricationStep('CONFIG'); setGeneratedAgent(null);}}
+                            onDeployNow={handleAcceptAgent}
                          />
                      </div>
                  )}
