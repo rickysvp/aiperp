@@ -25,8 +25,20 @@ const MIN_COLLATERAL = 100;
 
 export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, onAddAgent, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
-  // Selection State: 'FABRICATE' or agentId
-  const [selection, setSelection] = useState<string>('FABRICATE');
+  // Check if user has any agents
+  const userAgents = useMemo(() => agents.filter(a => a.owner === 'USER'), [agents]);
+  const hasAgents = userAgents.length > 0;
+
+  // Selection State: 'FABRICATE' or agentId or '' (dashboard)
+  // Default to dashboard if user has agents, otherwise show FABRICATE page
+  const [selection, setSelection] = useState<string>(hasAgents ? '' : 'FABRICATE');
+
+  // Update selection when agents change (first agent created)
+  useEffect(() => {
+    if (hasAgents && selection === 'FABRICATE') {
+      setSelection('');
+    }
+  }, [hasAgents, selection]);
   
   // Mobile Navigation State (List vs Detail)
   const [showDetailOnMobile, setShowDetailOnMobile] = useState(false);
@@ -125,8 +137,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       if (generatedAgent) {
           // Add agent to list first
           onAddAgent(generatedAgent);
-          // 铸造完成后显示统计概览页面
-          setSelection('');
+          // Then select it for deployment
+          setSelection(generatedAgent.id);
           setFabricationStep('IDLE');
           setGeneratedAgent(null);
           setNameHint('');
@@ -262,17 +274,16 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                        <span className="truncate max-w-[80px]">{agent.strategy}</span>
-                        <span className="text-slate-600">|</span>
-                        <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
+                    <div className="flex items-center justify-between text-[10px]">
+                        <div className="flex items-center gap-2 text-slate-500">
+                            <span className="truncate max-w-[80px]">{agent.strategy}</span>
+                            <span className="text-slate-600">|</span>
+                            <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
+                        </div>
                         {agent.status === 'ACTIVE' && agent.balance > 0 && (
-                            <>
-                                <span className="text-slate-600">|</span>
-                                <span className={agent.pnl / agent.balance >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}>
-                                    {agent.pnl / agent.balance >= 0 ? '+' : ''}{(agent.pnl / agent.balance * 100).toFixed(1)}%
-                                </span>
-                            </>
+                            <span className={agent.pnl / agent.balance >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}>
+                                {agent.pnl / agent.balance >= 0 ? '+' : ''}{(agent.pnl / agent.balance * 100).toFixed(1)}%
+                            </span>
                         )}
                     </div>
                 </div>
