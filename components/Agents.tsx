@@ -471,15 +471,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
          {/* UNIFIED AGENT DETAIL PAGE - All statuses in one module */}
          {selectedAgent && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
-                 {/* Back Button */}
-                 <button
-                     onClick={() => setSelection('FABRICATE')}
-                     className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors w-fit"
-                 >
-                     <ArrowLeft size={18} />
-                     <span className="text-sm">Back to Agents</span>
-                 </button>
-
                  {/* Agent Header Card - Different styles based on status */}
                  <div className={`rounded-2xl p-4 lg:p-6 mb-4 border ${
                      selectedAgent.status === 'LIQUIDATED'
@@ -798,6 +789,72 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          >
                              {walletBalance < deployCollateral ? 'Insufficient Balance' : `Deploy with ${deployCollateral} $MON`}
                          </Button>
+                     </div>
+                 )}
+
+                 {/* ACTIVE Agent: Strategy Chat Section */}
+                 {selectedAgent.status === 'ACTIVE' && (
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
+                         <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                             <MessageSquare size={18} className="text-[#00FF9D]" />
+                             {t('neural_link')}
+                         </h3>
+
+                         {/* Chat History */}
+                         <div className="bg-black/40 rounded-xl border border-slate-800 p-3 mb-3 h-32 overflow-y-auto custom-scrollbar">
+                             {chatHistory.length === 0 ? (
+                                 <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
+                                     <Bot size={24} className="mb-1" />
+                                     <p className="text-xs">{t('chat_placeholder')}</p>
+                                 </div>
+                             ) : (
+                                 <div className="space-y-2">
+                                     {chatHistory.map((msg, i) => (
+                                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                             <div className={`max-w-[80%] rounded-lg px-3 py-1.5 text-xs ${
+                                                 msg.role === 'user'
+                                                 ? 'bg-[#836EF9]/20 border border-[#836EF9]/40 text-white'
+                                                 : 'bg-slate-800 border border-slate-700 text-slate-200 font-mono'
+                                             }`}>
+                                                 {msg.text}
+                                             </div>
+                                         </div>
+                                     ))}
+                                     {isChatLoading && (
+                                         <div className="flex justify-start">
+                                             <div className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+                                                 <div className="w-1.5 h-1.5 bg-[#00FF9D] rounded-full animate-bounce"></div>
+                                                 <div className="w-1.5 h-1.5 bg-[#00FF9D] rounded-full animate-bounce delay-75"></div>
+                                                 <div className="w-1.5 h-1.5 bg-[#00FF9D] rounded-full animate-bounce delay-150"></div>
+                                                 <span className="text-[10px] text-[#00FF9D] ml-1">{t('agent_typing')}</span>
+                                             </div>
+                                         </div>
+                                     )}
+                                 </div>
+                             )}
+                         </div>
+
+                         {/* Input Area */}
+                         <div className="flex gap-2">
+                             <input
+                                 type="text"
+                                 value={chatInput}
+                                 onChange={(e) => setChatInput(e.target.value)}
+                                 onKeyDown={(e) => e.key === 'Enter' && handleStrategyChat()}
+                                 placeholder={t('chat_placeholder')}
+                                 className="flex-1 bg-black border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-[#00FF9D] focus:outline-none transition-colors"
+                             />
+                             <button
+                                 onClick={handleStrategyChat}
+                                 disabled={isChatLoading || !chatInput.trim()}
+                                 className="px-3 bg-[#00FF9D] hover:bg-[#00cc7d] text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                             >
+                                 <Send size={16} />
+                             </button>
+                         </div>
+                         <p className="text-[10px] text-slate-600 mt-2 text-center">
+                             {t('current_strategy')}: {selectedAgent.strategy}
+                         </p>
                      </div>
                  )}
 
