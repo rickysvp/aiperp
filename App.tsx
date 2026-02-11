@@ -149,8 +149,15 @@ const AppContent: React.FC = () => {
 
     // Initialize System Bots
     const systemBots: Agent[] = [];
-    for (let i = 0; i < 200; i++) { 
+    for (let i = 0; i < 200; i++) {
         const dir = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+        const leverage = Math.floor(Math.random() * 19) + 1;
+        const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
+            if (lev <= 3) return 'LOW';
+            if (lev <= 8) return 'MEDIUM';
+            if (lev <= 15) return 'HIGH';
+            return 'EXTREME';
+        };
         systemBots.push({
             id: uuidv4(),
             owner: 'SYSTEM',
@@ -160,13 +167,14 @@ const AppContent: React.FC = () => {
             strategy: "Swarm",
             avatarSeed: Math.random().toString(36),
             direction: dir,
-            leverage: Math.floor(Math.random() * 19) + 1,
+            leverage: leverage,
             balance: MINT_COST + (Math.random() * 500),
             pnl: 0,
             pnlHistory: [],
             wins: 0,
             losses: 0,
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            riskLevel: getRiskLevel(leverage)
         });
     }
     setAgents(systemBots);
@@ -449,6 +457,14 @@ const AppContent: React.FC = () => {
       // Just pass the user name, let Gemini generate bio/strategy but we force the name
       const persona = await generateAgentPersona('AUTO', userInputName);
       
+      // Calculate risk level based on leverage (default 1 = LOW)
+      const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
+        if (lev <= 3) return 'LOW';
+        if (lev <= 8) return 'MEDIUM';
+        if (lev <= 15) return 'HIGH';
+        return 'EXTREME';
+      };
+
       const newAgent: Agent = {
         id: uuidv4(),
         owner: 'USER',
@@ -459,13 +475,14 @@ const AppContent: React.FC = () => {
         strategy: persona.strategy,
         avatarSeed: finalName, // Use name as seed for consistent pixel art
         direction: 'LONG', // Default, will be set on deploy
-        leverage: 1, 
-        balance: 0, 
+        leverage: 1,
+        balance: 0,
         pnl: 0,
         pnlHistory: [],
         wins: 0,
         losses: 0,
         status: 'IDLE',
+        riskLevel: getRiskLevel(1),
         twitterHandle: twitterHandle
       };
 
@@ -522,13 +539,20 @@ const AppContent: React.FC = () => {
     
     setAgents(prev => prev.map(agent => {
         if (agent.id === agentId) {
+            const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
+                if (lev <= 3) return 'LOW';
+                if (lev <= 8) return 'MEDIUM';
+                if (lev <= 15) return 'HIGH';
+                return 'EXTREME';
+            };
             return {
                 ...agent,
                 status: 'ACTIVE',
                 direction: direction,
                 leverage: leverage,
                 balance: collateral,
-                pnl: 0 
+                pnl: 0,
+                riskLevel: getRiskLevel(leverage)
             };
         }
         return agent;

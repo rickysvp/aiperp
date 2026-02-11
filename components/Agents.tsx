@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Agent, Direction, MarketState } from '../types';
 import { Button } from './Button';
-import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain, Sparkles, Rocket, X, Wallet } from 'lucide-react';
+import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain, Sparkles, Rocket, X, Wallet, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { refineAgentStrategy } from '../services/kimiService';
 import { AgentCard } from './AgentCard';
@@ -977,18 +977,60 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
         </div>
       )}
 
-      {/* Withdraw Success Toast */}
+      {/* Withdraw Success Toast - Enhanced with Transfer Animation */}
       {withdrawSuccess.show && (
         <div className="fixed top-4 right-4 z-50 animate-fade-in">
-          <div className="bg-[#0f111a] border border-emerald-500/50 rounded-xl p-4 shadow-2xl shadow-emerald-500/20 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle2 size={20} className="text-emerald-500" />
+          <div className="bg-[#0f111a] border border-emerald-500/50 rounded-xl p-4 shadow-2xl shadow-emerald-500/20 min-w-[320px]">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
+                <CheckCircle2 size={20} className="text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">{t('withdraw_success')}</p>
+                <p className="text-xs text-slate-400">{withdrawSuccess.agentName}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-white">{t('withdraw_success')}</p>
-              <p className="text-xs text-slate-400">
-                {withdrawSuccess.agentName} exited with {withdrawSuccess.amount.toFixed(2)} $MON
-              </p>
+
+            {/* Transfer Animation */}
+            <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
+              <div className="flex items-center justify-between">
+                {/* From */}
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mb-1">
+                    <Bot size={14} className="text-slate-400" />
+                  </div>
+                  <span className="text-[10px] text-slate-500">Agent</span>
+                </div>
+
+                {/* Transfer Arrow & Amount */}
+                <div className="flex-1 flex flex-col items-center px-2">
+                  <div className="relative w-full h-6 flex items-center justify-center">
+                    {/* Animated arrow */}
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full h-0.5 bg-gradient-to-r from-slate-600 via-emerald-500 to-emerald-400"></div>
+                    </div>
+                    <ArrowRight size={16} className="text-emerald-400 relative z-10 animate-bounce" />
+                  </div>
+                  <div className="text-emerald-400 font-mono font-bold text-sm animate-pulse">
+                    +{withdrawSuccess.amount.toFixed(2)} $MON
+                  </div>
+                </div>
+
+                {/* To */}
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-1 animate-pulse">
+                    <Wallet size={14} className="text-emerald-400" />
+                  </div>
+                  <span className="text-[10px] text-emerald-400">Wallet</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Balance Update */}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500">Wallet Balance Updated</span>
+              <span className="text-emerald-400 font-mono">+{withdrawSuccess.amount.toFixed(2)} $MON</span>
             </div>
           </div>
         </div>
