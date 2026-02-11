@@ -40,12 +40,14 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   // Default to dashboard if user has agents, otherwise show FABRICATE page
   const [selection, setSelection] = useState<string>(hasAgents ? '' : 'FABRICATE');
 
-  // Update selection when agents change (first agent created)
+  // Update selection when first agent is created (from FABRICATE to dashboard)
   useEffect(() => {
+    // Only run when hasAgents changes from false to true, not on every selection change
     if (hasAgents && selection === 'FABRICATE') {
       setSelection('');
     }
-  }, [hasAgents, selection]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAgents]);
   
   // Mobile Navigation State (List vs Detail)
   const [showDetailOnMobile, setShowDetailOnMobile] = useState(false);
