@@ -6,18 +6,18 @@ interface MintingLoaderProps {
 }
 
 const CODE_SNIPPETS = [
-  { cmd: 'npm install ai-agent@latest', output: '✓ Package installed (42ms)' },
+  { cmd: 'npm install ai-agent@latest', output: '' },
   { cmd: 'import { NeuralAgent } from "@aiperp/core"', output: '' },
-  { cmd: 'const agent = new NeuralAgent()', output: '✓ Instance created' },
-  { cmd: 'await agent.loadModel("gemini-3-pro")', output: '✓ Model loaded (2.3GB)' },
-  { cmd: 'agent.configure({ strategy: "adaptive" })', output: '✓ Strategy configured' },
-  { cmd: 'const marketData = await fetchMarketAnalysis()', output: '✓ Data fetched (1,247 candles)' },
-  { cmd: 'agent.train(marketData)', output: '✓ Training complete (98.7% accuracy)' },
-  { cmd: 'const avatar = generatePixelAvatar()', output: '✓ Avatar rendered' },
-  { cmd: 'agent.encryptIdentity()', output: '✓ Identity encrypted (AES-256)' },
-  { cmd: 'await agent.deployToBlockchain()', output: '✓ Smart contract deployed' },
-  { cmd: 'const nft = await mintAgentNFT(agent)', output: '✓ NFT minted #0x7a3f...' },
-  { cmd: 'console.log("Agent ready for battle!")', output: 'Agent ready for battle!' },
+  { cmd: 'const agent = new NeuralAgent()', output: '' },
+  { cmd: 'await agent.loadModel("gemini-3-pro")', output: '' },
+  { cmd: 'agent.configure({ strategy: "adaptive" })', output: '' },
+  { cmd: 'const marketData = await fetchMarketAnalysis()', output: '' },
+  { cmd: 'agent.train(marketData)', output: '' },
+  { cmd: 'const avatar = generatePixelAvatar()', output: '' },
+  { cmd: 'agent.encryptIdentity()', output: '' },
+  { cmd: 'await agent.deployToBlockchain()', output: '' },
+  { cmd: 'const nft = await mintAgentNFT(agent)', output: '' },
+  { cmd: 'console.log("Agent ready for battle!")', output: '' },
 ];
 
 export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
