@@ -125,9 +125,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       if (generatedAgent) {
           // Add agent to list first
           onAddAgent(generatedAgent);
-          // Then select it
-          setSelection(generatedAgent.id);
-          // 直接进入部署页面，不清空状态
+          // 铸造完成后显示统计概览页面
+          setSelection('');
           setFabricationStep('IDLE');
           setGeneratedAgent(null);
           setNameHint('');
