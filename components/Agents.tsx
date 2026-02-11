@@ -809,7 +809,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
          {selectedAgent && selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0) && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
                  {/* Agent Header Card */}
-                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-6">
+                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                          {/* Avatar */}
                          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg shrink-0 mx-auto lg:mx-0">
@@ -844,6 +844,26 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
                              </p>
                          </div>
+                     </div>
+                 </div>
+
+                 {/* Performance Stats */}
+                 <div className="grid grid-cols-3 gap-3 mb-4">
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3 text-center">
+                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Wins</p>
+                         <p className="text-xl font-bold text-emerald-400">{selectedAgent.wins}</p>
+                     </div>
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3 text-center">
+                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Losses</p>
+                         <p className="text-xl font-bold text-rose-400">{selectedAgent.losses}</p>
+                     </div>
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3 text-center">
+                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
+                         <p className="text-xl font-bold text-[#836EF9]">
+                             {selectedAgent.wins + selectedAgent.losses > 0 
+                                 ? Math.round((selectedAgent.wins / (selectedAgent.wins + selectedAgent.losses)) * 100) 
+                                 : 0}%
+                         </p>
                      </div>
                  </div>
 
