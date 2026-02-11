@@ -849,9 +849,18 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </div>
          )}
 
-         {/* SCENARIO D: EXITED (IDLE after active) - Show Deploy Page */}
+         {/* SCENARIO D: EXITED (IDLE after active) - Show Agent Summary Page */}
          {selectedAgent && selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0) && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
+                 {/* Back Button */}
+                 <button 
+                     onClick={() => setSelection('FABRICATE')}
+                     className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors w-fit"
+                 >
+                     <ArrowLeft size={18} />
+                     <span className="text-sm">Back to Agents</span>
+                 </button>
+
                  {/* Agent Header Card */}
                  <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
@@ -875,35 +884,41 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
                                      {selectedAgent.strategy}
                                  </span>
-                                 <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg text-xs border border-emerald-500/20 font-medium">
-                                     Exited Arena
+                                 <span className="px-3 py-1.5 bg-slate-600/20 text-slate-400 rounded-lg text-xs border border-slate-600/30 font-medium">
+                                     Idle
                                  </span>
                              </div>
                          </div>
                          
-                         {/* PnL Display */}
-                         <div className="text-center lg:text-right shrink-0">
-                             <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">Final PnL</p>
-                             <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                 {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
-                             </p>
+                         {/* Final Stats */}
+                         <div className="text-center lg:text-right shrink-0 space-y-2">
+                             <div>
+                                 <p className="text-xs text-slate-500 uppercase tracking-widest">Final PnL</p>
+                                 <p className={`text-2xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                     {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
+                                 </p>
+                             </div>
+                             <div>
+                                 <p className="text-xs text-slate-500 uppercase tracking-widest">Returned</p>
+                                 <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
+                             </div>
                          </div>
                      </div>
                  </div>
 
                  {/* Performance Stats */}
                  <div className="grid grid-cols-3 gap-3 mb-4">
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3 text-center">
-                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Wins</p>
-                         <p className="text-xl font-bold text-emerald-400">{selectedAgent.wins}</p>
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Wins</p>
+                         <p className="text-2xl font-bold text-emerald-400">{selectedAgent.wins}</p>
                      </div>
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3 text-center">
-                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Losses</p>
-                         <p className="text-xl font-bold text-rose-400">{selectedAgent.losses}</p>
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Losses</p>
+                         <p className="text-2xl font-bold text-rose-400">{selectedAgent.losses}</p>
                      </div>
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3 text-center">
-                         <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
-                         <p className="text-xl font-bold text-[#836EF9]">
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
+                         <p className="text-2xl font-bold text-[#836EF9]">
                              {selectedAgent.wins + selectedAgent.losses > 0 
                                  ? Math.round((selectedAgent.wins / (selectedAgent.wins + selectedAgent.losses)) * 100) 
                                  : 0}%
@@ -911,95 +926,48 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      </div>
                  </div>
 
-                 {/* Deploy Configuration */}
-                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 flex-1">
-                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                         <Rocket size={20} className="text-[#00FF9D]" />
-                         Redeploy to Arena
+                 {/* Agent Configuration Summary */}
+                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
+                     <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                         <Brain size={18} className="text-[#836EF9]" />
+                         Agent Configuration
                      </h3>
                      
-                     {/* Direction Selection */}
-                     <div className="mb-6">
-                         <label className="text-xs text-slate-500 uppercase tracking-wider mb-3 block">Direction</label>
-                         <div className="grid grid-cols-3 gap-2">
-                             {(['AUTO', 'LONG', 'SHORT'] as Direction[]).map((dir) => (
-                                 <button
-                                     key={dir}
-                                     onClick={() => setDeployDirection(dir)}
-                                     className={`py-3 px-4 rounded-xl text-sm font-bold transition-all ${
-                                         deployDirection === dir
-                                             ? dir === 'LONG' ? 'bg-emerald-500 text-black' : dir === 'SHORT' ? 'bg-rose-500 text-white' : 'bg-[#836EF9] text-white'
-                                             : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                     }`}
-                                 >
-                                     {dir}
-                                 </button>
-                             ))}
+                     <div className="grid grid-cols-2 gap-4">
+                         <div className="bg-slate-900/50 rounded-lg p-3">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Strategy</p>
+                             <p className="text-sm font-bold text-white">{selectedAgent.strategy}</p>
+                         </div>
+                         <div className="bg-slate-900/50 rounded-lg p-3">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Risk Level</p>
+                             <p className="text-sm font-bold text-white">{selectedAgent.riskLevel}</p>
+                         </div>
+                         <div className="bg-slate-900/50 rounded-lg p-3">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
+                             <p className="text-sm font-bold text-slate-400">Exited Arena</p>
+                         </div>
+                         <div className="bg-slate-900/50 rounded-lg p-3">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
+                             <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
                          </div>
                      </div>
-                     
-                     {/* Leverage Slider */}
-                     <div className="mb-6">
-                         <div className="flex justify-between items-center mb-3">
-                             <label className="text-xs text-slate-500 uppercase tracking-wider">Leverage</label>
-                             <span className="text-lg font-mono font-bold text-[#00FF9D]">{deployLeverage}X</span>
-                         </div>
-                         <input
-                             type="range"
-                             min="1"
-                             max="100"
-                             value={deployLeverage}
-                             onChange={(e) => setDeployLeverage(Number(e.target.value))}
-                             className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#00FF9D]"
-                         />
-                         <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                             <span>1X</span>
-                             <span>50X</span>
-                             <span>100X</span>
-                         </div>
-                     </div>
-                     
-                     {/* Collateral Input */}
-                     <div className="mb-6">
-                         <div className="flex justify-between items-center mb-3">
-                             <label className="text-xs text-slate-500 uppercase tracking-wider">Collateral</label>
-                             <span className="text-xs text-slate-500">Balance: {walletBalance} $MON</span>
-                         </div>
-                         <div className="relative">
-                             <input
-                                 type="number"
-                                 value={deployCollateral}
-                                 onChange={(e) => setDeployCollateral(Math.max(0, Number(e.target.value)))}
-                                 className="w-full bg-black border border-slate-700 rounded-xl px-4 py-3 text-white font-mono focus:border-[#00FF9D] focus:outline-none transition-colors"
-                             />
-                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$MON</span>
-                         </div>
-                     </div>
-                     
-                     {/* Deploy Button */}
-                     <Button
-                         onClick={() => handleDeployClick(selectedAgent.id)}
-                         disabled={deployCollateral < 50 || deployCollateral > walletBalance}
-                         className="w-full h-14 text-base uppercase tracking-wider bg-gradient-to-r from-[#836EF9] to-[#00FF9D] text-black font-bold hover:opacity-90 disabled:opacity-50"
+                 </div>
+
+                 {/* Actions */}
+                 <div className="mt-auto grid grid-cols-2 gap-3">
+                     <Button 
+                         onClick={() => handleSocialShare(selectedAgent)} 
+                         variant="secondary"
+                         className="h-12"
                      >
-                         <Rocket size={18} className="mr-2" />
-                         Deploy to Arena
+                         Share Results
                      </Button>
-                     
-                     {deployCollateral < 50 && (
-                         <p className="text-xs text-rose-500 mt-2 text-center">Minimum collateral is 50 $MON</p>
-                     )}
-                     
-                     {/* Share Button */}
-                     <div className="mt-4 flex gap-2">
-                         <Button 
-                             onClick={() => handleSocialShare(selectedAgent)} 
-                             variant="secondary"
-                             className="flex-1 h-12 text-sm"
-                         >
-                             Share Results
-                         </Button>
-                     </div>
+                     <Button 
+                         onClick={() => setSelection('FABRICATE')}
+                         className="h-12 bg-slate-700 hover:bg-slate-600"
+                     >
+                         Back to List
+                     </Button>
                  </div>
              </div>
          )}
