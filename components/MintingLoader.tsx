@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, CheckCircle2 } from 'lucide-react';
 
 interface MintingLoaderProps {
@@ -26,54 +26,75 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
   const [isComplete, setIsComplete] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const onCompleteRef = useRef(onComplete);
+  const isRunningRef = useRef(false);
 
-  const typeLine = useCallback(async (lineIndex: number) => {
-    if (lineIndex >= CODE_SNIPPETS.length) {
-      setIsComplete(true);
-      setTimeout(() => onComplete?.(), 800);
-      return;
-    }
-
-    const snippet = CODE_SNIPPETS[lineIndex];
-    setCurrentLine(lineIndex);
-    
-    // Add new line with typing status
-    setDisplayedLines(prev => [...prev, { cmd: '', output: '', status: 'typing' }]);
-
-    // Type command character by character
-    for (let i = 0; i <= snippet.cmd.length; i++) {
-      await new Promise(r => setTimeout(r, 30 + Math.random() * 40));
-      setDisplayedLines(prev => {
-        const newLines = [...prev];
-        newLines[lineIndex] = { 
-          ...newLines[lineIndex], 
-          cmd: snippet.cmd.slice(0, i),
-          status: 'typing'
-        };
-        return newLines;
-      });
-    }
-
-    // Show output after a brief pause
-    await new Promise(r => setTimeout(r, 200));
-    
-    setDisplayedLines(prev => {
-      const newLines = [...prev];
-      newLines[lineIndex] = { 
-        cmd: snippet.cmd, 
-        output: snippet.output,
-        status: 'done'
-      };
-      return newLines;
-    });
-
-    // Move to next line
-    setTimeout(() => typeLine(lineIndex + 1), 150);
+  // Keep onComplete ref up to date
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Main typing animation effect
   useEffect(() => {
+    if (isRunningRef.current) return;
+    isRunningRef.current = true;
+
+    const typeLine = async (lineIndex: number) => {
+      if (lineIndex >= CODE_SNIPPETS.length) {
+        setIsComplete(true);
+        setTimeout(() => {
+          onCompleteRef.current?.();
+        }, 800);
+        return;
+      }
+
+      const snippet = CODE_SNIPPETS[lineIndex];
+      setCurrentLine(lineIndex);
+      
+      // Add new line with typing status
+      setDisplayedLines(prev => [...prev, { cmd: '', output: '', status: 'typing' }]);
+
+      // Type command character by character
+      for (let i = 0; i <= snippet.cmd.length; i++) {
+        await new Promise(r => setTimeout(r, 30 + Math.random() * 40));
+        setDisplayedLines(prev => {
+          const newLines = [...prev];
+          if (newLines[lineIndex]) {
+            newLines[lineIndex] = { 
+              ...newLines[lineIndex], 
+              cmd: snippet.cmd.slice(0, i),
+              status: 'typing'
+            };
+          }
+          return newLines;
+        });
+      }
+
+      // Show output after a brief pause
+      await new Promise(r => setTimeout(r, 200));
+      
+      setDisplayedLines(prev => {
+        const newLines = [...prev];
+        if (newLines[lineIndex]) {
+          newLines[lineIndex] = { 
+            cmd: snippet.cmd, 
+            output: snippet.output,
+            status: 'done'
+          };
+        }
+        return newLines;
+      });
+
+      // Move to next line
+      setTimeout(() => typeLine(lineIndex + 1), 150);
+    };
+
     typeLine(0);
-  }, [typeLine]);
+
+    return () => {
+      isRunningRef.current = false;
+    };
+  }, []);
 
   // Cursor blink effect
   useEffect(() => {
@@ -95,11 +116,11 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
   return (
     <div className="relative w-full max-w-lg mx-auto h-full flex flex-col items-center justify-center p-6">
       {/* Background Matrix Effect */}
-      <div className="absolute inset-0 overflow-hidden opacity-5">
+      <div className="absolute inset-0 overflow-hidden opacity-5 pointer-events-none">
         <div className="absolute inset-0 font-mono text-[8px] text-[#00FF9D] leading-tight whitespace-pre-wrap break-all">
-          {Array.from({ length: 50 }).map((_, i) => (
+          {Array.from({ length: 30 }).map((_, i) => (
             <div key={i} className="animate-pulse" style={{ animationDelay: `${i * 0.1}s` }}>
-              {'01'.repeat(100)}
+              {'01'.repeat(80)}
             </div>
           ))}
         </div>
@@ -144,7 +165,8 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
         {/* Terminal Content */}
         <div 
           ref={containerRef}
-          className="p-4 h-[280px] overflow-y-auto font-mono text-xs space-y-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+          className="p-4 h-[280px] overflow-y-auto font-mono text-xs space-y-1"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}
         >
           {/* Welcome Message */}
           <div className="text-slate-500 mb-3">
@@ -160,7 +182,7 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
                 <span className="text-slate-400 shrink-0">~</span>
                 <span className="text-white break-all">
                   {line.cmd}
-                  {idx === currentLine && line.status === 'typing' && (
+                  {idx === currentLine && line.status === 'typing' && !isComplete && (
                     <span 
                       className={`inline-block w-2 h-4 bg-[#00FF9D] ml-0.5 align-middle ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}
                     />
