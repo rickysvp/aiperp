@@ -259,7 +259,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                         <h4 className={`text-xs font-bold font-display truncate ${selection === agent.id ? 'text-white' : 'text-slate-300'}`}>{agent.name}</h4>
                         {agent.status === 'ACTIVE' && (
                             <span className={`text-[10px] font-mono ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)}
+                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} $MON
                             </span>
                         )}
                     </div>
@@ -267,6 +267,14 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                         <span className="truncate max-w-[80px]">{agent.strategy}</span>
                         <span className="text-slate-600">|</span>
                         <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
+                        {agent.status === 'ACTIVE' && agent.balance > 0 && (
+                            <>
+                                <span className="text-slate-600">|</span>
+                                <span className={agent.pnl / agent.balance >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}>
+                                    {agent.pnl / agent.balance >= 0 ? '+' : ''}{(agent.pnl / agent.balance * 100).toFixed(1)}%
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

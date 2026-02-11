@@ -29,8 +29,8 @@ export const translations = {
     asset_perp: "-USD PERP",
 
     // Agents
-    my_fleet: "MY FLEET",
-    new_fabrication: "New Fabrication",
+    my_fleet: "MY AGENTS",
+    new_fabrication: "Mint a New Agent",
     deployed: "Deployed",
     awaiting_orders: "Awaiting Orders",
     decommissioned: "Decommissioned",
@@ -278,8 +278,8 @@ export const translations = {
     plundered: "已掠夺",
     asset_perp: "-USD 永续合约",
 
-    my_fleet: "我的舰队",
-    new_fabrication: "制造新特工",
+    my_fleet: "我的特工",
+    new_fabrication: "铸造新特工",
     deployed: "已部署",
     awaiting_orders: "待命",
     decommissioned: "已退役",
