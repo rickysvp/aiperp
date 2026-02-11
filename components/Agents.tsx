@@ -763,99 +763,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </div>
          )}
 
-         {/* SCENARIO C: ACTIVE MONITOR (LIVE AGENT) */}
-         {selectedAgent && selectedAgent.status === 'ACTIVE' && (
-             <div className="flex-1 flex flex-col p-4 lg:p-8 relative z-10 animate-fade-in overflow-y-auto">
-                 {/* Top Status Bar - Reverted to Standard Layout */}
-                 <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
-                     <div className="flex items-center gap-4">
-                         <div className="relative">
-                             <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-16 h-16 rounded-lg border border-white/20" />
-                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#00FF9D] border-2 border-[#050508] rounded-full animate-pulse" />
-                         </div>
-                         <div>
-                             <h2 className="text-xl lg:text-2xl font-display font-bold text-white tracking-wide">{selectedAgent.name}</h2>
-                             <div className="flex items-center gap-3 mt-1">
-                                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${selectedAgent.direction === 'LONG' ? 'bg-[#00FF9D]/20 text-[#00FF9D]' : selectedAgent.direction === 'SHORT' ? 'bg-[#FF0055]/20 text-[#FF0055]' : 'bg-[#836EF9]/20 text-[#836EF9]'}`}>
-                                     {selectedAgent.direction} {selectedAgent.leverage}X
-                                 </span>
-                                 <span className="text-xs text-slate-500 font-mono">ID: {selectedAgent.id.slice(0,8)}</span>
-                             </div>
-                         </div>
-                     </div>
-                     <div className="text-right">
-                         <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">{t('live_pnl')}</p>
-                         <p className={`text-2xl lg:text-4xl font-mono font-bold tracking-tighter ${selectedAgent.pnl >= 0 ? 'text-[#00FF9D] glow-text-green' : 'text-[#FF0055] glow-text-red'}`}>
-                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)}
-                         </p>
-                     </div>
-                 </div>
-
-                 {/* Main Telemetry */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                     <div className="bg-[#0f111a] p-6 rounded-2xl border border-slate-800 relative overflow-hidden group">
-                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <Activity size={64} />
-                         </div>
-                         <p className="text-xs text-slate-500 uppercase font-bold mb-2">{t('health_collateral')}</p>
-                         <div className="flex items-baseline gap-2 mb-3">
-                             <span className="text-2xl font-mono font-bold text-white">{selectedAgent.balance.toFixed(0)}</span>
-                             <span className="text-sm text-slate-500">$MON</span>
-                         </div>
-                         <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                             <div 
-                                className={`h-full transition-all duration-500 ${selectedAgent.balance < 100 ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`} 
-                                style={{ width: `${Math.min(100, (selectedAgent.balance / 600) * 100)}%` }}
-                             />
-                         </div>
-                     </div>
-
-                     <div className="bg-[#0f111a] p-6 rounded-2xl border border-slate-800 relative overflow-hidden group">
-                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <Swords size={64} />
-                         </div>
-                         <div className="flex gap-8">
-                             <div>
-                                <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t('wins')}</p>
-                                <p className="text-2xl font-mono font-bold text-[#00FF9D]">{selectedAgent.wins}</p>
-                             </div>
-                             <div>
-                                <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t('losses')}</p>
-                                <p className="text-2xl font-mono font-bold text-[#FF0055]">{selectedAgent.losses}</p>
-                             </div>
-                             <div>
-                                <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t('win_rate')}</p>
-                                <p className="text-2xl font-mono font-bold text-yellow-400">
-                                    {(selectedAgent.wins + selectedAgent.losses) > 0 
-                                     ? Math.round((selectedAgent.wins / (selectedAgent.wins + selectedAgent.losses)) * 100)
-                                     : 0}%
-                                </p>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-                 
-                 {/* Actions */}
-                 <div className="mt-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <Button 
-                        onClick={() => handleSocialShare(selectedAgent)}
-                        variant="secondary"
-                        className="h-14 text-sm uppercase tracking-wider"
-                     >
-                         {t('share_status')}
-                     </Button>
-                     <Button 
-                        onClick={() => handleWithdrawClick(selectedAgent)}
-                        className="h-14 text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-black"
-                     >
-                        Withdraw & Exit Arena
-                     </Button>
-                 </div>
-             </div>
-         )}
-
-         {/* SCENARIO D: EXITED (IDLE after active) - Show Agent Summary Page */}
-         {selectedAgent && selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0) && (
+         {/* UNIFIED AGENT DETAIL PAGE (ACTIVE or EXITED) */}
+         {selectedAgent && (selectedAgent.status === 'ACTIVE' || (selectedAgent.status === 'IDLE' && (selectedAgent.wins > 0 || selectedAgent.losses > 0))) && (
              <div className="flex-1 flex flex-col p-4 lg:p-6 relative z-10 animate-fade-in overflow-y-auto">
                  {/* Back Button */}
                  <button 
@@ -870,8 +779,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                          {/* Avatar */}
-                         <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg shrink-0 mx-auto lg:mx-0">
-                             <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
+                         <div className="relative w-20 h-20 lg:w-24 lg:h-24 shrink-0 mx-auto lg:mx-0">
+                             <div className="w-full h-full rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg">
+                                 <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
+                             </div>
+                             {selectedAgent.status === 'ACTIVE' && (
+                                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00FF9D] border-2 border-[#050508] rounded-full animate-pulse" />
+                             )}
                          </div>
                          
                          {/* Info */}
@@ -889,24 +803,50 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
                                      {selectedAgent.strategy}
                                  </span>
-                                 <span className="px-3 py-1.5 bg-slate-600/20 text-slate-400 rounded-lg text-xs border border-slate-600/30 font-medium">
-                                     Idle
+                                 <span className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                                     selectedAgent.status === 'ACTIVE' 
+                                         ? 'bg-[#00FF9D]/20 text-[#00FF9D] border border-[#00FF9D]/30' 
+                                         : 'bg-slate-600/20 text-slate-400 border border-slate-600/30'
+                                 }`}>
+                                     {selectedAgent.status === 'ACTIVE' ? 'Active' : 'Idle'}
                                  </span>
+                                 {selectedAgent.status === 'ACTIVE' && (
+                                     <span className={`text-xs font-bold px-2 py-1.5 rounded ${selectedAgent.direction === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : selectedAgent.direction === 'SHORT' ? 'bg-rose-500/20 text-rose-400' : 'bg-[#836EF9]/20 text-[#836EF9]'}`}>
+                                         {selectedAgent.direction} {selectedAgent.leverage}X
+                                     </span>
+                                 )}
                              </div>
                          </div>
                          
-                         {/* Final Stats */}
+                         {/* Financial Stats */}
                          <div className="text-center lg:text-right shrink-0 space-y-2">
-                             <div>
-                                 <p className="text-xs text-slate-500 uppercase tracking-widest">Final PnL</p>
-                                 <p className={`text-2xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                     {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
-                                 </p>
-                             </div>
-                             <div>
-                                 <p className="text-xs text-slate-500 uppercase tracking-widest">Returned</p>
-                                 <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
-                             </div>
+                             {selectedAgent.status === 'ACTIVE' ? (
+                                 <>
+                                     <div>
+                                         <p className="text-xs text-slate-500 uppercase tracking-widest">Live PnL</p>
+                                         <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
+                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
+                                         </p>
+                                     </div>
+                                     <div>
+                                         <p className="text-xs text-slate-500 uppercase tracking-widest">Balance</p>
+                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
+                                     </div>
+                                 </>
+                             ) : (
+                                 <>
+                                     <div>
+                                         <p className="text-xs text-slate-500 uppercase tracking-widest">Final PnL</p>
+                                         <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
+                                         </p>
+                                     </div>
+                                     <div>
+                                         <p className="text-xs text-slate-500 uppercase tracking-widest">Returned</p>
+                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
+                                     </div>
+                                 </>
+                             )}
                          </div>
                      </div>
                  </div>
@@ -931,14 +871,14 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      </div>
                  </div>
 
-                 {/* Agent Configuration Summary */}
+                 {/* Agent Configuration */}
                  <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
                      <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                          <Brain size={18} className="text-[#836EF9]" />
                          Agent Configuration
                      </h3>
                      
-                     <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                          <div className="bg-slate-900/50 rounded-lg p-3">
                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Strategy</p>
                              <p className="text-sm font-bold text-white">{selectedAgent.strategy}</p>
@@ -947,14 +887,29 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Risk Level</p>
                              <p className="text-sm font-bold text-white">{selectedAgent.riskLevel}</p>
                          </div>
-                         <div className="bg-slate-900/50 rounded-lg p-3">
-                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
-                             <p className="text-sm font-bold text-slate-400">Exited Arena</p>
-                         </div>
-                         <div className="bg-slate-900/50 rounded-lg p-3">
-                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
-                             <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
-                         </div>
+                         {selectedAgent.status === 'ACTIVE' ? (
+                             <>
+                                 <div className="bg-slate-900/50 rounded-lg p-3">
+                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Direction</p>
+                                     <p className="text-sm font-bold text-white">{selectedAgent.direction}</p>
+                                 </div>
+                                 <div className="bg-slate-900/50 rounded-lg p-3">
+                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Leverage</p>
+                                     <p className="text-sm font-bold text-white">{selectedAgent.leverage}X</p>
+                                 </div>
+                             </>
+                         ) : (
+                             <>
+                                 <div className="bg-slate-900/50 rounded-lg p-3">
+                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
+                                     <p className="text-sm font-bold text-slate-400">Exited Arena</p>
+                                 </div>
+                                 <div className="bg-slate-900/50 rounded-lg p-3">
+                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
+                                     <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
+                                 </div>
+                             </>
+                         )}
                      </div>
                  </div>
 
@@ -965,14 +920,23 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          variant="secondary"
                          className="h-12"
                      >
-                         Share Results
+                         {selectedAgent.status === 'ACTIVE' ? 'Share Status' : 'Share Results'}
                      </Button>
-                     <Button 
-                         onClick={() => setSelection('FABRICATE')}
-                         className="h-12 bg-slate-700 hover:bg-slate-600"
-                     >
-                         Back to List
-                     </Button>
+                     {selectedAgent.status === 'ACTIVE' ? (
+                         <Button 
+                             onClick={() => handleWithdrawClick(selectedAgent)}
+                             className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
+                         >
+                             Withdraw & Exit
+                         </Button>
+                     ) : (
+                         <Button 
+                             onClick={() => setSelection('FABRICATE')}
+                             className="h-12 bg-slate-700 hover:bg-slate-600"
+                         >
+                             Back to List
+                         </Button>
+                     )}
                  </div>
              </div>
          )}
