@@ -6,93 +6,87 @@ interface MintingLoaderProps {
 }
 
 const CODE_SNIPPETS = [
-  { cmd: 'npm install ai-agent@latest', output: '' },
-  { cmd: 'import { NeuralAgent } from "@aiperp/core"', output: '' },
-  { cmd: 'const agent = new NeuralAgent()', output: '' },
-  { cmd: 'await agent.loadModel("gemini-3-pro")', output: '' },
-  { cmd: 'agent.configure({ strategy: "adaptive" })', output: '' },
-  { cmd: 'const marketData = await fetchMarketAnalysis()', output: '' },
-  { cmd: 'agent.train(marketData)', output: '' },
-  { cmd: 'const avatar = generatePixelAvatar()', output: '' },
-  { cmd: 'agent.encryptIdentity()', output: '' },
-  { cmd: 'await agent.deployToBlockchain()', output: '' },
-  { cmd: 'const nft = await mintAgentNFT(agent)', output: '' },
-  { cmd: 'console.log("Agent ready for battle!")', output: '' },
+  'npm install ai-agent@latest',
+  'import { NeuralAgent } from "@aiperp/core"',
+  'const agent = new NeuralAgent()',
+  'await agent.loadModel("gemini-3-pro")',
+  'agent.configure({ strategy: "adaptive" })',
+  'const marketData = await fetchMarketAnalysis()',
+  'agent.train(marketData)',
+  'const avatar = generatePixelAvatar()',
+  'agent.encryptIdentity()',
+  'await agent.deployToBlockchain()',
+  'const nft = await mintAgentNFT(agent)',
+  'console.log("Agent ready for battle!")',
 ];
 
+// 总时长3秒，分配给12行代码
+const TOTAL_DURATION = 3000; // 3秒
+const TYPING_SPEED = 15; // 每字符15ms
+
 export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
-  const [currentLine, setCurrentLine] = useState(0);
-  const [displayedLines, setDisplayedLines] = useState<{ cmd: string; output: string; status: 'typing' | 'done' }[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [displayedText, setDisplayedText] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const onCompleteRef = useRef(onComplete);
-  const isRunningRef = useRef(false);
+  const animationRef = useRef<number | null>(null);
 
-  // Keep onComplete ref up to date
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // Main typing animation effect
   useEffect(() => {
-    if (isRunningRef.current) return;
-    isRunningRef.current = true;
+    const startTime = performance.now();
+    let currentLineIndex = 0;
+    let currentCharIndex = 0;
 
-    const typeLine = async (lineIndex: number) => {
-      if (lineIndex >= CODE_SNIPPETS.length) {
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progressPercent = Math.min((elapsed / TOTAL_DURATION) * 100, 100);
+      setProgress(Math.round(progressPercent));
+
+      // 计算应该显示到哪一行
+      const lineProgress = (elapsed / TOTAL_DURATION) * CODE_SNIPPETS.length;
+      const targetLineIndex = Math.floor(lineProgress);
+      const lineCharProgress = lineProgress - targetLineIndex;
+
+      // 更新显示的行
+      const newDisplayedText: string[] = [];
+      for (let i = 0; i < CODE_SNIPPETS.length; i++) {
+        if (i < targetLineIndex) {
+          // 已完成行 - 显示完整
+          newDisplayedText.push(CODE_SNIPPETS[i]);
+        } else if (i === targetLineIndex) {
+          // 当前行 - 显示部分
+          const charsToShow = Math.floor(CODE_SNIPPETS[i].length * lineCharProgress);
+          newDisplayedText.push(CODE_SNIPPETS[i].slice(0, charsToShow));
+        } else {
+          // 未开始行 - 空
+          newDisplayedText.push('');
+        }
+      }
+      setDisplayedText(newDisplayedText);
+
+      if (progressPercent < 100) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        // 确保最后一行完整显示
+        setDisplayedText(CODE_SNIPPETS);
         setIsComplete(true);
         setTimeout(() => {
           onCompleteRef.current?.();
-        }, 800);
-        return;
+        }, 500);
       }
-
-      const snippet = CODE_SNIPPETS[lineIndex];
-      setCurrentLine(lineIndex);
-      
-      // Add new line with typing status
-      setDisplayedLines(prev => [...prev, { cmd: '', output: '', status: 'typing' }]);
-
-      // Type command character by character
-      for (let i = 0; i <= snippet.cmd.length; i++) {
-        await new Promise(r => setTimeout(r, 30 + Math.random() * 40));
-        setDisplayedLines(prev => {
-          const newLines = [...prev];
-          if (newLines[lineIndex]) {
-            newLines[lineIndex] = { 
-              ...newLines[lineIndex], 
-              cmd: snippet.cmd.slice(0, i),
-              status: 'typing'
-            };
-          }
-          return newLines;
-        });
-      }
-
-      // Show output after a brief pause
-      await new Promise(r => setTimeout(r, 200));
-      
-      setDisplayedLines(prev => {
-        const newLines = [...prev];
-        if (newLines[lineIndex]) {
-          newLines[lineIndex] = { 
-            cmd: snippet.cmd, 
-            output: snippet.output,
-            status: 'done'
-          };
-        }
-        return newLines;
-      });
-
-      // Move to next line
-      setTimeout(() => typeLine(lineIndex + 1), 150);
     };
 
-    typeLine(0);
+    animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      isRunningRef.current = false;
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
   }, []);
 
@@ -109,9 +103,15 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [displayedLines]);
+  }, [displayedText]);
 
-  const progress = Math.round((currentLine / CODE_SNIPPETS.length) * 100);
+  // 找到当前正在输入的行
+  const currentLineIndex = displayedText.findIndex((text, idx) => 
+    text.length > 0 && text.length < CODE_SNIPPETS[idx].length
+  );
+  const activeLineIndex = currentLineIndex === -1 
+    ? (isComplete ? -1 : displayedText.findIndex(t => t === ''))
+    : currentLineIndex;
 
   return (
     <div className="relative w-full max-w-lg mx-auto h-full flex flex-col items-center justify-center p-6">
@@ -141,9 +141,9 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
         </div>
         
         {/* Progress Bar */}
-        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-[#836EF9] to-[#00FF9D] transition-all duration-300"
+            className="h-full bg-gradient-to-r from-[#836EF9] to-[#00FF9D] transition-all duration-75"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -165,7 +165,7 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
         {/* Terminal Content */}
         <div 
           ref={containerRef}
-          className="p-4 h-[280px] overflow-y-auto font-mono text-xs space-y-1"
+          className="p-4 h-[280px] overflow-y-auto font-mono text-xs space-y-0.5"
           style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}
         >
           {/* Welcome Message */}
@@ -174,34 +174,32 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
             <div>Initializing neural synthesis protocol...</div>
           </div>
 
-          {displayedLines.map((line, idx) => (
-            <div key={idx} className="space-y-0.5">
-              {/* Command Line */}
-              <div className="flex items-start gap-2">
+          {CODE_SNIPPETS.map((fullCmd, idx) => {
+            const displayedCmd = displayedText[idx] || '';
+            const isActive = idx === activeLineIndex;
+            const isDone = displayedCmd === fullCmd;
+            
+            if (!displayedCmd && !isDone) return null;
+            
+            return (
+              <div key={idx} className="flex items-start gap-2">
                 <span className="text-[#836EF9] shrink-0">➜</span>
                 <span className="text-slate-400 shrink-0">~</span>
                 <span className="text-white break-all">
-                  {line.cmd}
-                  {idx === currentLine && line.status === 'typing' && !isComplete && (
+                  {displayedCmd}
+                  {isActive && !isComplete && (
                     <span 
                       className={`inline-block w-2 h-4 bg-[#00FF9D] ml-0.5 align-middle ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}
                     />
                   )}
                 </span>
               </div>
-              
-              {/* Output Line */}
-              {line.output && (
-                <div className="pl-4 text-[#00FF9D]/80 text-[11px]">
-                  {line.output}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
 
-          {/* Current Input Line */}
+          {/* Complete Message */}
           {isComplete && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 animate-fade-in">
               <span className="text-[#836EF9]">➜</span>
               <span className="text-slate-400">~</span>
               <span className="text-[#00FF9D]">
