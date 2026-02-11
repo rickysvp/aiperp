@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Agent, Direction, MarketState } from '../types';
 import { Button } from './Button';
-import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain, Sparkles, Rocket } from 'lucide-react';
+import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield, Skull, TrendingUp, TrendingDown, Swords, Terminal, AlertTriangle, Wind, Scan, CheckCircle2, ArrowLeft, Coins, MessageSquare, Send, Brain, Sparkles, Rocket, X, Wallet } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { refineAgentStrategy } from '../services/geminiService';
 import { AgentCard } from './AgentCard';
@@ -46,6 +46,11 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [chatHistory, setChatHistory] = useState<{role: 'user' | 'agent', text: string}[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Withdraw Modal State
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawingAgent, setWithdrawingAgent] = useState<Agent | null>(null);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
 
   // Group Agents
   const { activeAgents, idleAgents, deadAgents } = useMemo(() => {
@@ -114,6 +119,31 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       }
       mintPromiseRef.current = null;
     }
+  };
+
+  const handleWithdrawClick = (agent: Agent) => {
+    setWithdrawingAgent(agent);
+    setWithdrawModalOpen(true);
+  };
+
+  const handleConfirmWithdraw = async () => {
+    if (!withdrawingAgent) return;
+    
+    setWithdrawLoading(true);
+    
+    // Simulate processing delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    await onWithdraw(withdrawingAgent.id);
+    
+    setWithdrawLoading(false);
+    setWithdrawModalOpen(false);
+    setWithdrawingAgent(null);
+  };
+
+  const handleCancelWithdraw = () => {
+    setWithdrawModalOpen(false);
+    setWithdrawingAgent(null);
   };
 
   const handleAcceptAgent = () => {
@@ -796,7 +826,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          {t('share_status')}
                      </Button>
                      <Button 
-                        onClick={() => onWithdraw(selectedAgent.id)}
+                        onClick={() => handleWithdrawClick(selectedAgent)}
                         className="h-14 text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-black"
                      >
                         Withdraw & Exit Arena
@@ -978,6 +1008,85 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
          )}
 
       </div>
+
+      {/* Withdraw Confirmation Modal */}
+      {withdrawModalOpen && withdrawingAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0f111a] border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Wallet size={20} className="text-emerald-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Withdraw Funds</h3>
+                  <p className="text-xs text-slate-400">{withdrawingAgent.name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleCancelWithdraw}
+                className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Amount Display */}
+            <div className="bg-slate-900/50 rounded-xl p-4 mb-6 border border-slate-800">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-slate-400">Current Balance</span>
+                <span className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} $MON</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-400">PnL</span>
+                <span className={`text-sm font-mono font-bold ${withdrawingAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {withdrawingAgent.pnl >= 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} $MON
+                </span>
+              </div>
+              <div className="h-px bg-slate-800 my-3" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-400">To Receive</span>
+                <span className="text-2xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} $MON</span>
+              </div>
+            </div>
+
+            {/* Warning */}
+            <div className="flex items-start gap-2 mb-6 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-500/80">
+                Withdrawing will exit your agent from the arena. You can redeploy later with new collateral.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                onClick={handleCancelWithdraw}
+                variant="secondary"
+                className="h-12"
+                disabled={withdrawLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleConfirmWithdraw}
+                className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
+                disabled={withdrawLoading}
+              >
+                {withdrawLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  'Confirm Withdraw'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
