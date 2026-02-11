@@ -1,88 +1,81 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Terminal, CheckCircle2, Cpu, Database, Brain, Lock, Rocket, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Terminal, CheckCircle2 } from 'lucide-react';
 
 interface MintingLoaderProps {
   onComplete?: () => void;
   agentName?: string;
 }
 
-interface Step {
-  id: string;
-  icon: React.ElementType;
-  label: string;
-  code: string;
-  duration: number;
-}
-
-const STEPS: Step[] = [
-  { id: 'init', icon: Cpu, label: 'Initialize', code: 'npm install ai-agent@latest', duration: 250 },
-  { id: 'import', icon: Database, label: 'Load Core', code: 'import { NeuralAgent } from "@aiperp/core"', duration: 200 },
-  { id: 'create', icon: Brain, label: 'Create', code: 'const agent = new NeuralAgent()', duration: 200 },
-  { id: 'model', icon: Database, label: 'Load Model', code: 'await agent.loadModel("gemini-3-pro")', duration: 300 },
-  { id: 'config', icon: Cpu, label: 'Configure', code: 'agent.configure({ strategy: "adaptive" })', duration: 200 },
-  { id: 'market', icon: Database, label: 'Fetch Data', code: 'const marketData = await fetchMarketAnalysis()', duration: 350 },
-  { id: 'train', icon: Brain, label: 'Train', code: 'agent.train(marketData)', duration: 400 },
-  { id: 'avatar', icon: Sparkles, label: 'Render', code: 'const avatar = generatePixelAvatar()', duration: 300 },
-  { id: 'encrypt', icon: Lock, label: 'Encrypt', code: 'agent.encryptIdentity()', duration: 250 },
-  { id: 'deploy', icon: Rocket, label: 'Deploy', code: 'await agent.deployToBlockchain()', duration: 350 },
-  { id: 'mint', icon: Database, label: 'Mint NFT', code: 'const nft = await mintAgentNFT(agent)', duration: 300 },
-  { id: 'ready', icon: CheckCircle2, label: 'Ready', code: 'console.log("Agent ready!")', duration: 200 },
+const CODE_LINES = [
+  { text: 'npm install ai-agent@latest', status: 'done' },
+  { text: 'import { NeuralAgent } from "@aiperp/core"', status: 'done' },
+  { text: 'const agent = new NeuralAgent()', status: 'done' },
+  { text: 'await agent.loadModel("gemini-3-pro")', status: 'done' },
+  { text: 'agent.configure({ strategy: "adaptive" })', status: 'done' },
+  { text: 'const marketData = await fetchMarketAnalysis()', status: 'done' },
+  { text: 'agent.train(marketData)', status: 'done' },
+  { text: 'const avatar = generatePixelAvatar()', status: 'done' },
+  { text: 'agent.encryptIdentity()', status: 'done' },
+  { text: 'await agent.deployToBlockchain()', status: 'done' },
+  { text: 'const nft = await mintAgentNFT(agent)', status: 'done' },
+  { text: 'console.log("Agent ready for battle!")', status: 'done' },
 ];
 
-const TOTAL_DURATION = STEPS.reduce((sum, step) => sum + step.duration, 0);
+const TOTAL_DURATION = 3000;
 
 export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentName }) => {
   const [progress, setProgress] = useState(0);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [displayedLines, setDisplayedLines] = useState<string[]>([]);
+  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const [currentCharIndex, setCurrentCharIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
-  const [cursorVisible, setCursorVisible] = useState(true);
-  const [currentCode, setCurrentCode] = useState('');
+  const [matrixChars, setMatrixChars] = useState<string[]>([]);
   const onCompleteRef = useRef(onComplete);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Generate matrix rain characters
   useEffect(() => {
-    let stepStartTime = performance.now();
-    let currentStepIdx = 0;
-    let codeCharIndex = 0;
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+    const interval = setInterval(() => {
+      const newChars = Array.from({ length: 50 }, () => chars[Math.floor(Math.random() * chars.length)]);
+      setMatrixChars(newChars);
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
 
+  // Typing animation
+  useEffect(() => {
+    const startTime = performance.now();
+    
     const animate = (currentTime: number) => {
-      const elapsed = currentTime - stepStartTime;
-      const currentStep = STEPS[currentStepIdx];
-      
-      const stepsBeforeDuration = STEPS.slice(0, currentStepIdx).reduce((sum, s) => sum + s.duration, 0);
-      const stepProgress = Math.min(elapsed / currentStep.duration, 1);
-      const totalProgress = ((stepsBeforeDuration + currentStep.duration * stepProgress) / TOTAL_DURATION) * 100;
-      
-      setProgress(Math.round(totalProgress));
-      setCurrentStepIndex(currentStepIdx);
+      const elapsed = currentTime - startTime;
+      const progressPercent = Math.min((elapsed / TOTAL_DURATION) * 100, 100);
+      setProgress(Math.round(progressPercent));
 
-      const code = currentStep.code;
-      const charsToShow = Math.floor(code.length * stepProgress);
-      if (charsToShow !== codeCharIndex) {
-        codeCharIndex = charsToShow;
-        setCurrentCode(code.slice(0, charsToShow));
-      }
+      const lineProgress = (elapsed / TOTAL_DURATION) * CODE_LINES.length;
+      const targetLine = Math.floor(lineProgress);
+      const charProgress = lineProgress - targetLine;
 
-      if (elapsed >= currentStep.duration) {
-        setCompletedSteps(prev => new Set([...prev, currentStep.id]));
-        
-        if (currentStepIdx < STEPS.length - 1) {
-          currentStepIdx++;
-          stepStartTime = currentTime;
-          codeCharIndex = 0;
-          setCurrentCode('');
-        } else {
-          setIsComplete(true);
-          setProgress(100);
-          setTimeout(() => {
-            onCompleteRef.current?.();
-          }, 300);
-          return;
+      if (targetLine < CODE_LINES.length) {
+        setCurrentLineIndex(targetLine);
+        const currentLine = CODE_LINES[targetLine].text;
+        const charsToShow = Math.floor(currentLine.length * charProgress);
+        setCurrentCharIndex(charsToShow);
+
+        const newDisplayedLines = CODE_LINES.slice(0, targetLine).map(l => l.text);
+        if (charsToShow > 0) {
+          newDisplayedLines.push(currentLine.slice(0, charsToShow));
         }
+        setDisplayedLines(newDisplayedLines);
+      } else {
+        setDisplayedLines(CODE_LINES.map(l => l.text));
+        setIsComplete(true);
+        setTimeout(() => onCompleteRef.current?.(), 500);
+        return;
       }
 
       requestAnimationFrame(animate);
@@ -92,164 +85,130 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete, agentN
     return () => cancelAnimationFrame(animationId);
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCursorVisible(v => !v);
-    }, 530);
-    return () => clearInterval(interval);
-  }, []);
-
-  const currentStep = STEPS[currentStepIndex];
-  const CurrentIcon = currentStep?.icon || CheckCircle2;
-
   return (
-    <div className="relative w-full h-full flex flex-col p-4 overflow-hidden">
+    <div className="relative w-full h-full flex flex-col p-4 overflow-hidden bg-black">
+      {/* Matrix Rain Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+        <div className="absolute inset-0 font-mono text-[10px] text-[#00FF41] leading-none">
+          {Array.from({ length: 20 }).map((_, row) => (
+            <div key={row} className="whitespace-pre opacity-30" style={{ animationDelay: `${row * 0.1}s` }}>
+              {matrixChars.slice(row * 2, row * 2 + 25).join(' ')}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Scanline Effect */}
+      <div className="absolute inset-0 pointer-events-none opacity-5">
+        <div className="w-full h-full" style={{
+          background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.1) 2px, rgba(0,255,65,0.1) 4px)'
+        }} />
+      </div>
+
       {/* Header */}
-      <div className="relative z-10 mb-4 shrink-0">
+      <div className="relative z-10 mb-3 shrink-0">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#836EF9] to-[#00FF9D] flex items-center justify-center shadow-lg shadow-[#836EF9]/20">
-              <Terminal size={20} className="text-black" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Fabricating Agent</h3>
-              <p className="text-xs text-slate-400">{agentName || 'Neural Agent'}</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <Terminal size={16} className="text-[#00FF41]" />
+            <span className="text-xs font-mono text-[#00FF41]">aiperp_fabrication.exe</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isComplete ? 'bg-[#00FF9D]' : 'bg-[#836EF9] animate-pulse'}`} />
-            <span className="text-xs font-mono text-slate-400">{isComplete ? 'COMPLETE' : 'PROCESSING'}</span>
+            <div className={`w-2 h-2 rounded-full ${isComplete ? 'bg-[#00FF41]' : 'bg-[#00FF41] animate-pulse'}`} />
+            <span className="text-xs font-mono text-[#00FF41]">{progress}%</span>
           </div>
         </div>
         
-        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+        {/* Progress Bar - Matrix Style */}
+        <div className="h-1.5 bg-[#003300] rounded-full overflow-hidden border border-[#00FF41]/30">
           <div 
-            className="h-full bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-full transition-all duration-100"
-            style={{ width: `${progress}%` }}
+            className="h-full bg-[#00FF41] rounded-full transition-all duration-75"
+            style={{ width: `${progress}%`, boxShadow: '0 0 10px #00FF41' }}
           />
         </div>
-        <div className="flex justify-between text-xs text-slate-500 mt-1 font-mono">
-          <span>Step {Math.min(currentStepIndex + 1, STEPS.length)}/{STEPS.length}</span>
-          <span className={isComplete ? 'text-[#00FF9D]' : 'text-[#836EF9]'}>{progress}%</span>
+      </div>
+
+      {/* Main Terminal Window */}
+      <div 
+        ref={containerRef}
+        className="relative z-10 flex-1 bg-[#0a0a0a] border border-[#00FF41]/40 rounded-lg overflow-hidden"
+        style={{ boxShadow: '0 0 20px rgba(0,255,65,0.1), inset 0 0 20px rgba(0,255,65,0.05)' }}
+      >
+        {/* Terminal Header */}
+        <div className="px-3 py-1.5 border-b border-[#00FF41]/30 bg-[#0f0f0f] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Terminal size={12} className="text-[#00FF41]" />
+            <span className="text-[10px] font-mono text-[#00FF41]/70">root@aiperp:~/fabrication</span>
+          </div>
+          <div className="flex gap-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-900/50 border border-red-700/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-900/50 border border-yellow-700/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-900/50 border border-[#00FF41]/50" />
+          </div>
+        </div>
+
+        {/* Terminal Content */}
+        <div className="p-3 font-mono text-xs overflow-y-auto h-full" style={{ scrollbarWidth: 'thin', scrollbarColor: '#00FF41 #0a0a0a' }}>
+          {/* Welcome Message */}
+          <div className="text-[#00FF41]/50 mb-3 space-y-0.5">
+            <div>{`>`} AIperp Agent Fabrication Engine v2.0</div>
+            <div>{`>`} Initializing neural synthesis protocol...</div>
+            <div>{`>`} Target: {agentName || 'Neural Agent'}</div>
+            <div className="text-[#00FF41]/30">{'─'.repeat(50)}</div>
+          </div>
+
+          {/* Code Lines */}
+          <div className="space-y-1">
+            {displayedLines.map((line, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span className="text-[#00FF41]/50 shrink-0">{`>`}</span>
+                <span className="text-[#00FF41]">{line}</span>
+                {idx === displayedLines.length - 1 && !isComplete && (
+                  <span className="inline-block w-2 h-4 bg-[#00FF41] ml-1 animate-pulse" />
+                )}
+                {idx < currentLineIndex && (
+                  <CheckCircle2 size={12} className="text-[#00FF41] ml-1 shrink-0" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Current Line Being Typed */}
+          {!isComplete && currentCharIndex > 0 && currentLineIndex === displayedLines.length && (
+            <div className="flex items-start gap-2 mt-1">
+              <span className="text-[#00FF41]/50 shrink-0">{`>`}</span>
+              <span className="text-[#00FF41]">
+                {CODE_LINES[currentLineIndex]?.text.slice(0, currentCharIndex)}
+                <span className="inline-block w-2 h-4 bg-[#00FF41] ml-0.5 animate-pulse" />
+              </span>
+            </div>
+          )}
+
+          {/* Complete Message */}
+          {isComplete && (
+            <div className="mt-4 space-y-2">
+              <div className="text-[#00FF41]/30">{'─'.repeat(50)}</div>
+              <div className="flex items-center gap-2 text-[#00FF41]">
+                <CheckCircle2 size={16} />
+                <span className="font-bold">[SUCCESS] Agent fabrication complete!</span>
+              </div>
+              <div className="text-[#00FF41]/70">{`>`} Ready for deployment to arena...</div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Content - Two Column Layout */}
-      <div className="relative z-10 flex-1 grid grid-cols-2 gap-4 min-h-0">
-        {/* Left: Steps Grid */}
-        <div className="bg-[#0a0b14] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-slate-800 bg-[#0f111a]">
-            <span className="text-xs font-mono text-slate-500 uppercase tracking-wider">Pipeline</span>
-          </div>
-          <div className="p-3 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}>
-            <div className="grid grid-cols-1 gap-2">
-              {STEPS.map((step, idx) => {
-                const isActive = idx === currentStepIndex && !isComplete;
-                const isDone = completedSteps.has(step.id) || (isComplete && idx < STEPS.length);
-                const Icon = step.icon;
-                
-                return (
-                  <div
-                    key={step.id}
-                    className={`flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200 ${
-                      isActive 
-                        ? 'bg-[#836EF9]/20 border border-[#836EF9]/40' 
-                        : isDone 
-                          ? 'bg-[#00FF9D]/10 border border-[#00FF9D]/20' 
-                          : 'bg-slate-800/30 border border-transparent'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      isActive 
-                        ? 'bg-[#836EF9] text-white shadow-lg shadow-[#836EF9]/30' 
-                        : isDone 
-                          ? 'bg-[#00FF9D] text-black' 
-                          : 'bg-slate-800 text-slate-600'
-                    }`}>
-                      <Icon size={16} className={isActive ? 'animate-pulse' : ''} />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-bold truncate ${
-                        isActive ? 'text-white' : isDone ? 'text-[#00FF9D]' : 'text-slate-500'
-                      }`}>
-                        {step.label}
-                      </div>
-                    </div>
-                    
-                    {isActive && (
-                      <div className="w-4 h-4 border-2 border-[#836EF9] border-t-transparent rounded-full animate-spin shrink-0" />
-                    )}
-                    {isDone && !isActive && (
-                      <CheckCircle2 size={16} className="text-[#00FF9D] shrink-0" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+      {/* Footer Status */}
+      <div className="relative z-10 mt-3 flex items-center justify-between text-[10px] font-mono shrink-0">
+        <div className="flex items-center gap-2 text-[#00FF41]/60">
+          <span>SYS: ONLINE</span>
+          <span className="text-[#00FF41]/30">|</span>
+          <span>MEM: 64TB</span>
+          <span className="text-[#00FF41]/30">|</span>
+          <span>NET: SECURE</span>
         </div>
-
-        {/* Right: Terminal */}
-        <div className="bg-[#0a0b14] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-slate-800 bg-[#0f111a] flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Terminal size={14} className="text-[#00FF9D]" />
-              <span className="text-xs font-mono text-slate-500">terminal</span>
-            </div>
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/60" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-              <div className="w-3 h-3 rounded-full bg-green-500/60" />
-            </div>
-          </div>
-          
-          <div className="p-4 font-mono text-sm flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}>
-            {/* Welcome */}
-            <div className="text-slate-500 space-y-1 mb-4">
-              <div>AIperp Agent Fabrication Engine v2.0</div>
-              <div className="text-[#836EF9]">Initializing neural synthesis protocol...</div>
-            </div>
-
-            {/* Current Step Display */}
-            {!isComplete && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-[#836EF9]">
-                  <CurrentIcon size={16} className="animate-pulse" />
-                  <span className="text-sm uppercase tracking-wider font-bold">{currentStep?.label}</span>
-                </div>
-                
-                <div className="flex items-start gap-2">
-                  <span className="text-[#836EF9]">➜</span>
-                  <span className="text-slate-400">~</span>
-                  <span className="text-white break-all">
-                    {currentCode}
-                    <span 
-                      className={`inline-block w-2 h-5 bg-[#00FF9D] ml-1 align-middle ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}
-                    />
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Complete Message */}
-            {isComplete && (
-              <div className="flex items-center gap-2 text-[#00FF9D] animate-fade-in">
-                <CheckCircle2 size={20} />
-                <span className="font-bold text-base">Agent fabrication complete!</span>
-              </div>
-            )}
-          </div>
+        <div className="text-[#00FF41]">
+          {isComplete ? 'STATUS: READY' : `EXECUTING: ${currentLineIndex + 1}/${CODE_LINES.length}`}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="relative z-10 mt-4 flex items-center justify-between text-xs text-slate-500 font-mono shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#836EF9]" />
-          <span>v2.0.4-stable</span>
-        </div>
-        <span className="text-[#00FF9D]">{completedSteps.size}/{STEPS.length} steps completed</span>
       </div>
     </div>
   );
