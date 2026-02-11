@@ -5,6 +5,8 @@ import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield
 import { useLanguage } from '../contexts/LanguageContext';
 import { refineAgentStrategy } from '../services/geminiService';
 import { AgentCard } from './AgentCard';
+import { AIGenerating } from './AIGenerating';
+import { NFTReveal } from './NFTReveal';
 
 interface AgentsProps {
   agents: Agent[];
@@ -426,69 +428,21 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                     </div>
                  )}
 
-                 {/* Step 2: Generating - Fast & Compact */}
+                 {/* Step 2: Generating - High Tech AI Effect */}
                  {fabricationStep === 'GENERATING' && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <div className="max-w-sm w-full text-center">
-                             {/* Fast Animation */}
-                             <div className="relative w-16 h-16 mx-auto mb-3">
-                                 <div className="absolute inset-0 bg-[#836EF9] rounded-full animate-ping opacity-30"></div>
-                                 <div className="relative w-full h-full bg-gradient-to-br from-[#836EF9] to-[#00FF9D] rounded-full flex items-center justify-center">
-                                     <Brain size={28} className="text-white animate-pulse" />
-                                 </div>
-                             </div>
-                             
-                             <h3 className="text-lg font-bold text-white mb-1">Creating...</h3>
-                             <p className="text-xs text-slate-400 mb-3">AI generating your agent</p>
-                             
-                             {/* Fast Progress Bar */}
-                             <div className="bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                                 <div className="h-full bg-gradient-to-r from-[#836EF9] to-[#00FF9D] animate-[loading_0.8s_ease-in-out]"></div>
-                             </div>
-                             
-                             {/* Quick Logs */}
-                             <div className="mt-3 space-y-1">
-                                 {logs.slice(-2).map((log, i) => (
-                                     <div key={i} className="text-[10px] text-[#00FF9D]">
-                                         {log}
-                                     </div>
-                                 ))}
-                             </div>
-                         </div>
+                         <AIGenerating logs={logs} />
                      </div>
                  )}
 
-                 {/* Step 3: Reveal - Compact */}
+                 {/* Step 3: Reveal - Premium NFT Style */}
                  {fabricationStep === 'REVEAL' && generatedAgent && (
-                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <div className="max-w-sm w-full">
-                             {/* Compact Success */}
-                             <div className="text-center mb-3">
-                                 <div className="w-10 h-10 mx-auto bg-[#00FF9D] rounded-full flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(0,255,157,0.4)]">
-                                     <CheckCircle2 size={20} className="text-black" />
-                                 </div>
-                                 <h3 className="text-lg font-bold text-white">Created!</h3>
-                             </div>
-                             
-                             {/* Compact Agent Card */}
-                             <div className="mb-3 scale-90 origin-center">
-                                 <AgentCard agent={generatedAgent} showChart={false} />
-                             </div>
-                             
-                             {/* Compact Actions */}
-                             <div className="space-y-2">
-                                 <Button onClick={handleAcceptAgent} className="w-full py-3 text-sm bg-[#00FF9D] hover:bg-[#00cc7d] text-black font-bold rounded-lg">
-                                     <Rocket size={16} className="mr-1.5" /> Add to Fleet
-                                 </Button>
-                                 <Button 
-                                    onClick={() => {setFabricationStep('CONFIG'); setGeneratedAgent(null);}}
-                                    variant="secondary"
-                                    className="w-full py-2 text-xs"
-                                 >
-                                    Create Another
-                                 </Button>
-                             </div>
-                         </div>
+                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in overflow-y-auto">
+                         <NFTReveal 
+                            agent={generatedAgent}
+                            onAddToFleet={handleAcceptAgent}
+                            onCreateAnother={() => {setFabricationStep('CONFIG'); setGeneratedAgent(null);}}
+                         />
                      </div>
                  )}
              </div>
