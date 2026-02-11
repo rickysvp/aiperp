@@ -94,20 +94,26 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       setShowDetailOnMobile(false);
   };
 
-  const handleMintingComplete = async () => {
-    // 进度条完成后，执行铸造
-    const newAgent = await onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
-    if (newAgent) {
-        setGeneratedAgent(newAgent);
-        setFabricationStep('REVEAL');
-    } else {
-        setFabricationStep('CONFIG'); // Failed
-    }
-  };
+  const mintPromiseRef = useRef<Promise<Agent | null> | null>(null);
 
   const handleConfirmFabrication = () => {
     setFabricationStep('GENERATING');
-    // 不再使用setTimeout等待，而是由MintingLoader的进度条驱动
+    // 立即开始铸造，与加载动画并行
+    mintPromiseRef.current = onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
+  };
+
+  const handleMintingComplete = async () => {
+    // 等待铸造完成（如果还没完成的话）
+    if (mintPromiseRef.current) {
+      const newAgent = await mintPromiseRef.current;
+      if (newAgent) {
+          setGeneratedAgent(newAgent);
+          setFabricationStep('REVEAL');
+      } else {
+          setFabricationStep('CONFIG'); // Failed
+      }
+      mintPromiseRef.current = null;
+    }
   };
 
   const handleAcceptAgent = () => {
