@@ -72,12 +72,12 @@ export const MintingLoader: React.FC<MintingLoaderProps> = ({ onComplete }) => {
       if (progressPercent < 100) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        // 确保最后一行完整显示
+        // 确保最后一行完整显示，立即触发完成
         setDisplayedText(CODE_SNIPPETS);
+        setProgress(100);
         setIsComplete(true);
-        setTimeout(() => {
-          onCompleteRef.current?.();
-        }, 500);
+        // 立即触发回调，不等待
+        onCompleteRef.current?.();
       }
     };
 
