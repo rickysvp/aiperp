@@ -143,6 +143,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [withdrawingAgent, setWithdrawingAgent] = useState<Agent | null>(null);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<{show: boolean; amount: number; agentName: string}>({show: false, amount: 0, agentName: ''});
 
   const handleWithdrawClick = (agent: Agent) => {
     setWithdrawingAgent(agent);
@@ -152,16 +153,24 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const handleConfirmWithdraw = async () => {
     if (!withdrawingAgent) return;
 
+    const amount = withdrawingAgent.balance;
+    const name = withdrawingAgent.name;
+
     setWithdrawLoading(true);
 
     // Execute withdraw immediately (synchronous state update)
     await onWithdraw(withdrawingAgent.id);
 
-    // Close modal and stay on the same agent page
+    // Close modal
     setWithdrawModalOpen(false);
     setWithdrawingAgent(null);
-
     setWithdrawLoading(false);
+
+    // Show success toast
+    setWithdrawSuccess({show: true, amount, agentName: name});
+    setTimeout(() => {
+      setWithdrawSuccess({show: false, amount: 0, agentName: ''});
+    }, 3000);
   };
 
   const handleCancelWithdraw = () => {
@@ -847,6 +856,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Balance</p>
                                          <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
                                      </div>
+                                     {/* ROI */}
+                                     <div>
+                                         <p className="text-xs text-slate-500 uppercase tracking-widest">ROI</p>
+                                         <p className={`text-sm font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
+                                             {selectedAgent.pnl >= 0 ? '+' : ''}{((selectedAgent.pnl / (selectedAgent.balance - selectedAgent.pnl + 0.001)) * 100).toFixed(2)}%
+                                         </p>
+                                     </div>
                                  </>
                              ) : selectedAgent.status === 'LIQUIDATED' ? (
                                  <>
@@ -873,15 +889,47 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Returned</p>
                                          <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
                                      </div>
+                                     {/* ROI for exited agents */}
+                                     {selectedAgent.wins + selectedAgent.losses > 0 && (
+                                         <div>
+                                             <p className="text-xs text-slate-500 uppercase tracking-widest">Session ROI</p>
+                                             <p className={`text-sm font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                 {selectedAgent.pnl >= 0 ? '+' : ''}{((selectedAgent.pnl / (selectedAgent.balance - selectedAgent.pnl + 0.001)) * 100).toFixed(2)}%
+                                             </p>
+                                         </div>
+                                     )}
                                  </>
                              )}
                          </div>
                      </div>
                  </div>
 
+                 {/* Collateral Health Bar - Only for ACTIVE agents */}
+                 {selectedAgent.status === 'ACTIVE' && (
+                     <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 mb-4">
+                         <div className="flex justify-between items-center mb-2">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider">Collateral Health</p>
+                             <p className="text-xs font-mono text-slate-400">{Math.min(100, (selectedAgent.balance / 1000) * 100).toFixed(0)}%</p>
+                         </div>
+                         <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                             <div
+                                 className={`h-full transition-all duration-500 ${
+                                     selectedAgent.balance < 200 ? 'bg-red-500 animate-pulse' :
+                                     selectedAgent.balance < 500 ? 'bg-amber-500' :
+                                     selectedAgent.direction === 'LONG' ? 'bg-[#00FF9D]' :
+                                     selectedAgent.direction === 'SHORT' ? 'bg-[#FF0055]' :
+                                     'bg-[#836EF9]'
+                                 }`}
+                                 style={{ width: `${Math.min(100, (selectedAgent.balance / 1000) * 100)}%` }}
+                             />
+                         </div>
+                         <p className="text-[10px] text-slate-600 mt-1">Based on initial 1000 $MON collateral scale</p>
+                     </div>
+                 )}
+
                  {/* Performance Stats - Hidden for LIQUIDATED if no trades */}
                  {(selectedAgent.status !== 'LIQUIDATED' || selectedAgent.wins + selectedAgent.losses > 0) && (
-                     <div className="grid grid-cols-3 gap-3 mb-4">
+                     <div className="grid grid-cols-4 gap-3 mb-4">
                          <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Wins</p>
                              <p className="text-2xl font-bold text-emerald-400">{selectedAgent.wins}</p>
@@ -896,6 +944,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  {selectedAgent.wins + selectedAgent.losses > 0
                                      ? Math.round((selectedAgent.wins / (selectedAgent.wins + selectedAgent.losses)) * 100)
                                      : 0}%
+                             </p>
+                         </div>
+                         {/* Ranking - calculated from agents prop */}
+                         <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-4 text-center">
+                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Rank</p>
+                             <p className="text-2xl font-bold text-yellow-400">
+                                 #{agents.filter(a => a.status === 'ACTIVE' && a.pnl > selectedAgent.pnl).length + 1}
                              </p>
                          </div>
                      </div>
@@ -984,16 +1039,68 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
       </div>
 
-      {/* Withdraw Confirmation Modal */}
+      {/* Withdraw Confirmation Modal - Enhanced */}
       {withdrawModalOpen && withdrawingAgent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#0f111a] border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Confirm Withdraw</h3>
-            <p className="text-sm text-slate-400 mb-6">
-              Withdraw {withdrawingAgent.balance.toFixed(2)} $MON from {withdrawingAgent.name}?
-            </p>
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <Wallet size={24} className="text-emerald-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Confirm Withdraw</h3>
+                <p className="text-sm text-slate-400">{withdrawingAgent.name}</p>
+              </div>
+            </div>
+
+            {/* Agent Stats Summary */}
+            <div className="bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-800">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Current Balance</p>
+                  <p className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} $MON</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">PnL</p>
+                  <p className={`text-xl font-mono font-bold ${withdrawingAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {withdrawingAgent.pnl > 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} $MON
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Win Rate</p>
+                  <p className="text-sm font-mono font-bold text-white">
+                    {withdrawingAgent.wins + withdrawingAgent.losses > 0
+                      ? Math.round((withdrawingAgent.wins / (withdrawingAgent.wins + withdrawingAgent.losses)) * 100)
+                      : 0}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
+                  <p className="text-sm font-mono font-bold text-white">{withdrawingAgent.wins + withdrawingAgent.losses}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Amount to Receive */}
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
+              <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">To Receive</p>
+              <p className="text-3xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} $MON</p>
+            </div>
+
+            {/* Warning */}
+            <div className="flex items-start gap-2 mb-6 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-500/80">
+                Withdrawing will exit your agent from the arena. You can redeploy later with new collateral.
+              </p>
+            </div>
+
+            {/* Actions */}
             <div className="flex gap-3">
-              <Button 
+              <Button
                 onClick={handleCancelWithdraw}
                 variant="secondary"
                 className="flex-1 h-12"
@@ -1001,13 +1108,37 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleConfirmWithdraw}
                 className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
                 disabled={withdrawLoading}
               >
-                {withdrawLoading ? 'Processing...' : 'Confirm'}
+                {withdrawLoading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    Processing...
+                  </span>
+                ) : (
+                  'Confirm Withdraw'
+                )}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw Success Toast */}
+      {withdrawSuccess.show && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className="bg-[#0f111a] border border-emerald-500/50 rounded-xl p-4 shadow-2xl shadow-emerald-500/20 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <CheckCircle2 size={20} className="text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Withdrawal Successful!</p>
+              <p className="text-xs text-slate-400">
+                {withdrawSuccess.agentName} exited with {withdrawSuccess.amount.toFixed(2)} $MON
+              </p>
             </div>
           </div>
         </div>
