@@ -5,8 +5,8 @@ import { Bot, Plus, User, Zap, Crosshair, ChevronRight, Activity, AtSign, Shield
 import { useLanguage } from '../contexts/LanguageContext';
 import { refineAgentStrategy } from '../services/geminiService';
 import { AgentCard } from './AgentCard';
-import { AIGenerating } from './AIGenerating';
-import { NFTReveal } from './NFTReveal';
+import { MintingLoader } from './MintingLoader';
+import { NFT3DCard } from './NFT3DCard';
 
 interface AgentsProps {
   agents: Agent[];
@@ -404,7 +404,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                             <span>Enter Name</span>
                                         ) : (
                                             <span className="flex items-center justify-center gap-1.5">
-                                                <Zap size={16} /> Create Agent
+                                                <Zap size={16} /> Mint Agent
                                             </span>
                                         )}
                                     </Button>
@@ -414,17 +414,17 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                     </div>
                  )}
 
-                 {/* Step 2: Generating - High Tech AI Effect */}
+                 {/* Step 2: Minting Loading with Progress */}
                  {fabricationStep === 'GENERATING' && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <AIGenerating logs={logs} />
+                         <MintingLoader logs={logs} />
                      </div>
                  )}
 
-                 {/* Step 3: Reveal - Premium NFT Style */}
+                 {/* Step 3: 3D NFT Card Reveal with Flip Animation */}
                  {fabricationStep === 'REVEAL' && generatedAgent && (
-                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in overflow-y-auto">
-                         <NFTReveal 
+                     <div className="flex-1 flex flex-col items-center justify-center animate-fade-in overflow-y-auto py-8">
+                         <NFT3DCard
                             agent={generatedAgent}
                             userName={nameHint}
                             nftNumber={agents.length + 1}
