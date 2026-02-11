@@ -597,7 +597,7 @@ const AppContent: React.FC = () => {
 
       {/* Main Content - Added padding bottom for fixed nav */}
       <main className="flex-1 overflow-hidden relative z-10">
-        <div className="h-full w-full max-w-[1920px] mx-auto p-4 md:p-6 overflow-y-auto custom-scrollbar pb-28">
+        <div className="h-full w-full max-w-[1920px] mx-auto p-4 md:p-6 overflow-y-auto custom-scrollbar pb-32 md:pb-36">
           {activeTab === Tab.ARENA && (
             <Arena 
                 market={market} 

@@ -118,7 +118,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
   const handleConfirmFabrication = async () => {
     setFabricationStep('GENERATING');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     // We pass the user-defined name here
     const newAgent = await onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
