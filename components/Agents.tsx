@@ -66,33 +66,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     setActiveTab('DEPLOY');
   }, [selection]);
 
-  // Terminal Log Animation - 只执行一次
-  useEffect(() => {
-    if (fabricationStep === 'GENERATING' && logs.length === 0) {
-        const messages = [
-            "[SYSTEM] Initializing neural synthesis engine...",
-            "[CORE] Loading Gemini-3 language model weights...",
-            "[DATA] Scanning blockchain for personality shards...",
-            "[ANALYSIS] Market trend analysis complete",
-            "[AI] Generating trading strategy matrix...",
-            "[NEURAL] Constructing synaptic pathways...",
-            "[AVATAR] Rendering pixel-art neural avatar...",
-            "[CRYPTO] Encrypting agent identity hash...",
-            "[FINAL] Binding smart contract interface...",
-            "[DONE] Agent synthesis complete ✓",
-        ];
-        let i = 0;
-        const interval = setInterval(() => {
-            if (i < messages.length) {
-                setLogs(prev => [...prev, messages[i]]);
-                i++;
-            } else {
-                clearInterval(interval);
-            }
-        }, 80);
-        return () => clearInterval(interval);
-    }
-  }, [fabricationStep]);
+
 
   // Reset collateral when wallet balance changes
   useEffect(() => {
@@ -121,12 +95,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       setShowDetailOnMobile(false);
   };
 
-  const handleConfirmFabrication = async () => {
-    setFabricationStep('GENERATING');
-    // 等待日志动画完成（800ms）+ 额外等待（200ms）= 1秒总等待时间
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // We pass the user-defined name here
+  const handleMintingComplete = async () => {
+    // 进度条完成后，执行铸造
     const newAgent = await onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
     if (newAgent) {
         setGeneratedAgent(newAgent);
@@ -134,6 +104,11 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     } else {
         setFabricationStep('CONFIG'); // Failed
     }
+  };
+
+  const handleConfirmFabrication = () => {
+    setFabricationStep('GENERATING');
+    // 不再使用setTimeout等待，而是由MintingLoader的进度条驱动
   };
 
   const handleAcceptAgent = () => {
@@ -417,7 +392,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  {/* Step 2: Minting Loading with Progress */}
                  {fabricationStep === 'GENERATING' && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <MintingLoader logs={logs} />
+                         <MintingLoader onComplete={handleMintingComplete} />
                      </div>
                  )}
 
