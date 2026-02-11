@@ -35,6 +35,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [nameHint, setNameHint] = useState('');
   const [generatedAgent, setGeneratedAgent] = useState<Agent | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [nftCounter, setNftCounter] = useState(1); // NFT编号计数器
 
   // Deployment State
   const [deployDirection, setDeployDirection] = useState<Direction>('AUTO');
@@ -140,6 +141,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
           setGeneratedAgent(null);
           setTwitterHandle('');
           setNameHint('');
+          setNftCounter(prev => prev + 1); // 增加NFT编号
       }
   };
 
@@ -440,6 +442,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in overflow-y-auto">
                          <NFTReveal 
                             agent={generatedAgent}
+                            userName={nameHint}
+                            nftNumber={nftCounter}
                             onDeployNow={handleAcceptAgent}
                          />
                      </div>
