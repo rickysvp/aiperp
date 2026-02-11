@@ -178,17 +178,17 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
             {/* Background Decor */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#836EF9] blur-[80px] opacity-20 pointer-events-none rounded-full" />
 
-            <div className="relative z-10 flex items-center justify-between">
-              {/* Left: Asset Selector & Price */}
-              <div>
+            <div className="relative z-10 flex items-center">
+              {/* Left: Asset Selector & Price - 固定宽度 */}
+              <div className="flex-shrink-0 w-[140px] lg:w-[180px]">
                 <div className="relative mb-1">
                     <button
                       onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
-                      className="flex items-center gap-2.5 text-slate-400 text-sm font-bold uppercase tracking-wider hover:text-white transition-colors py-2 px-4 rounded-lg hover:bg-white/5"
+                      className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-white transition-colors"
                     >
-                        <Activity className="w-5 h-5 text-[#836EF9]" />
+                        <Activity className="w-4 h-4 text-[#836EF9]" />
                         {selectedAsset}{t('asset_perp')}
-                        <ChevronDown size={16} />
+                        <ChevronDown size={14} />
                     </button>
 
                     {assetDropdownOpen && (
@@ -209,14 +209,17 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
                     )}
                 </div>
 
-                <div className="text-xl lg:text-3xl font-mono font-bold tracking-tighter text-white">
+                <div className="text-lg lg:text-2xl font-mono font-bold tracking-tighter text-white">
                   ${market.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
 
+              {/* Spacer */}
+              <div className="flex-1"></div>
+
               {/* Right: Mini Chart & Trend */}
-              <div className="flex items-center gap-6">
-                 <div className="h-[52px] w-[110px] lg:h-[64px] lg:w-[140px]">
+              <div className="flex items-center gap-4 flex-shrink-0">
+                 <div className="h-[40px] w-[80px] lg:h-[52px] lg:w-[110px]">
                    <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={market.history}>
                           <defs>
@@ -230,18 +233,18 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
                           type="monotone"
                           dataKey="price"
                           stroke={market.lastChangePct >= 0 ? '#00FF9D' : '#FF0055'}
-                          strokeWidth={2.5}
+                          strokeWidth={2}
                           fill="url(#miniChart)"
                           isAnimationActive={false}
                           />
                       </AreaChart>
                    </ResponsiveContainer>
                  </div>
-                 <div className="text-right">
-                   <span className={`block text-lg lg:text-xl font-mono font-bold ${market.lastChangePct >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
+                 <div className="text-right w-[60px] lg:w-[70px]">
+                   <span className={`block text-sm lg:text-base font-mono font-bold ${market.lastChangePct >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
                      {market.lastChangePct >= 0 ? '+' : ''}{market.lastChangePct.toFixed(2)}%
                    </span>
-                   <span className={`text-xs font-bold tracking-wider uppercase ${market.trend === 'UP' ? 'text-[#00FF9D]/70' : market.trend === 'DOWN' ? 'text-[#FF0055]/70' : 'text-slate-500'}`}>
+                   <span className={`text-[10px] font-bold tracking-wider uppercase ${market.trend === 'UP' ? 'text-[#00FF9D]/70' : market.trend === 'DOWN' ? 'text-[#FF0055]/70' : 'text-slate-500'}`}>
                      {market.trend === 'UP' ? t('bullish') : market.trend === 'DOWN' ? t('bearish') : t('flat')}
                    </span>
                  </div>
