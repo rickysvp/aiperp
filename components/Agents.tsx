@@ -111,6 +111,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const mintPromiseRef = useRef<Promise<Agent | null> | null>(null);
 
   const handleConfirmFabrication = () => {
+    console.log('handleConfirmFabrication called', { nameHint, twitterHandle, walletBalance, FABRICATION_COST });
     setFabricationStep('GENERATING');
     // 立即开始铸造，与加载动画并行
     mintPromiseRef.current = onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
@@ -453,21 +454,21 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                          </div>
                                      </div>
 
-                                     <Button
+                                     <button
                                          onClick={handleConfirmFabrication}
                                          disabled={walletBalance < FABRICATION_COST}
-                                         className="w-full py-3 text-sm font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg"
+                                         className="w-full py-3 text-sm font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg text-black flex items-center justify-center gap-2"
                                      >
                                          {walletBalance < FABRICATION_COST ? (
-                                             <span className="flex items-center justify-center gap-1.5">
+                                             <>
                                                  <AlertTriangle size={16} /> {t('insufficient')}
-                                             </span>
+                                             </>
                                          ) : (
-                                             <span className="flex items-center justify-center gap-1.5">
+                                             <>
                                                  <Zap size={16} /> {t('mint_agent')}
-                                             </span>
+                                             </>
                                          )}
-                                     </Button>
+                                     </button>
                                  </div>
                             </div>
                         </div>
