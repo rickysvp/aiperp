@@ -423,17 +423,15 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                         </div>
                                     </div>
                                     
-                                    <Button 
+                                    <Button
                                         onClick={handleConfirmFabrication}
-                                        disabled={walletBalance < FABRICATION_COST || !nameHint.trim()}
+                                        disabled={walletBalance < FABRICATION_COST}
                                         className="w-full py-3 text-sm font-display bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg"
                                     >
                                         {walletBalance < FABRICATION_COST ? (
                                             <span className="flex items-center justify-center gap-1.5">
                                                 <AlertTriangle size={16} /> Insufficient
                                             </span>
-                                        ) : !nameHint.trim() ? (
-                                            <span>Enter Name</span>
                                         ) : (
                                             <span className="flex items-center justify-center gap-1.5">
                                                 <Zap size={16} /> Mint Agent
