@@ -857,27 +857,30 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  )}
 
                  {/* Actions - Different for each status */}
-                 <div className="mt-auto grid grid-cols-2 gap-3">
-                     <Button
-                         onClick={() => handleSocialShare(selectedAgent)}
-                         variant="secondary"
-                         className="h-12"
-                     >
-                         {selectedAgent.status === 'ACTIVE' ? t('share_status') : selectedAgent.status === 'IDLE' ? t('share_agent') : t('share_report')}
-                     </Button>
+                 <div className="mt-auto">
                      {selectedAgent.status === 'ACTIVE' ? (
-                         <Button
-                             onClick={() => handleWithdrawClick(selectedAgent)}
-                             className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
-                         >
-                             {t('withdraw')}
-                         </Button>
+                         <div className="grid grid-cols-2 gap-3">
+                             <Button
+                                 onClick={() => handleSocialShare(selectedAgent)}
+                                 variant="secondary"
+                                 className="h-12"
+                             >
+                                 {t('share_status')}
+                             </Button>
+                             <Button
+                                 onClick={() => handleWithdrawClick(selectedAgent)}
+                                 className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
+                             >
+                                 {t('withdraw')}
+                             </Button>
+                         </div>
                      ) : (
                          <Button
-                             onClick={() => setSelection('FABRICATE')}
-                             className="h-12 bg-slate-700 hover:bg-slate-600"
+                             onClick={() => handleSocialShare(selectedAgent)}
+                             variant="secondary"
+                             className="h-12 w-full"
                          >
-                             {t('back_to_list')}
+                             {selectedAgent.status === 'IDLE' ? t('share_agent') : t('share_report')}
                          </Button>
                      )}
                  </div>
