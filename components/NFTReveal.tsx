@@ -57,7 +57,7 @@ export const NFTReveal: React.FC<NFTRevealProps> = ({ agent, userName, nftNumber
               
               {/* Agent图像 */}
               <img 
-                src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.avatarSeed}`}
+                src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`}
                 alt={agent.name}
                 className="w-full h-full object-cover"
               />

@@ -75,7 +75,7 @@ export const AgentCard: React.FC<AgentCardProps> = React.memo(({
             ? isAuto ? 'border-violet-500' : isLong ? 'border-emerald-500' : 'border-rose-500'
             : 'border-slate-600'
         }`}>
-           <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
+           <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
         </div>
 
         {/* Info */}
@@ -126,7 +126,7 @@ export const AgentCard: React.FC<AgentCardProps> = React.memo(({
                     : 'border-slate-600'
                 }`}>
                     <img 
-                      src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.avatarSeed}`} 
+                      src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} 
                       className="w-full h-full object-cover"
                       alt={agent.name}
                     />

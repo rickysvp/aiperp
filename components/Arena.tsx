@@ -48,7 +48,7 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
                 {/* Avatar & Leverage */}
                 <div className="relative shrink-0">
                     <div className={`w-9 h-9 rounded bg-black border border-white/10 overflow-hidden ${isRekt ? 'grayscale opacity-50' : ''}`}>
-                        <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover opacity-90" loading="lazy" />
+                        <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover opacity-90" loading="lazy" />
                     </div>
                     {!isRekt && (
                         <div className={`absolute -bottom-1 -right-1 px-1 rounded-sm text-[8px] font-bold bg-black border border-white/20 ${themeColor}`}>

@@ -71,7 +71,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ agents }) => {
                            {/* Agent Profile */}
                            <div className="col-span-5 md:col-span-4 flex items-center gap-3 overflow-hidden">
                                <div className="relative w-10 h-10 rounded-lg bg-slate-800 shrink-0 overflow-hidden border border-white/10">
-                                   <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
+                                   <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
                                    {agent.owner === 'USER' && (
                                        <div className="absolute bottom-0 left-0 w-full h-1 bg-[#836EF9]" />
                                    )}

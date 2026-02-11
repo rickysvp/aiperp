@@ -13,6 +13,7 @@ interface AgentsProps {
   market: MarketState;
   onMint: (twitterHandle?: string, nameHint?: string) => Promise<Agent | null>;
   onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number) => Promise<void>;
+  onWithdraw: (agentId: string) => Promise<void>;
   walletBalance: number;
   shouldHighlightFab?: boolean;
 }
@@ -20,7 +21,7 @@ interface AgentsProps {
 const FABRICATION_COST = 100;
 const MIN_COLLATERAL = 100;
 
-export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, walletBalance, shouldHighlightFab }) => {
+export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
   // Selection State: 'FABRICATE' or agentId
   const [selection, setSelection] = useState<string>('FABRICATE');
@@ -45,6 +46,9 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [chatHistory, setChatHistory] = useState<{role: 'user' | 'agent', text: string}[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Withdraw State - Simple toast notification
+  const [withdrawToast, setWithdrawToast] = useState<{show: boolean; agentName: string; amount: number}>({show: false, agentName: '', amount: 0});
 
   // Group Agents
   const { activeAgents, idleAgents, deadAgents } = useMemo(() => {
@@ -131,6 +135,37 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
     setSelection(agentId);
   };
 
+  // Withdraw with confirmation modal
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawingAgent, setWithdrawingAgent] = useState<Agent | null>(null);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+
+  const handleWithdrawClick = (agent: Agent) => {
+    setWithdrawingAgent(agent);
+    setWithdrawModalOpen(true);
+  };
+
+  const handleConfirmWithdraw = async () => {
+    if (!withdrawingAgent) return;
+    
+    setWithdrawLoading(true);
+    
+    // Close modal and return to list immediately
+    setWithdrawModalOpen(false);
+    setWithdrawingAgent(null);
+    setSelection('FABRICATE');
+    
+    // Execute withdraw in background
+    await onWithdraw(withdrawingAgent.id);
+    
+    setWithdrawLoading(false);
+  };
+
+  const handleCancelWithdraw = () => {
+    setWithdrawModalOpen(false);
+    setWithdrawingAgent(null);
+  };
+
   const handleSocialShare = (agent: Agent) => {
       let text = '';
       if (agent.status === 'LIQUIDATED') {
@@ -189,8 +224,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       return (
         <div 
             key={agent.id}
-            onClick={() => handleSelectAgent(agent.id)}
-            className={`group p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden mb-2 ${
+            className={`group p-3 rounded-xl border transition-all flex items-center gap-3 relative overflow-hidden mb-2 ${
                 selection === agent.id 
                 ? 'bg-[#836EF9]/10 border-[#836EF9] shadow-[0_0_15px_rgba(131,110,249,0.2)]' 
                 : 'bg-[#0f111a] border-slate-800 hover:border-slate-600 hover:bg-[#151824]'
@@ -199,25 +233,32 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             {/* Selection Indicator */}
             {selection === agent.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#836EF9]" />}
 
-            <div className={`w-10 h-10 rounded-lg bg-black shrink-0 overflow-hidden border ${agent.status === 'LIQUIDATED' ? 'border-slate-800 grayscale opacity-50' : 'border-slate-700'}`}>
-                <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
-                    <h4 className={`text-xs font-bold font-display truncate ${selection === agent.id ? 'text-white' : 'text-slate-300'}`}>{agent.name}</h4>
-                    {agent.status === 'ACTIVE' && (
-                        <span className={`text-[10px] font-mono ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                            {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)}
-                        </span>
-                    )}
+            <div 
+                onClick={() => handleSelectAgent(agent.id)}
+                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+            >
+                <div className={`w-10 h-10 rounded-lg bg-black shrink-0 overflow-hidden border ${agent.status === 'LIQUIDATED' ? 'border-slate-800 grayscale opacity-50' : 'border-slate-700'}`}>
+                    <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                    <span className="truncate max-w-[80px]">{agent.strategy}</span>
-                    <span className="text-slate-600">|</span>
-                    <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
+                
+                <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center">
+                        <h4 className={`text-xs font-bold font-display truncate ${selection === agent.id ? 'text-white' : 'text-slate-300'}`}>{agent.name}</h4>
+                        {agent.status === 'ACTIVE' && (
+                            <span className={`text-[10px] font-mono ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
+                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                        <span className="truncate max-w-[80px]">{agent.strategy}</span>
+                        <span className="text-slate-600">|</span>
+                        <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
+                    </div>
                 </div>
             </div>
+
+
         </div>
       );
   };
@@ -423,7 +464,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                          {/* Avatar */}
                          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg shrink-0 mx-auto lg:mx-0">
-                             <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
+                             <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
                          </div>
                          
                          {/* Info */}
@@ -731,7 +772,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          {/* Avatar */}
                          <div className="relative w-20 h-20 lg:w-24 lg:h-24 shrink-0 mx-auto lg:mx-0">
                              <div className="w-full h-full rounded-2xl bg-black border-2 border-slate-700 overflow-hidden shadow-lg">
-                                 <img src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
+                                 <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${selectedAgent.avatarSeed}`} className="w-full h-full object-cover" />
                              </div>
                              {selectedAgent.status === 'ACTIVE' && (
                                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00FF9D] border-2 border-[#050508] rounded-full animate-pulse" />
@@ -872,12 +913,21 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                      >
                          {selectedAgent.status === 'ACTIVE' ? 'Share Status' : 'Share Results'}
                      </Button>
-                     <Button 
-                         onClick={() => setSelection('FABRICATE')}
-                         className="h-12 bg-slate-700 hover:bg-slate-600"
-                     >
-                         Back to List
-                     </Button>
+                     {selectedAgent.status === 'ACTIVE' ? (
+                         <Button 
+                             onClick={() => handleWithdrawClick(selectedAgent)}
+                             className="h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
+                         >
+                             Withdraw
+                         </Button>
+                     ) : (
+                         <Button 
+                             onClick={() => setSelection('FABRICATE')}
+                             className="h-12 bg-slate-700 hover:bg-slate-600"
+                         >
+                             Back to List
+                         </Button>
+                     )}
                  </div>
              </div>
          )}
@@ -900,6 +950,35 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
          )}
 
       </div>
+
+      {/* Withdraw Confirmation Modal */}
+      {withdrawModalOpen && withdrawingAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0f111a] border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4">Confirm Withdraw</h3>
+            <p className="text-sm text-slate-400 mb-6">
+              Withdraw {withdrawingAgent.balance.toFixed(2)} $MON from {withdrawingAgent.name}?
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleCancelWithdraw}
+                variant="secondary"
+                className="flex-1 h-12"
+                disabled={withdrawLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleConfirmWithdraw}
+                className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-black font-bold"
+                disabled={withdrawLoading}
+              >
+                {withdrawLoading ? 'Processing...' : 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
