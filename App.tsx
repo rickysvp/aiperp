@@ -4,7 +4,7 @@ import { INITIAL_BALANCE, MINT_COST, GAME_TICK_MS } from './constants';
 import { generateAgentPersona } from './services/kimiService';
 import { Arena } from './components/Arena';
 import { Agents } from './components/Agents';
-import { Wallet } from './components/Wallet';
+import { WalletV2 } from './components/WalletV2';
 import { Leaderboard } from './components/Leaderboard';
 import { AuthModal } from './components/AuthModal';
 import { Onboarding } from './components/Onboarding';
@@ -147,9 +147,10 @@ const AppContent: React.FC = () => {
         });
     }
 
-    // Initialize System Bots
+    // Initialize System Bots (500-1000 agents per asset)
     const systemBots: Agent[] = [];
-    for (let i = 0; i < 200; i++) {
+    const botCount = Math.floor(Math.random() * 501) + 500; // 500-1000 agents
+    for (let i = 0; i < botCount; i++) {
         const dir = Math.random() > 0.5 ? 'LONG' : 'SHORT';
         const leverage = Math.floor(Math.random() * 19) + 1;
         const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
@@ -655,11 +656,15 @@ const AppContent: React.FC = () => {
              <Leaderboard agents={agents} />
           )}
           {activeTab === Tab.WALLET && (
-            <Wallet 
+            <WalletV2 
                 wallet={wallet} 
-                agents={agents} 
+                agents={agents}
+                logs={logs}
                 onLogout={handleLogout} 
                 onShowLegal={() => setShowLegal(true)}
+                referralCode={wallet.referralCode || ''}
+                referralCount={wallet.referralCount || 0}
+                referralEarnings={wallet.referralEarnings || 0}
             />
           )}
         </div>

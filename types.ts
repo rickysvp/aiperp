@@ -9,6 +9,7 @@ export interface Agent {
   minter: string; // Wallet address or 'Protocol'
   minterTwitter?: string; // Twitter handle of the minter
   name: string;
+  nftId?: string; // NFT number displayed as #XXXX
   bio: string;
   avatarSeed: string; // For generating unique avatar images
   direction: Direction;
@@ -24,6 +25,9 @@ export interface Agent {
 
   // Social Features
   twitterHandle?: string;
+  
+  // Runtime properties (not persisted)
+  effectiveDirection?: 'LONG' | 'SHORT'; // For AUTO strategy - actual direction this tick
 }
 
 export interface MarketState {
@@ -42,6 +46,9 @@ export interface WalletState {
   referralCode?: string;
   referralEarnings: number;
   referralCount: number;
+  // Energy System
+  energy: number;
+  totalEnergyEarned: number;
 }
 
 export interface BattleLog {

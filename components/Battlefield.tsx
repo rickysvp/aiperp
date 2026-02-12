@@ -140,6 +140,7 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const spritesRef = useRef<{ long: HTMLCanvasElement[], short: HTMLCanvasElement[] }>({ long: [], short: [] });
+  const prevSymbolRef = useRef<string>(market.symbol);
 
   // Game State Ref
   const gameState = useRef({
@@ -159,6 +160,29 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
     prevPnL: new Map<string, number>(),
     renderableAgents: [] as RenderableAgent[]
   });
+
+  // Reset game state when asset symbol changes
+  useEffect(() => {
+    if (prevSymbolRef.current !== market.symbol) {
+      console.log(`[Battlefield] Asset changed from ${prevSymbolRef.current} to ${market.symbol}, resetting state...`);
+      prevSymbolRef.current = market.symbol;
+      
+      // Reset game state
+      gameState.current.battlePosition = 50;
+      gameState.current.targetBattlePosition = 50;
+      gameState.current.velocity = 0;
+      gameState.current.lastPrice = market.price;
+      gameState.current.priceTrend = 0;
+      
+      // Clear all active effects
+      gameState.current.particles.forEach(p => p.active = false);
+      gameState.current.beams.forEach(b => b.active = false);
+      gameState.current.floatingTexts.forEach(t => t.active = false);
+      gameState.current.agentFlashes.clear();
+      gameState.current.prevPnL.clear();
+      gameState.current.renderableAgents = [];
+    }
+  }, [market.symbol]);
 
   // Helpers to spawn objects from pool
   const spawnParticle = (x: number, y: number, color: string, speed: number = 4) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Zap, Swords, ChevronRight, X, ArrowRightCircle } from 'lucide-react';
+import { Bot, Zap, Swords, ChevronRight, X, ArrowRightCircle, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface OnboardingProps {
@@ -12,19 +12,19 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onFinish }) => {
 
   const steps = [
     {
-      icon: <Bot size={64} className="text-[#836EF9]" />,
-      title: t('ob_step1_title'),
-      text: t('ob_step1_text')
+      icon: <Sparkles size={64} className="text-[#836EF9]" />,
+      title: "Welcome to AIPerps",
+      text: "The future of AI-powered trading. Create your agents, deploy them to the market, and watch them trade autonomously."
     },
     {
-      icon: <Zap size={64} className="text-[#00FF9D]" />,
-      title: t('ob_step2_title'),
-      text: t('ob_step2_text')
+      icon: <Bot size={64} className="text-[#00FF9D]" />,
+      title: "Create Your Agent",
+      text: "Mint unique AI agents with distinct personalities and strategies. Each agent is an NFT that trades on your behalf."
     },
     {
-      icon: <Swords size={64} className="text-[#FF0055]" />,
-      title: t('ob_step3_title'),
-      text: t('ob_step3_text')
+      icon: <Zap size={64} className="text-[#FF0055]" />,
+      title: "Deploy & Earn",
+      text: "Deploy your agents with custom leverage and direction. Earn profits as they trade in the arena 24/7."
     }
   ];
 

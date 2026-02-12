@@ -8,6 +8,15 @@ import { AgentCard } from './AgentCard';
 import { MintingLoader } from './MintingLoader';
 import { NFT3DCard } from './NFT3DCard';
 import { AgentsDashboard } from './AgentsDashboard';
+import { AgentAvatar } from './AgentAvatar';
+import {
+  formatNumber,
+  formatCurrency,
+  formatPercentage,
+  validateDeployment,
+  safeMultiply,
+  isValidNumber,
+} from '../utils/financialUtils';
 
 interface AgentsProps {
   agents: Agent[];
@@ -62,7 +71,16 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [deployDirection, setDeployDirection] = useState<Direction>('AUTO');
   const [deployLeverage, setDeployLeverage] = useState(5);
   const [deployCollateral, setDeployCollateral] = useState(400);
+  const [deployAsset, setDeployAsset] = useState<'BTC' | 'ETH' | 'SOL' | 'MON'>('BTC');
   const [activeTab, setActiveTab] = useState<'DEPLOY' | 'CHAT'>('DEPLOY');
+
+  // Available trading assets
+  const tradingAssets = [
+    { symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: '#F7931A' },
+    { symbol: 'ETH', name: 'Ethereum', icon: 'Ξ', color: '#627EEA' },
+    { symbol: 'SOL', name: 'Solana', icon: '◎', color: '#00FFA3' },
+    { symbol: 'MON', name: 'Monad', icon: '◈', color: '#836EF9' },
+  ];
 
   // Chat State
   const [chatInput, setChatInput] = useState('');
@@ -262,7 +280,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                 className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
             >
                 <div className={`w-10 h-10 rounded-lg bg-black shrink-0 overflow-hidden border ${agent.status === 'LIQUIDATED' ? 'border-slate-800 grayscale opacity-50' : 'border-slate-700'}`}>
-                    <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" />
+                    <AgentAvatar seed={agent.avatarSeed} size={40} className="w-full h-full" />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -275,7 +293,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                         )}
                     </div>
                     <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-slate-500 font-mono">#{String(index + 1).padStart(4, '0')}</span>
+                        <span className="text-slate-500 font-mono">{agent.nftId ? `#${agent.nftId}` : `#${String(index + 1).padStart(4, '0')}`}</span>
                         <div className="flex items-center gap-2">
                             <span className={`${winRate > 50 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>WR: {winRate}%</span>
                             {agent.status === 'ACTIVE' && agent.balance > 0 && (
@@ -529,8 +547,11 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
                          {/* Info */}
                          <div className="flex-1 text-center lg:text-left">
-                             <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-2 justify-center lg:justify-start">
+                             <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-1 justify-center lg:justify-start">
                                  <h2 className="text-xl lg:text-2xl font-display font-bold text-white">{selectedAgent.name}</h2>
+                                 {selectedAgent.nftId && (
+                                     <span className="text-xs font-mono text-slate-500">#{selectedAgent.nftId}</span>
+                                 )}
                                  {selectedAgent.twitterHandle && (
                                      <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full border border-blue-500/20 inline-flex items-center gap-1 w-fit mx-auto lg:mx-0">
                                          <AtSign size={10} /> {selectedAgent.twitterHandle}
@@ -733,57 +754,90 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  </div>
 
                  {/* IDLE Agent: Deploy Section */}
-                 {selectedAgent.status === 'IDLE' && (
-                     <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
-                         <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                             <Rocket size={18} className="text-[#836EF9]" />
-                             {t('deploy_section')}
-                         </h3>
+                {selectedAgent.status === 'IDLE' && (
+                    <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
+                        <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                            <Rocket size={18} className="text-[#836EF9]" />
+                            {t('deploy_section')}
+                        </h3>
 
-                         {/* Direction Selection */}
-                         <div className="mb-4">
-                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
-                                 <Crosshair size={14} /> {t('direction')}
-                             </label>
-                             <div className="grid grid-cols-3 gap-3">
-                                 <button
-                                     onClick={() => setDeployDirection('AUTO')}
-                                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                         deployDirection === 'AUTO'
-                                         ? 'bg-[#836EF9]/20 border-[#836EF9]'
-                                         : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                     }`}
-                                 >
-                                     <Brain size={18} className={deployDirection === 'AUTO' ? 'text-[#836EF9]' : 'text-slate-500'} />
-                                     <span className={`text-xs font-bold ${deployDirection === 'AUTO' ? 'text-white' : 'text-slate-400'}`}>AUTO</span>
-                                 </button>
-                                 <button
-                                     onClick={() => setDeployDirection('LONG')}
-                                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                         deployDirection === 'LONG'
-                                         ? 'bg-emerald-500/10 border-emerald-500'
-                                         : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                     }`}
-                                 >
-                                     <TrendingUp size={18} className={deployDirection === 'LONG' ? 'text-emerald-400' : 'text-slate-500'} />
-                                     <span className={`text-xs font-bold ${deployDirection === 'LONG' ? 'text-white' : 'text-slate-400'}`}>LONG</span>
-                                 </button>
-                                 <button
-                                     onClick={() => setDeployDirection('SHORT')}
-                                     className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                         deployDirection === 'SHORT'
-                                         ? 'bg-rose-500/10 border-rose-500'
-                                         : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                     }`}
-                                 >
-                                     <TrendingDown size={18} className={deployDirection === 'SHORT' ? 'text-rose-400' : 'text-slate-500'} />
-                                     <span className={`text-xs font-bold ${deployDirection === 'SHORT' ? 'text-white' : 'text-slate-400'}`}>SHORT</span>
-                                 </button>
-                             </div>
-                         </div>
+                        {/* Asset Selection */}
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
+                                <Coins size={14} /> Trading Asset
+                            </label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {tradingAssets.map((asset) => (
+                                    <button
+                                        key={asset.symbol}
+                                        onClick={() => setDeployAsset(asset.symbol as 'BTC' | 'ETH' | 'SOL' | 'MON')}
+                                        className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                                            deployAsset === asset.symbol
+                                            ? 'bg-slate-800 border-[#836EF9]'
+                                            : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                        }`}
+                                    >
+                                        <span 
+                                            className="text-lg font-bold"
+                                            style={{ color: deployAsset === asset.symbol ? asset.color : '#64748b' }}
+                                        >
+                                            {asset.icon}
+                                        </span>
+                                        <span className={`text-[10px] font-bold ${deployAsset === asset.symbol ? 'text-white' : 'text-slate-400'}`}>
+                                            {asset.symbol}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2">
+                                Selected: <span className="text-[#836EF9]">{tradingAssets.find(a => a.symbol === deployAsset)?.name}</span>
+                            </p>
+                        </div>
 
-                         {/* Leverage & Collateral */}
-                         <div className="grid grid-cols-2 gap-4 mb-4">
+                        {/* Direction Selection */}
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
+                                <Crosshair size={14} /> {t('direction')}
+                            </label>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button
+                                    onClick={() => setDeployDirection('AUTO')}
+                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                        deployDirection === 'AUTO'
+                                        ? 'bg-[#836EF9]/20 border-[#836EF9]'
+                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <Brain size={18} className={deployDirection === 'AUTO' ? 'text-[#836EF9]' : 'text-slate-500'} />
+                                    <span className={`text-xs font-bold ${deployDirection === 'AUTO' ? 'text-white' : 'text-slate-400'}`}>AUTO</span>
+                                </button>
+                                <button
+                                    onClick={() => setDeployDirection('LONG')}
+                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                        deployDirection === 'LONG'
+                                        ? 'bg-emerald-500/10 border-emerald-500'
+                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <TrendingUp size={18} className={deployDirection === 'LONG' ? 'text-emerald-400' : 'text-slate-500'} />
+                                    <span className={`text-xs font-bold ${deployDirection === 'LONG' ? 'text-white' : 'text-slate-400'}`}>LONG</span>
+                                </button>
+                                <button
+                                    onClick={() => setDeployDirection('SHORT')}
+                                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                                        deployDirection === 'SHORT'
+                                        ? 'bg-rose-500/10 border-rose-500'
+                                        : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <TrendingDown size={18} className={deployDirection === 'SHORT' ? 'text-rose-400' : 'text-slate-500'} />
+                                    <span className={`text-xs font-bold ${deployDirection === 'SHORT' ? 'text-white' : 'text-slate-400'}`}>SHORT</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Leverage & Collateral */}
+                        <div className="grid grid-cols-2 gap-4 mb-4">
                              <div>
                                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">{t('leverage')}</label>
                                  <input

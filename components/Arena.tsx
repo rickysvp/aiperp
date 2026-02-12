@@ -116,6 +116,7 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
   const [mobileListTab, setMobileListTab] = useState<'LONG' | 'SHORT'>('LONG');
   const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
   const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
+  const [isSwitchingAsset, setIsSwitchingAsset] = useState(false);
 
   const activeAgents = agents.filter(a => a.status === 'ACTIVE');
   
@@ -183,12 +184,17 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
               <div className="flex-shrink-0 w-[140px] lg:w-[180px]">
                 <div className="relative mb-1">
                     <button
-                      onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
-                      className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-white transition-colors"
+                      onClick={() => !isSwitchingAsset && setAssetDropdownOpen(!assetDropdownOpen)}
+                      disabled={isSwitchingAsset}
+                      className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Activity className="w-4 h-4 text-[#836EF9]" />
-                        {selectedAsset}{t('asset_perp')}
-                        <ChevronDown size={14} />
+                        {isSwitchingAsset ? (
+                            <span className="animate-pulse">Switching...</span>
+                        ) : (
+                            <>{selectedAsset}{t('asset_perp')}</>
+                        )}
+                        {!isSwitchingAsset && <ChevronDown size={14} />}
                     </button>
 
                     {assetDropdownOpen && (
@@ -196,13 +202,17 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
                             {ASSETS.map(asset => (
                                 <button
                                   key={asset}
-                                  onClick={() => {
-                                      onAssetChange(asset);
+                                  disabled={isSwitchingAsset || asset === selectedAsset}
+                                  onClick={async () => {
+                                      if (isSwitchingAsset || asset === selectedAsset) return;
+                                      setIsSwitchingAsset(true);
                                       setAssetDropdownOpen(false);
+                                      await onAssetChange(asset);
+                                      setIsSwitchingAsset(false);
                                   }}
-                                  className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors ${selectedAsset === asset ? 'text-[#836EF9]' : 'text-slate-400'}`}
+                                  className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${selectedAsset === asset ? 'text-[#836EF9]' : 'text-slate-400'}`}
                                 >
-                                    {asset}
+                                    {asset} {asset === selectedAsset && '✓'}
                                 </button>
                             ))}
                         </div>
@@ -210,7 +220,23 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
                 </div>
 
                 <div className="text-lg lg:text-2xl font-mono font-bold tracking-tighter text-white">
-                  ${market.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {market.price > 0 ? (
+                    (() => {
+                      // Determine decimal places based on price magnitude
+                      let decimals = 2;
+                      if (market.price < 1) decimals = 6;
+                      else if (market.price < 100) decimals = 4;
+                      else if (market.price < 1000) decimals = 2;
+                      else decimals = 2;
+                      
+                      return `$${market.price.toLocaleString(undefined, { 
+                        minimumFractionDigits: decimals, 
+                        maximumFractionDigits: decimals 
+                      })}`;
+                    })()
+                  ) : (
+                    <span className="text-slate-500 animate-pulse">Loading...</span>
+                  )}
                 </div>
               </div>
 
