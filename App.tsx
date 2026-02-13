@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tab, Agent, MarketState, WalletState, BattleLog, Direction, LootEvent, AssetSymbol } from './types';
+import { Tab, Agent, MarketState, BattleLog, Direction, LootEvent, AssetSymbol } from './types';
 import { INITIAL_BALANCE, MINT_COST, GAME_TICK_MS } from './constants';
 import { generateAgentPersona } from './services/kimiService';
 import { Arena } from './components/Arena';
@@ -13,8 +13,8 @@ import { LayoutDashboard, Users, Wallet as WalletIcon, BrainCircuit, Trophy, Glo
 import { v4 as uuidv4 } from 'uuid';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { Logo } from './components/Logo';
-import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
 import { UserMenu } from './components/UserMenu';
+import { useWallet } from './contexts/WalletContext';
 
 const AGENT_FABRICATION_COST = 100;
 
@@ -66,26 +66,15 @@ const Marquee = ({ agents }: { agents: Agent[] }) => {
 
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
-  const { setShowAuthFlow } = useDynamicContext();
-  const isLoggedIn = useIsLoggedIn();
+  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updatePnl } = useWallet();
+  
   // --- State ---
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [highlightMint, setHighlightMint] = useState(false); // For tutorial guidance
 
-  const [currentUser, setCurrentUser] = useState<{email: string, address: string} | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.ARENA);
   const [selectedAsset, setSelectedAsset] = useState<AssetSymbol>('BTC');
-  
-  const [wallet, setWallet] = useState<WalletState>({
-    address: '',
-    balance: 0,
-    totalPnl: 0,
-    referralEarnings: 0,
-    referralCount: 0,
-    energy: 0
-  });
 
   const [market, setMarket] = useState<MarketState>({
     symbol: 'BTC',
@@ -129,28 +118,6 @@ const AppContent: React.FC = () => {
 
   // --- Auth & Init ---
   useEffect(() => {
-    const savedUser = localStorage.getItem('aipers_user');
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        setIsAuthenticated(true);
-        // Load wallet from storage or init
-        const savedBalance = localStorage.getItem('aipers_balance');
-        const savedRef = localStorage.getItem('aipers_referral');
-        
-        let refData = { earnings: 0, count: 0, code: '' };
-        if (savedRef) refData = JSON.parse(savedRef);
-
-        setWallet({
-            address: user.address,
-            balance: savedBalance ? parseFloat(savedBalance) : INITIAL_BALANCE,
-            totalPnl: 0,
-            referralEarnings: refData.earnings,
-            referralCount: refData.count,
-            referralCode: refData.code
-        });
-    }
-
     // Initialize System Bots (500-1000 agents per asset)
     const systemBots: Agent[] = [];
     const botCount = Math.floor(Math.random() * 501) + 500; // 500-1000 agents
@@ -188,57 +155,16 @@ const AppContent: React.FC = () => {
     }
     setAgents(systemBots);
     addLog("System Swarm Initialized.", "MINT");
-  }, []);
-
-  // Save balance on change
-  useEffect(() => {
-    if (isAuthenticated) {
-        localStorage.setItem('aipers_balance', wallet.balance.toString());
-        localStorage.setItem('aipers_referral', JSON.stringify({
-            earnings: wallet.referralEarnings,
-            count: wallet.referralCount,
-            code: wallet.referralCode
-        }));
-    }
-  }, [wallet.balance, wallet.referralEarnings, isAuthenticated]);
-
-  const handleLogin = (email: string) => {
-    // Generate deterministic-ish address
-    const mockAddress = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
-    
-    // Generate Referral Code from email
-    const refCode = email.split('@')[0].toUpperCase().substring(0, 8);
-
-    const user = { email, address: mockAddress };
-    
-    localStorage.setItem('aipers_user', JSON.stringify(user));
-    localStorage.setItem('aipers_balance', INITIAL_BALANCE.toString());
-    
-    setCurrentUser(user);
-    setWallet({
-        address: mockAddress,
-        balance: INITIAL_BALANCE,
-        totalPnl: 0,
-        referralCode: refCode,
-        referralEarnings: 0,
-        referralCount: 0
-    });
-    setIsAuthenticated(true);
 
     // Check onboarding
     const hasSeen = localStorage.getItem('hasSeenOnboarding');
-    if (!hasSeen) {
+    if (!hasSeen && isConnected) {
         setShowOnboarding(true);
     }
-  };
+  }, [isConnected]);
 
   const handleLogout = () => {
-    localStorage.removeItem('aipers_user');
-    localStorage.removeItem('aipers_balance');
-    localStorage.removeItem('aipers_referral');
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setWallet({ address: '', balance: 0, totalPnl: 0, referralEarnings: 0, referralCount: 0 });
+    disconnect();
     setActiveTab(Tab.ARENA);
     // Remove user agents
     setAgents(prev => prev.filter(a => a.owner !== 'USER'));
@@ -408,24 +334,11 @@ const AppContent: React.FC = () => {
         // --- D. Update State ---
         setAgents([...currentAgents]);
         
-        const newWalletBalance = walletRef.current.balance + userBalanceChange;
-        
-        // SIMULATION: Randomly increment referral earnings
-        let newReferralEarnings = walletRef.current.referralEarnings;
-        let newReferralCount = walletRef.current.referralCount;
-        if (Math.random() < 0.01) { // 1% chance per tick to get a referral commission
-             const commish = Math.floor(Math.random() * 50);
-             newReferralEarnings += commish;
-             if (Math.random() < 0.2) newReferralCount += 1; // New user joined
+        // Update wallet through context
+        if (userBalanceChange !== 0) {
+          updateBalance(userBalanceChange);
+          updatePnl(userBalanceChange);
         }
-
-        setWallet(prev => ({
-            ...prev,
-            balance: newWalletBalance,
-            totalPnl: prev.totalPnl + userBalanceChange,
-            referralEarnings: newReferralEarnings,
-            referralCount: newReferralCount
-        }));
 
         if (Math.abs(priceChangePct) > 0.002) {
              const winningSide = priceChangePct > 0 ? "BULLS" : "BEARS";
@@ -444,13 +357,13 @@ const AppContent: React.FC = () => {
     }, GAME_TICK_MS);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]); 
+  }, [isConnected, updateBalance, updatePnl]); 
 
   // --- Actions ---
   const handleMintAgent = async (twitterHandle?: string, nameHint?: string): Promise<Agent | null> => {
     // Check if user is logged in
-    if (!isAuthenticated && !isLoggedIn) {
-      setShowAuthFlow(true);
+    if (!isConnected) {
+      await connect();
       return null;
     }
     
@@ -465,7 +378,7 @@ const AppContent: React.FC = () => {
     const finalName = `${userInputName} #${nftId}`;
 
     // Deduct cost immediately
-    setWallet(prev => ({ ...prev, balance: prev.balance - AGENT_FABRICATION_COST }));
+    updateBalance(-AGENT_FABRICATION_COST);
     addLog(`Fabricating ${finalName}...`, 'MINT');
 
     try {
@@ -508,7 +421,7 @@ const AppContent: React.FC = () => {
     } catch (e) {
       console.error(e);
       // Refund on error
-      setWallet(prev => ({ ...prev, balance: prev.balance + AGENT_FABRICATION_COST }));
+      updateBalance(AGENT_FABRICATION_COST);
       return null;
     }
   };
@@ -525,7 +438,7 @@ const AppContent: React.FC = () => {
     const withdrawAmount = agent.balance;
 
     // Return balance to wallet
-    setWallet(prev => ({ ...prev, balance: prev.balance + withdrawAmount }));
+    updateBalance(withdrawAmount);
 
     // Reset agent to IDLE state
     setAgents(prev => prev.map(a => {
@@ -547,8 +460,8 @@ const AppContent: React.FC = () => {
 
   const handleDeployAgent = async (agentId: string, direction: Direction, leverage: number, collateral: number) => {
     // Check if user is logged in
-    if (!isAuthenticated && !isLoggedIn) {
-      setShowAuthFlow(true);
+    if (!isConnected) {
+      await connect();
       return;
     }
     
@@ -557,7 +470,7 @@ const AppContent: React.FC = () => {
       return;
     }
 
-    setWallet(prev => ({ ...prev, balance: prev.balance - collateral }));
+    updateBalance(-collateral);
     
     setAgents(prev => prev.map(agent => {
         if (agent.id === agentId) {
@@ -633,7 +546,7 @@ const AppContent: React.FC = () => {
                 <span className="text-xs font-bold">{language === 'en' ? 'EN' : '中'}</span>
              </button>
 
-             {isAuthenticated || isLoggedIn ? (
+             {isConnected ? (
                 <UserMenu 
                   wallet={wallet}
                   agents={agents}
@@ -642,11 +555,12 @@ const AppContent: React.FC = () => {
                 />
              ) : (
                 <button 
-                  onClick={() => setShowAuthFlow(true)}
-                  className="px-4 py-2 bg-[#836EF9] text-white text-sm font-bold rounded-lg hover:bg-[#6c56e0] transition-colors flex items-center gap-2"
+                  onClick={connect}
+                  disabled={isConnecting}
+                  className="px-4 py-2 bg-[#836EF9] text-white text-sm font-bold rounded-lg hover:bg-[#6c56e0] transition-colors flex items-center gap-2 disabled:opacity-50"
                 >
                   <WalletIcon size={16} />
-                  Connect
+                  {isConnecting ? 'Connecting...' : 'Connect'}
                 </button>
              )}
           </div>
@@ -707,8 +621,8 @@ const AppContent: React.FC = () => {
                   onClick={() => {
                     // Check if tab requires login
                     const requiresLogin = tab.id === Tab.AGENTS || tab.id === Tab.WALLET;
-                    if (requiresLogin && !isAuthenticated && !isLoggedIn) {
-                      setShowAuthFlow(true);
+                    if (requiresLogin && !isConnected) {
+                      connect();
                       return;
                     }
                     setActiveTab(tab.id as Tab);

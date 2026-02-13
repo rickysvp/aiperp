@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Wallet as WalletIcon, Settings, Gift, Download, FileText, LogOut, Copy, Zap, Users } from 'lucide-react';
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { useWallet } from '../contexts/WalletContext';
 
 interface UserMenuProps {
   wallet: {
@@ -19,7 +19,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { primaryWallet, user, handleLogOut } = useDynamicContext();
+  const { wallet: walletState, disconnect } = useWallet();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -38,8 +38,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDynamicLogout = async () => {
-    await handleLogOut();
+  const handleLogout = () => {
+    disconnect();
     onLogout();
     setIsOpen(false);
   };
@@ -50,9 +50,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
-  // Get wallet address from Dynamic
-  const evmAddress = primaryWallet?.address;
-  const userName = user?.username || user?.email || '@User';
+  // Get wallet address
+  const evmAddress = walletState.address;
+  const userName = 'Trader';
 
   return (
     <div className="relative" ref={menuRef}>
@@ -80,7 +80,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#836EF9] to-[#00FF9D] flex items-center justify-center">
               <WalletIcon size={12} className="text-white" />
             </div>
-            {primaryWallet && (
+            {evmAddress && (
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center -ml-2 border-2 border-[#1a1d2d]">
                 <span className="text-[8px] font-bold text-white">S</span>
               </div>
@@ -102,7 +102,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
                     <WalletIcon size={18} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-400">EVM</p>
+                    <p className="text-xs text-slate-400">Monad Testnet</p>
                     <p className="text-sm font-mono font-bold text-white">{formatAddress(evmAddress)}</p>
                   </div>
                 </div>
@@ -162,9 +162,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
               </span>
             </button>
 
-            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl transition-colors text-left">
+            <button 
+              onClick={onShowLegal}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl transition-colors text-left"
+            >
               <FileText size={18} className="text-slate-400" />
-              <span className="text-sm font-medium text-white">Documentation</span>
+              <span className="text-sm font-medium text-white">Legal & Privacy</span>
             </button>
           </div>
 
@@ -174,7 +177,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ wallet, agents, onLogout, on
           {/* Logout */}
           <div className="p-2">
             <button 
-              onClick={handleDynamicLogout}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 rounded-xl transition-colors text-left"
             >
               <LogOut size={18} className="text-red-400" />

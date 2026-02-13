@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { WalletState, Agent, BattleLog } from '../types';
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { useWallet } from '../contexts/WalletContext';
 import {
   Wallet as WalletIcon,
   TrendingUp,
@@ -157,7 +157,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
   referralEarnings
 }) => {
   const { t } = useLanguage();
-  const { primaryWallet } = useDynamicContext();
+  const { wallet: walletState } = useWallet();
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'analytics'>('overview');
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -745,9 +745,9 @@ export const WalletV2: React.FC<WalletV2Props> = ({
               <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
                 <p className="text-xs text-slate-500 mb-2">Your Wallet Address</p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs text-white bg-black p-3 rounded-lg break-all">{primaryWallet?.address || wallet.address}</code>
+                  <code className="flex-1 text-xs text-white bg-black p-3 rounded-lg break-all">{walletState.address}</code>
                   <button
-                    onClick={() => navigator.clipboard.writeText(primaryWallet?.address || wallet.address)}
+                    onClick={() => navigator.clipboard.writeText(walletState.address)}
                     className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white"
                   >
                     <Copy size={16} />
