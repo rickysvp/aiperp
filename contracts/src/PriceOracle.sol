@@ -2,17 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-/**
- * @title IPriceOracle
- * @notice Interface for price oracle
- */
-interface IPriceOracle {
-    function getPrice(string memory asset) external view returns (uint256);
-    function updatePrice(string memory asset, uint256 price) external;
-    function getPriceChange(string memory asset, uint256 timeframe) external view returns (int256);
-    function getPriceAge(string memory asset) external view returns (uint256);
-}
+import "./interfaces/IPriceOracle.sol";
 
 /**
  * @title PriceOracle

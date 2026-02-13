@@ -9,10 +9,12 @@ import "../src/AIperpArena.sol";
 
 contract DeployScript is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        // Use Anvil's default private key for local testing
+        uint256 deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
         address deployer = vm.addr(deployerPrivateKey);
-        
-        vm.startBroadcast(deployerPrivateKey);
+
+        // Start prank as deployer
+        vm.startPrank(deployer);
 
         // 1. Deploy Mock USDT
         MockUSDT usdt = new MockUSDT();
@@ -23,26 +25,27 @@ contract DeployScript is Script {
         console.log("PriceOracle deployed at:", address(oracle));
 
         // 3. Add authorized updaters for oracle
-        oracle.addAuthorized(deployer);
+        oracle.addUpdater(deployer);
         console.log("Added deployer as oracle authorized updater");
 
-        // 4. Deploy Agent NFT
-        AgentNFT agentNFT = new AgentNFT();
+        // 4. Deploy Agent NFT (requires USDT address and base URI)
+        AgentNFT agentNFT = new AgentNFT(address(usdt), "https://api.aiperp.fun/metadata/");
         console.log("AgentNFT deployed at:", address(agentNFT));
 
-        // 5. Deploy AIperp Arena
+        // 5. Deploy AIperp Arena (requires USDT, NFT, Oracle, FeeRecipient)
         AIperpArena arena = new AIperpArena(
             address(usdt),
+            address(agentNFT),
             address(oracle),
-            address(agentNFT)
+            deployer  // fee recipient
         );
         console.log("AIperpArena deployed at:", address(arena));
 
         // 6. Configure contracts
         // Add supported assets
-        oracle.addSupportedAsset("BTC");
-        oracle.addSupportedAsset("ETH");
-        oracle.addSupportedAsset("SOL");
+        oracle.addAsset("BTC");
+        oracle.addAsset("ETH");
+        oracle.addAsset("SOL");
         console.log("Added supported assets: BTC, ETH, SOL");
 
         // Set initial prices (8 decimals)
@@ -55,7 +58,7 @@ contract DeployScript is Script {
         usdt.mint(deployer, 1000000 * 10**6); // 1M USDT
         console.log("Minted 1M USDT to deployer");
 
-        vm.stopBroadcast();
+        vm.stopPrank();
 
         // Log deployment summary
         console.log("\n=== Deployment Summary ===");

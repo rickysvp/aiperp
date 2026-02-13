@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BattleLogic.sol";
+import "./interfaces/IPriceOracle.sol";
 
 interface IAgentNFT {
     struct AgentAttributes {
@@ -25,11 +26,6 @@ interface IAgentNFT {
     function agentAttributes(uint256 tokenId) external view returns (AgentAttributes memory);
     function exists(uint256 tokenId) external view returns (bool);
     function nextTokenId() external view returns (uint256);
-}
-
-interface IPriceOracle {
-    function getPrice(string memory asset) external view returns (uint256);
-    function updatePrice(string memory asset, uint256 price) external;
 }
 
 /**
