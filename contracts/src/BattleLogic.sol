@@ -132,12 +132,12 @@ library BattleLogic {
      * @notice Check if agent should be liquidated
      * @param pnl Current PnL (can be negative)
      * @param collateral Agent's collateral
-     * @return shouldLiquidate True if agent should be liquidated
+     * @return willLiquidate True if agent should be liquidated
      */
     function shouldLiquidate(
         int256 pnl,
         uint256 collateral
-    ) internal pure returns (bool shouldLiquidate) {
+    ) internal pure returns (bool willLiquidate) {
         if (pnl >= 0) return false;
         
         uint256 loss = uint256(-pnl);

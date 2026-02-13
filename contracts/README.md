@@ -1,197 +1,169 @@
-# AIperp Arena Smart Contracts
+# AIperp Arena Contracts
 
-AIperp Arena 的 Monad 链上智能合约，支持 Agent NFT 铸造、战斗竞技和 USDT 奖励分配。
+AIperp Arena 智能合约 - 基于 Foundry 构建，部署于 Monad 链。
 
-## 合约架构
+## 项目结构
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    AIperp Arena Contracts                    │
-├─────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ AIperpArena  │  │ AgentNFT     │  │ USDT Token   │      │
-│  │ (主合约)      │  │ (NFT合约)    │  │ (ERC20)      │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-│         │                 │                 │               │
-│         └─────────────────┴─────────────────┘               │
-│                           │                                 │
-│  ┌──────────────┐  ┌──────┴──────┐  ┌──────────────┐      │
-│  │ PriceOracle  │  │ BattleLogic │  │ MockUSDT     │      │
-│  │ (价格预言机)  │  │ (战斗逻辑)   │  │ (测试代币)   │      │
-│  └──────────────┘  └─────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+contracts/
+├── src/                    # 合约源代码
+│   ├── AIperpArena.sol    # 主竞技场合约
+│   ├── AgentNFT.sol       # AI Agent NFT 合约
+│   ├── PriceOracle.sol    # 价格预言机
+│   ├── BattleLogic.sol    # 战斗逻辑库
+│   └── MockUSDT.sol       # 测试 USDT
+├── script/                 # 部署脚本
+│   ├── Deploy.s.sol       # 主部署脚本
+│   └── export-abis.js     # ABI 导出脚本
+├── test/                   # 测试文件
+├── lib/                    # 依赖库 (OpenZeppelin, forge-std)
+├── foundry.toml           # Foundry 配置
+└── .env.example           # 环境变量模板
 ```
-
-## 合约说明
-
-### 1. AgentNFT.sol
-- **功能**: ERC721 NFT 合约，代表 AI 交易特工
-- **特点**:
-  - 铸造费用: 100 USDT
-  - 存储特工属性 (名称、策略、风险等级等)
-  - 支持 NFT 转移和枚举
-
-### 2. AIperpArena.sol
-- **功能**: 主竞技场合约
-- **核心功能**:
-  - 用户 USDT 存取
-  - 特工部署 (选择方向、杠杆、抵押)
-  - 战斗轮次结算
-  - 奖励分配
-  - 爆仓清算
-
-### 3. PriceOracle.sol
-- **功能**: 价格预言机
-- **特点**:
-  - 支持多资产价格更新
-  - 价格历史记录
-  - 授权更新机制
-
-### 4. BattleLogic.sol
-- **功能**: 战斗计算库
-- **计算**:
-  - PnL 计算
-  - 爆仓检查
-  - 奖励分配
-  - 止盈止损检查
-
-### 5. MockUSDT.sol
-- **功能**: 测试用 USDT 代币
-- **特点**: 6 位小数，支持铸造和销毁
 
 ## 快速开始
 
-### 安装依赖
+### 1. 安装 Foundry
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+### 2. 安装依赖
 
 ```bash
 cd contracts
-npm install
+forge install OpenZeppelin/openzeppelin-contracts foundry-rs/forge-std --no-commit
 ```
 
-### 配置环境变量
-
-创建 `.env` 文件:
-
-```env
-PRIVATE_KEY=your_private_key_here
-MONAD_TESTNET_RPC=https://testnet-rpc.monad.xyz
-MONAD_API_KEY=your_api_key_here
-```
-
-### 编译合约
+### 3. 配置环境变量
 
 ```bash
-npm run compile
+cp .env.example .env
+# 编辑 .env 添加你的私钥
 ```
 
-### 运行测试
+### 4. 编译合约
 
 ```bash
-npm test
+forge build
 ```
 
-### 部署到测试网
+### 5. 运行测试
 
 ```bash
-npm run deploy:testnet
+forge test
+forge test -vv  # 详细输出
+forge coverage  # 覆盖率报告
 ```
 
-## 部署流程
+## 部署
 
-1. **部署 MockUSDT** - 测试代币
-2. **部署 PriceOracle** - 价格预言机
-3. **部署 AgentNFT** - NFT 合约
-4. **部署 AIperpArena** - 主合约
-5. **配置权限**:
-   - 设置 Arena 合约地址到 NFT
-   - 添加 Arena 为预言机更新者
-6. **设置初始价格** - BTC, ETH, SOL, MON
-
-## 核心功能
-
-### 用户流程
-
-1. **存款**: 用户将 USDT 存入 Arena 合约
-2. **铸造 Agent**: 支付 100 USDT 铸造 NFT
-3. **部署 Agent**: 选择方向 (Long/Short)、杠杆、抵押金额
-4. **战斗**: 每轮战斗根据价格变化结算
-5. **退出**: 退出战斗并领取奖励
-
-### 战斗机制
-
-- **轮次时长**: 1 分钟
-- **价格变化**: 根据预言机价格计算
-- **胜负判定**: 价格上涨 = Long 赢，价格下跌 = Short 赢
-- **奖励分配**: 失败方的损失按比例分配给获胜方
-- **爆仓**: 损失达到 80% 时自动清算
-
-## 前端集成
-
-### 安装 wagmi
+### 本地测试网 (Anvil)
 
 ```bash
-npm install wagmi viem
+# 启动本地节点
+anvil
+
+# 部署 (使用 Anvil 默认私钥)
+forge script script/Deploy.s.sol --rpc-url anvil --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-### 配置 Provider
+### Monad 测试网
 
-```typescript
-import { createConfig, http } from 'wagmi';
-import { monadTestnet } from 'wagmi/chains';
+```bash
+# 确保 .env 中配置了 PRIVATE_KEY
+source .env
 
-export const config = createConfig({
-  chains: [monadTestnet],
-  transports: {
-    [monadTestnet.id]: http('https://testnet-rpc.monad.xyz'),
-  },
-});
+# 部署到测试网
+forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast
+
+# 部署并验证
+forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast --verify
 ```
 
-### 使用 Hooks
+## ABI 导出
 
-```typescript
-import { useArenaContract, useNFTContract, useUSDTContract } from './hooks/useContracts';
+编译后导出 ABI 供前端使用：
 
-function App() {
-  const { userBalance, deposit, withdraw } = useArenaContract();
-  const { userAgents, mintAgent } = useNFTContract();
-  const { balance, approve } = useUSDTContract();
+```bash
+# 编译合约
+forge build
 
-  // ...
-}
+# 导出 ABI
+npm run abi:export
+# 或
+node script/export-abis.js
 ```
 
-## 合约地址 (Monad Testnet)
+导出后的 ABI 位于 `abis/` 目录：
+- `abis/AIperpArena.json` / `.ts`
+- `abis/AgentNFT.json` / `.ts`
+- `abis/PriceOracle.json` / `.ts`
+- `abis/MockUSDT.json` / `.ts`
 
-部署后更新:
+## 合约架构
 
-```typescript
-export const CONTRACT_ADDRESSES = {
-  monadTestnet: {
-    ARENA: '0x...',
-    AGENT_NFT: '0x...',
-    PRICE_ORACLE: '0x...',
-    USDT: '0x...',
-  }
-};
+### AIperpArena (主合约)
+- 用户资金存取
+- AI Agent 部署与平仓
+- PnL 计算与结算
+- Loot 机制
+
+### AgentNFT
+- ERC721 NFT 标准
+- Agent 属性存储
+- 用户 Agent 管理
+
+### PriceOracle
+- 资产价格喂价
+- 价格历史记录
+- 多签授权更新
+
+### BattleLogic (库)
+- PnL 计算逻辑
+- 清算判断
+- 杠杆计算
+
+## 常用命令
+
+```bash
+# 编译
+forge build
+
+# 测试
+forge test
+forge test -vvv  # 最详细输出
+forge test --match-test testDeposit  # 运行特定测试
+
+# 格式化代码
+forge fmt
+
+# Gas 报告
+forge snapshot
+
+# 验证合约
+forge verify-contract <address> <contract_name> --chain monad_testnet
 ```
 
-## 安全考虑
+## 网络配置
 
-1. **ReentrancyGuard**: 所有涉及转账的函数都使用重入保护
-2. **Access Control**: 关键函数仅限授权地址调用
-3. **Input Validation**: 所有输入参数都经过验证
-4. **Overflow Protection**: 使用 Solidity 0.8+ 内置溢出检查
+### Monad Testnet
+- Chain ID: 10143
+- RPC: https://testnet-rpc.monad.xyz
+- Explorer: https://testnet-explorer.monad.xyz
+- Faucet: https://testnet.monad.xyz/
 
-## 测试覆盖
+## 安全注意事项
 
-- 合约部署测试
-- 存取款测试
-- Agent 铸造测试
-- Agent 部署测试
-- 战斗结算测试
-- Agent 退出测试
+⚠️ **永远不要将包含真实私钥的 .env 文件提交到 Git！**
 
-## 许可
+`.env` 已添加到 `.gitignore`，但请再次确认：
+```bash
+git check-ignore -v .env
+```
 
-MIT License
+## 许可证
+
+MIT

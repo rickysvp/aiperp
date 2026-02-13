@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BattleLogic.sol";
 
@@ -18,12 +18,13 @@ interface IAgentNFT {
         address minter;
         bool isActive;
     }
-    
+
     function ownerOf(uint256 tokenId) external view returns (address);
     function updateAgentStatus(uint256 tokenId, bool isActive) external;
     function getUserAgents(address user) external view returns (uint256[] memory);
     function agentAttributes(uint256 tokenId) external view returns (AgentAttributes memory);
     function exists(uint256 tokenId) external view returns (bool);
+    function nextTokenId() external view returns (uint256);
 }
 
 interface IPriceOracle {

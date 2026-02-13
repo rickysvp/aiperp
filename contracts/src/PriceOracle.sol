@@ -96,23 +96,9 @@ contract PriceOracle is IPriceOracle, Ownable {
      * @param price Price with 8 decimal precision
      */
     function updatePrice(string memory asset, uint256 price) external override onlyAuthorized validAsset(asset) {
-        require(price > 0, "PriceOracle: Invalid price");
-        
-        PriceData memory oldData = latestPrices[asset];
-        
-        // Update latest price
-        latestPrices[asset] = PriceData({
-            price: price,
-            timestamp: block.timestamp,
-            blockNumber: block.number
-        });
-        
-        // Add to history
-        _addToHistory(asset, price, block.timestamp);
-        
-        emit PriceUpdated(asset, price, block.timestamp, msg.sender);
+        _updatePrice(asset, price);
     }
-    
+
     /**
      * @notice Batch update prices for multiple assets
      * @param assets Array of asset symbols
@@ -123,10 +109,10 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint256[] memory prices
     ) external onlyAuthorized {
         require(assets.length == prices.length, "PriceOracle: Array length mismatch");
-        
+
         for (uint i = 0; i < assets.length; i++) {
             if (supportedAssets[assets[i]] && prices[i] > 0) {
-                updatePrice(assets[i], prices[i]);
+                _updatePrice(assets[i], prices[i]);
             }
         }
     }
@@ -316,10 +302,10 @@ contract PriceOracle is IPriceOracle, Ownable {
     
     function _addToHistory(string memory asset, uint256 price, uint256 timestamp) internal {
         PriceHistory storage history = priceHistories[asset];
-        
+
         history.prices.push(price);
         history.timestamps.push(timestamp);
-        
+
         // Remove old entries if exceeding max history
         if (history.prices.length > history.maxHistory) {
             // Shift array (inefficient but simple)
@@ -330,5 +316,21 @@ contract PriceOracle is IPriceOracle, Ownable {
             history.prices.pop();
             history.timestamps.pop();
         }
+    }
+
+    function _updatePrice(string memory asset, uint256 price) internal {
+        require(price > 0, "PriceOracle: Invalid price");
+
+        // Update latest price
+        latestPrices[asset] = PriceData({
+            price: price,
+            timestamp: block.timestamp,
+            blockNumber: block.number
+        });
+
+        // Add to history
+        _addToHistory(asset, price, block.timestamp);
+
+        emit PriceUpdated(asset, price, block.timestamp, msg.sender);
     }
 }
