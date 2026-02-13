@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { WalletState, Agent, BattleLog } from '../types';
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import {
   Wallet as WalletIcon,
   TrendingUp,
@@ -156,6 +157,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
   referralEarnings
 }) => {
   const { t } = useLanguage();
+  const { primaryWallet } = useDynamicContext();
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'analytics'>('overview');
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -333,7 +335,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <span className="text-5xl lg:text-6xl font-bold text-white tracking-tight drop-shadow-lg">
                   {hideBalance ? maskNumber() : formatNumber(liquid)}
                 </span>
-                <span className="text-xl lg:text-2xl text-slate-400 font-medium">$MON</span>
+                <span className="text-xl lg:text-2xl text-slate-400 font-medium">USDT</span>
               </div>
               <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00FF9D]"></span>
@@ -367,7 +369,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                   </div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider">Total Equity</p>
                 </div>
-                <p className="text-2xl font-bold text-white group-hover:scale-105 transition-transform origin-left">{hideBalance ? maskNumber() : formatNumber(totalEquity)} <span className="text-xs text-slate-500">$MON</span></p>
+                <p className="text-2xl font-bold text-white group-hover:scale-105 transition-transform origin-left">{hideBalance ? maskNumber() : formatNumber(totalEquity)} <span className="text-xs text-slate-500">USDT</span></p>
               </div>
             </div>
 
@@ -380,7 +382,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase">Total PnL</p>
                   <p className={`font-bold ${totalPnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                    {hideBalance ? maskNumber() : `${totalPnl >= 0 ? '+' : ''}${formatNumber(totalPnl)}`} $MON
+                    {hideBalance ? maskNumber() : `${totalPnl >= 0 ? '+' : ''}${formatNumber(totalPnl)}`} USDT
                   </p>
                 </div>
               </div>
@@ -442,7 +444,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
               </div>
               <p className="text-[10px] text-[#836EF9]/80 uppercase tracking-wider">Total Assets</p>
             </div>
-            <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">{hideBalance ? maskNumber() : formatNumber(totalAllocated)} <span className="text-base text-slate-400 font-medium">$MON</span></p>
+            <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">{hideBalance ? maskNumber() : formatNumber(totalAllocated)} <span className="text-base text-slate-400 font-medium">USDT</span></p>
             <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
               <Info size={10} className="text-slate-600" />
               {totalAllocated > 0 ? 'Manual withdrawal required to reallocate' : 'No assets in Agents'}
@@ -547,7 +549,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <TrendingUpDown size={14} className="text-[#836EF9]" /> Daily PnL
               </h3>
               <span className={`text-sm font-bold ${totalPnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                {totalPnl >= 0 ? '+' : ''}{formatNumber(totalPnl)} $MON
+                {totalPnl >= 0 ? '+' : ''}{formatNumber(totalPnl)} USDT
               </span>
             </div>
             <div className="flex gap-1">
@@ -573,7 +575,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <Tooltip
                   contentStyle={{ backgroundColor: '#0f111a', borderColor: '#334155', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff', fontSize: '11px' }}
-                  formatter={(value: number) => [`${value} $MON`, 'PnL']}
+                  formatter={(value: number) => [`${value} USDT`, 'PnL']}
                 />
                 <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                   {pnlHistoryData.map((entry, index) => (
@@ -593,7 +595,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <TrendingUpIcon size={14} className="text-[#836EF9]" /> Equity
               </h3>
               <span className="text-sm font-bold text-white">
-                {formatNumber(wallet.balance + totalAllocated + totalPnl)} $MON
+                {formatNumber(wallet.balance + totalAllocated + totalPnl)} USDT
               </span>
             </div>
           </div>
@@ -612,7 +614,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <Tooltip
                   contentStyle={{ backgroundColor: '#0f111a', borderColor: '#334155', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff', fontSize: '11px' }}
-                  formatter={(value: number) => [`${value} $MON`, 'Equity']}
+                  formatter={(value: number) => [`${value} USDT`, 'Equity']}
                 />
                 <Area 
                   type="monotone" 
@@ -651,7 +653,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
               {/* Earnings */}
               <div className="text-right pl-4 border-l border-slate-700">
                 <p className="text-xl font-bold text-[#00FF9D] group-hover:scale-110 transition-transform">+{formatNumber(referralEarnings)}</p>
-                <p className="text-[10px] text-slate-500">$MON earned</p>
+                <p className="text-[10px] text-slate-500">USDT earned</p>
               </div>
             </div>
           </div>
@@ -741,11 +743,11 @@ export const WalletV2: React.FC<WalletV2Props> = ({
             </div>
             <div className="space-y-4">
               <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
-                <p className="text-xs text-slate-500 mb-2">Your Address</p>
+                <p className="text-xs text-slate-500 mb-2">Your Wallet Address</p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs text-white bg-black p-3 rounded-lg break-all">{wallet.address}</code>
+                  <code className="flex-1 text-xs text-white bg-black p-3 rounded-lg break-all">{primaryWallet?.address || wallet.address}</code>
                   <button
-                    onClick={() => navigator.clipboard.writeText(wallet.address)}
+                    onClick={() => navigator.clipboard.writeText(primaryWallet?.address || wallet.address)}
                     className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white"
                   >
                     <Copy size={16} />
@@ -753,7 +755,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 </div>
               </div>
               <div className="p-3 bg-[#00FF9D]/10 border border-[#00FF9D]/30 rounded-lg text-xs text-[#00FF9D]">
-                Send $MON tokens to this address
+                Send USDT tokens to this address
               </div>
               <button
                 onClick={() => setShowDepositModal(false)}
@@ -781,7 +783,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-900 rounded-xl border border-slate-800">
                 <p className="text-xs text-slate-500 mb-1">Available</p>
-                <p className="text-2xl font-bold text-white">{formatNumber(liquid)} $MON</p>
+                <p className="text-2xl font-bold text-white">{formatNumber(liquid)} USDT</p>
               </div>
               <div className="p-3 bg-[#FF0055]/10 border border-[#FF0055]/30 rounded-lg text-xs text-[#FF0055]">
                 Withdrawal coming soon
@@ -836,7 +838,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                     <p className={`text-sm font-semibold ${tx.amount > 0 ? 'text-[#00FF9D]' : 'text-white'}`}>
                       {tx.amount > 0 ? '+' : ''}{hideBalance ? maskNumber() : tx.amount.toFixed(0)}
                     </p>
-                    <p className="text-[10px] text-slate-500">$MON</p>
+                    <p className="text-[10px] text-slate-500">USDT</p>
                   </div>
                 </div>
               ))}

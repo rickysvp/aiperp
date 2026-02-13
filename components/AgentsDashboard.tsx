@@ -125,7 +125,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
         <StatCard
           title="Total PnL"
           value={`${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`}
-          unit="$MON"
+          unit="USDT"
           subtext="All time profit/loss"
           icon={totalPnl >= 0 ? TrendingUp : TrendingDown}
           color={totalPnl >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}
@@ -133,7 +133,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
         <StatCard
           title="Total Staked"
           value={totalBalance.toFixed(2)}
-          unit="$MON"
+          unit="USDT"
           subtext="Active collateral"
           icon={Wallet}
           color="bg-blue-500"
@@ -216,7 +216,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
               <p className="text-xs text-slate-500">{bestAgent.strategy}</p>
             </div>
             <div className="text-right">
-              <p className="text-xl font-bold text-emerald-400">+{bestAgent.pnl.toFixed(2)} $MON</p>
+              <p className="text-xl font-bold text-emerald-400">+{bestAgent.pnl.toFixed(2)} USDT</p>
               <p className="text-xs text-slate-500">Best profit</p>
             </div>
             <button

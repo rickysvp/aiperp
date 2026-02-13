@@ -413,7 +413,7 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
       const isLongWin = lootEvent.winner === 'LONG';
       const battleX = (gameState.current.battlePosition / 100) * WIDTH;
       const xPos = isLongWin ? battleX - 120 : battleX + 120;
-      spawnText(xPos, HEIGHT / 2 - 80, `+${Math.floor(lootEvent.amount).toLocaleString()} $MON`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
+      spawnText(xPos, HEIGHT / 2 - 80, `+${Math.floor(lootEvent.amount).toLocaleString()} USDT`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
     }
   }, [lootEvent, t]);
 

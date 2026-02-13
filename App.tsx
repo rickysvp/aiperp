@@ -390,7 +390,7 @@ const AppContent: React.FC = () => {
                  const remainingBalance = agent.balance;
                  if (agent.owner === 'USER') {
                      userBalanceChange += remainingBalance;
-                     addLog(`${agent.name} exited arena with ${remainingBalance.toFixed(0)} $MON remaining.`, 'EXIT');
+                     addLog(`${agent.name} exited arena with ${remainingBalance.toFixed(0)} USDT remaining.`, 'EXIT');
                  }
                  // Reset agent to IDLE state
                  agent.status = 'IDLE';
@@ -537,7 +537,7 @@ const AppContent: React.FC = () => {
         return a;
     }));
 
-    addLog(`${agent.name} withdrawn with ${withdrawAmount.toFixed(0)} $MON returned.`, 'EXIT');
+    addLog(`${agent.name} withdrawn with ${withdrawAmount.toFixed(0)} USDT returned.`, 'EXIT');
   };
 
   const handleDeployAgent = async (agentId: string, direction: Direction, leverage: number, collateral: number) => {
@@ -575,7 +575,7 @@ const AppContent: React.FC = () => {
         return agent;
     }));
 
-    addLog(`Unit Deployed ${direction} @ ${leverage}x (${collateral} $MON)`, 'MINT');
+    addLog(`Unit Deployed ${direction} @ ${leverage}x (${collateral} USDT)`, 'MINT');
     setActiveTab(Tab.ARENA);
   };
 

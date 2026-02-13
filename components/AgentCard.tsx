@@ -43,7 +43,7 @@ export const AgentCard: React.FC<AgentCardProps> = React.memo(({
       e.stopPropagation();
       let text = '';
       if (isActive) {
-          text = `My NFT Agent ${agent.name} is battling in @AIperp Arena! ${agent.direction} ${agent.leverage}x with ${agent.balance.toFixed(0)} $MON. Join the fight! 🎮 #AIperp #NFT`;
+          text = `My NFT Agent ${agent.name} is battling in @AIperp Arena! ${agent.direction} ${agent.leverage}x with ${agent.balance.toFixed(0)} USDT. Join the fight! 🎮 #AIperp #NFT`;
       } else if (agent.pnl > 0) {
           text = `Just minted my AI Agent NFT ${agent.name} on @AIperp! Strategy: ${agent.strategy}. Ready to deploy! 🚀 #AIperp #NFT`;
       } else {
@@ -94,7 +94,7 @@ export const AgentCard: React.FC<AgentCardProps> = React.memo(({
                 <>
                   <span className={themeColor}>{agent.direction} {agent.leverage}x</span>
                   <span className="text-slate-600">|</span>
-                  <span>{agent.balance.toFixed(0)} $MON</span>
+                  <span>{agent.balance.toFixed(0)} USDT</span>
                 </>
               ) : (
                 <span className="text-amber-400">{t('standby')}</span>
@@ -195,7 +195,7 @@ export const AgentCard: React.FC<AgentCardProps> = React.memo(({
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-[10px] text-slate-500 uppercase font-bold">24h PnL</span>
                         <span className={`text-xs font-mono font-bold ${agent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} $MON
+                            {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} USDT
                         </span>
                     </div>
                     <PnLChart data={agent.pnlHistory} width={240} height={60} />
@@ -215,7 +215,7 @@ export const AgentCard: React.FC<AgentCardProps> = React.memo(({
                     <div className="bg-black/40 rounded-xl p-3 border border-white/5">
                         <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Margin</div>
                         <div className="font-mono text-sm font-bold text-white">
-                            {agent.balance.toFixed(0)} $MON
+                            {agent.balance.toFixed(0)} USDT
                         </div>
                     </div>
                 </div>

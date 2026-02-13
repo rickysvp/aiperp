@@ -213,9 +213,9 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const handleSocialShare = (agent: Agent) => {
       let text = '';
       if (agent.status === 'LIQUIDATED') {
-          text = `My agent ${agent.name} was destroyed in the @AIperp Arena. -${agent.balance} $MON. The market is ruthless. 💀 #AIperp`;
+          text = `My agent ${agent.name} was destroyed in the @AIperp Arena. -${agent.balance} USDT. The market is ruthless. 💀 #AIperp`;
       } else if (agent.pnl > 0) {
-          text = `Reporting live: Agent ${agent.name} is printing! +${agent.pnl.toFixed(0)} $MON. Strategy: ${agent.strategy}. Join the winning side at aiperp.fun 🚀`;
+          text = `Reporting live: Agent ${agent.name} is printing! +${agent.pnl.toFixed(0)} USDT. Strategy: ${agent.strategy}. Join the winning side at aiperp.fun 🚀`;
       } else {
           text = `Deploying ${agent.name} to the @AIperp Arena. ${agent.direction} on BTC with ${agent.leverage}x leverage. Wish me luck. ⚔️`;
       }
@@ -293,7 +293,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                         </div>
                         {agent.status === 'ACTIVE' && (
                             <span className={`text-[10px] font-mono ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} $MON
+                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} USDT
                             </span>
                         )}
                     </div>
@@ -474,7 +474,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                          <span className="text-xs text-slate-400">{t('cost')}</span>
                                          <div className="flex items-center gap-1">
                                              <span className="text-lg font-mono font-bold text-white">{FABRICATION_COST}</span>
-                                             <span className="text-xs text-slate-500">$MON</span>
+                                             <span className="text-xs text-slate-500">USDT</span>
                                          </div>
                                      </div>
 
@@ -598,12 +598,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Live PnL</p>
                                          <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
+                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} USDT
                                          </p>
                                      </div>
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Balance</p>
-                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
+                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} USDT</p>
                                      </div>
                                      {/* ROI */}
                                      <div>
@@ -623,7 +623,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      </div>
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Collateral</p>
-                                         <p className="text-lg font-mono font-bold text-red-400">0 $MON</p>
+                                         <p className="text-lg font-mono font-bold text-red-400">0 USDT</p>
                                      </div>
                                  </>
                              ) : (
@@ -631,12 +631,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Final PnL</p>
                                          <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} $MON
+                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} USDT
                                          </p>
                                      </div>
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Returned</p>
-                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} $MON</p>
+                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} USDT</p>
                                      </div>
                                      {/* ROI for exited agents */}
                                      {selectedAgent.wins + selectedAgent.losses > 0 && (
@@ -672,7 +672,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  style={{ width: `${Math.min(100, (selectedAgent.balance / 1000) * 100)}%` }}
                              />
                          </div>
-                         <p className="text-[10px] text-slate-600 mt-1">Based on initial 1000 $MON collateral scale</p>
+                         <p className="text-[10px] text-slate-600 mt-1">Based on initial 1000 USDT collateral scale</p>
                      </div>
                  )}
 
@@ -866,7 +866,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      onChange={(e) => setDeployCollateral(parseInt(e.target.value))}
                                      className="w-full h-2 bg-slate-800 rounded-lg accent-[#836EF9]"
                                  />
-                                 <p className="text-center text-sm font-mono text-white mt-1">{deployCollateral} $MON</p>
+                                 <p className="text-center text-sm font-mono text-white mt-1">{deployCollateral} USDT</p>
                              </div>
                          </div>
 
@@ -924,7 +924,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                              disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
                              className="w-full py-3 text-base font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black disabled:opacity-50 rounded-xl"
                          >
-                             {walletBalance < deployCollateral ? t('insufficient_balance') : `${t('deploy_with')} ${deployCollateral} $MON`}
+                             {walletBalance < deployCollateral ? t('insufficient_balance') : `${t('deploy_with')} ${deployCollateral} USDT`}
                          </Button>
                      </div>
                  )}
@@ -1048,12 +1048,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{t('current_balance')}</p>
-                  <p className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} $MON</p>
+                  <p className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} USDT</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">PnL</p>
                   <p className={`text-xl font-mono font-bold ${withdrawingAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {withdrawingAgent.pnl > 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} $MON
+                    {withdrawingAgent.pnl > 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} USDT
                   </p>
                 </div>
               </div>
@@ -1076,7 +1076,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             {/* Amount to Receive */}
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
               <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">{t('to_receive')}</p>
-              <p className="text-3xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} $MON</p>
+              <p className="text-3xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} USDT</p>
             </div>
 
             {/* Warning */}
@@ -1152,7 +1152,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                     <ArrowRight size={16} className="text-emerald-400 relative z-10 animate-bounce" />
                   </div>
                   <div className="text-emerald-400 font-mono font-bold text-sm animate-pulse">
-                    +{withdrawSuccess.amount.toFixed(2)} $MON
+                    +{withdrawSuccess.amount.toFixed(2)} USDT
                   </div>
                 </div>
 
@@ -1169,7 +1169,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             {/* Balance Update */}
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-500">Wallet Balance Updated</span>
-              <span className="text-emerald-400 font-mono">+{withdrawSuccess.amount.toFixed(2)} $MON</span>
+              <span className="text-emerald-400 font-mono">+{withdrawSuccess.amount.toFixed(2)} USDT</span>
             </div>
           </div>
         </div>

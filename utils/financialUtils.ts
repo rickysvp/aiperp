@@ -2,7 +2,7 @@
  * Financial Utilities - Unified Asset & Number System
  * 
  * Rules:
- * 1. All monetary values are stored in base units (e.g., $MON)
+ * 1. All monetary values are stored in base units (e.g., USDT)
  * 2. Display functions handle formatting only, never calculation
  * 3. All calculations use precise decimal arithmetic
  * 4. Negative values are protected at calculation level
@@ -95,7 +95,7 @@ export const formatNumber = (value: number, decimals: number = DISPLAY_DECIMALS)
  */
 export const formatCurrency = (
   value: number,
-  symbol: string = '$MON',
+  symbol: string = 'USDT',
   decimals: number = DISPLAY_DECIMALS
 ): string => {
   return `${formatNumber(value, decimals)} ${symbol}`;
@@ -254,7 +254,7 @@ export const validateDeployment = (
   minCollateral: number = 100
 ): { valid: boolean; error?: string } => {
   if (!isValidNumber(collateral) || collateral < minCollateral) {
-    return { valid: false, error: `Minimum collateral is ${minCollateral} $MON` };
+    return { valid: false, error: `Minimum collateral is ${minCollateral} USDT` };
   }
   if (collateral > availableBalance) {
     return { valid: false, error: 'Insufficient balance for deployment' };

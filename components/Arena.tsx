@@ -64,7 +64,7 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
                             {agent.name}
                         </span>
                         <span className={`font-mono text-[10px] font-bold ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                            {agent.pnl >= 0 ? '+' : ''}{agent.pnl.toFixed(0)} <span className="text-[8px] opacity-60">$MON</span>
+                            {agent.pnl >= 0 ? '+' : ''}{agent.pnl.toFixed(0)} <span className="text-[8px] opacity-60">USDT</span>
                         </span>
                     </div>
 
@@ -78,7 +78,7 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
 
                     <div className="flex justify-between text-[9px] text-slate-500 font-mono">
                         <span className="truncate max-w-[60px]">{agent.strategy}</span>
-                        <span>{agent.balance.toFixed(0)} $MON</span>
+                        <span>{agent.balance.toFixed(0)} USDT</span>
                     </div>
                 </div>
             </div>
@@ -156,7 +156,7 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
              </div>
              <div className="flex justify-between items-end">
                  <span className="text-[10px] text-[#00FF9D]/60 uppercase">{t('total_staked')}</span>
-                 <span className="text-sm font-mono font-bold text-white">{totalLongStaked.toLocaleString()} <span className="text-[10px] text-slate-400">$MON</span></span>
+                 <span className="text-sm font-mono font-bold text-white">{totalLongStaked.toLocaleString()} <span className="text-[10px] text-slate-400">USDT</span></span>
              </div>
         </div>
         
@@ -343,7 +343,7 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
              </div>
              <div className="flex justify-between items-end">
                  <span className="text-[10px] text-[#FF0055]/60 uppercase">{t('total_staked')}</span>
-                 <span className="text-sm font-mono font-bold text-white">{totalShortStaked.toLocaleString()} <span className="text-[10px] text-slate-400">$MON</span></span>
+                 <span className="text-sm font-mono font-bold text-white">{totalShortStaked.toLocaleString()} <span className="text-[10px] text-slate-400">USDT</span></span>
              </div>
         </div>
 

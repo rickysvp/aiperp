@@ -9,10 +9,10 @@ const SYMBOL_MAP: Record<AssetSymbol, string> = {
   'BTC': 'BTCUSDT',
   'ETH': 'ETHUSDT',
   'SOL': 'SOLUSDT',
-  'MON': 'MONUSDT', // $MON is not on Binance, will use simulated price
+  'MON': 'MONUSDT', // USDT is not on Binance, will use simulated price
 };
 
-// $MON simulated price config
+// USDT simulated price config
 const MON_CONFIG = {
   basePrice: 0.5, // $0.5 USD
   volatility: 0.02, // 2% volatility
@@ -85,7 +85,7 @@ export const fetch24hStats = async (symbol: AssetSymbol) => {
   }
 };
 
-// Simulated $MON price generator
+// Simulated USDT price generator
 let monCurrentPrice = MON_CONFIG.basePrice;
 let monPriceInterval: NodeJS.Timeout | null = null;
 let monSubscribers: ((price: number, change24h: number) => void)[] = [];
@@ -97,7 +97,7 @@ const getSimulatedMONPrice = (): number => {
 const startMONSimulation = () => {
   if (monPriceInterval) return; // Already running
   
-  console.log('[PriceService] Starting $MON price simulation');
+  console.log('[PriceService] Starting USDT price simulation');
   
   monPriceInterval = setInterval(() => {
     // Random walk with mean reversion
@@ -121,7 +121,7 @@ const stopMONSimulation = () => {
   if (monPriceInterval) {
     clearInterval(monPriceInterval);
     monPriceInterval = null;
-    console.log('[PriceService] Stopping $MON price simulation');
+    console.log('[PriceService] Stopping USDT price simulation');
   }
   monSubscribers = [];
 };
@@ -135,7 +135,7 @@ export const subscribePrice = (
 ): (() => void) => {
   // For MON, use simulated price
   if (symbol === 'MON') {
-    console.log('[PriceService] Subscribing to simulated $MON price');
+    console.log('[PriceService] Subscribing to simulated USDT price');
     
     // Add subscriber
     monSubscribers.push(onUpdate);
@@ -148,7 +148,7 @@ export const subscribePrice = (
     
     // Return cleanup function
     return () => {
-      console.log('[PriceService] Unsubscribing from $MON price');
+      console.log('[PriceService] Unsubscribing from USDT price');
       monSubscribers = monSubscribers.filter(cb => cb !== onUpdate);
       if (monSubscribers.length === 0) {
         stopMONSimulation();
