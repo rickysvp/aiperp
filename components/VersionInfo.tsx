@@ -4,8 +4,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export const VersionInfo: React.FC = () => {
   const { t } = useLanguage();
-  const version = 'v1.1.0';
-  const buildDate = '2025-02-11';
+  const version = 'v1.3.0';
+  const buildDate = '2025-02-14';
 
   return (
     <div className="fixed bottom-4 right-4 z-40">

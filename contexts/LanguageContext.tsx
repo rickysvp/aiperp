@@ -7,7 +7,7 @@ export const translations = {
     // Nav
     app_title_root: "AIperp",
     app_title_suffix: ".fun",
-    nav_subtitle: "AI Perp Predict Clash",
+    nav_subtitle: "v1.3.0",
     net_equity: "Net Equity",
     top_profit: "Top Profit",
     
