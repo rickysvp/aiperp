@@ -243,4 +243,123 @@ describe("AIperpArena", function () {
       await expect(arena.connect(user2).exitAgent(1)).to.be.revertedWith("Arena: Not owner");
     });
   });
+
+  describe("Pause Functionality", function () {
+    it("Should allow owner to pause and unpause", async function () {
+      await arena.connect(owner).pause();
+      expect(await arena.paused()).to.be.true;
+
+      await arena.connect(owner).unpause();
+      expect(await arena.paused()).to.be.false;
+    });
+
+    it("Should not allow deposits when paused", async function () {
+      await arena.connect(owner).pause();
+      await expect(arena.connect(user1).deposit(DEPOSIT_AMOUNT)).to.be.reverted;
+    });
+
+    it("Should not allow withdrawals when paused", async function () {
+      await arena.connect(user1).deposit(DEPOSIT_AMOUNT);
+      await arena.connect(owner).pause();
+      await expect(arena.connect(user1).withdraw(DEPOSIT_AMOUNT / 2n)).to.be.reverted;
+    });
+
+    it("Should not allow non-owner to pause", async function () {
+      await expect(arena.connect(user1).pause()).to.be.reverted;
+    });
+  });
+
+  describe("View Functions", function () {
+    beforeEach(async function () {
+      await nft.connect(user1).mintAgent("Test Agent", "Test", "Aggressive", "seed1", 2);
+      await arena.connect(user1).deposit(DEPOSIT_AMOUNT);
+      await arena.connect(user1).deployAgent(1, 0, 10, COLLATERAL, 0, 0, "BTC");
+    });
+
+    it("Should return current round stats", async function () {
+      const stats = await arena.getCurrentRoundStats();
+      expect(stats.longTotal).to.equal(COLLATERAL);
+      expect(stats.shortTotal).to.equal(0);
+      expect(stats.canSettle).to.be.false;
+    });
+
+    it("Should calculate agent PnL", async function () {
+      const [pnl, shouldLiquidate] = await arena.calculateAgentCurrentPnL(1);
+      expect(shouldLiquidate).to.be.false;
+    });
+
+    it("Should return all active agents", async function () {
+      const activeAgents = await arena.getAllActiveAgents();
+      expect(activeAgents.length).to.equal(1);
+      expect(activeAgents[0]).to.equal(1);
+    });
+
+    it("Should check if asset is supported", async function () {
+      expect(await arena.isAssetSupported("BTC")).to.be.true;
+      expect(await arena.isAssetSupported("XYZ")).to.be.false;
+    });
+  });
+
+  describe("Liquidation", function () {
+    beforeEach(async function () {
+      await nft.connect(user1).mintAgent("Test Agent", "Test", "Aggressive", "seed1", 2);
+      await arena.connect(user1).deposit(DEPOSIT_AMOUNT);
+      // Deploy with high leverage
+      await arena.connect(user1).deployAgent(1, 0, 50, COLLATERAL, 0, 0, "BTC");
+    });
+
+    it("Should liquidate agent when price drops significantly", async function () {
+      // Wait for round to end
+      await ethers.provider.send("evm_increaseTime", [60]);
+      await ethers.provider.send("evm_mine");
+
+      // Price drops 50% - should trigger liquidation with 50x leverage
+      const newPrice = (65000n * PRICE_PRECISION * 50n) / 100n;
+
+      await arena.connect(owner).settleBattleRound("BTC", newPrice);
+
+      const agent = await arena.agents(1);
+      expect(agent.status).to.equal(2); // LIQUIDATED
+    });
+  });
+
+  describe("Reward Distribution", function () {
+    beforeEach(async function () {
+      // Setup agents for both sides
+      await nft.connect(user1).mintAgent("Long Agent", "Long", "Aggressive", "seed1", 2);
+      await nft.connect(user2).mintAgent("Short Agent", "Short", "Defensive", "seed2", 2);
+
+      await arena.connect(user1).deposit(DEPOSIT_AMOUNT);
+      await arena.connect(user2).deposit(DEPOSIT_AMOUNT);
+
+      await arena.connect(user1).deployAgent(1, 0, 10, COLLATERAL, 0, 0, "BTC");
+      await arena.connect(user2).deployAgent(2, 1, 10, COLLATERAL, 0, 0, "BTC");
+    });
+
+    it("Should distribute rewards to winners", async function () {
+      await ethers.provider.send("evm_increaseTime", [60]);
+      await ethers.provider.send("evm_mine");
+
+      // Price goes up 10% - LONG wins
+      const newPrice = (65000n * PRICE_PRECISION * 110n) / 100n;
+
+      await expect(arena.connect(owner).settleBattleRound("BTC", newPrice))
+        .to.emit(arena, "LootDistributed");
+
+      // Check that long agent received rewards
+      const agent = await arena.agents(1);
+      expect(agent.pnl).to.be.gt(0);
+    });
+
+    it("Should record loot events", async function () {
+      await ethers.provider.send("evm_increaseTime", [60]);
+      await ethers.provider.send("evm_mine");
+
+      const newPrice = (65000n * PRICE_PRECISION * 110n) / 100n;
+      await arena.connect(owner).settleBattleRound("BTC", newPrice);
+
+      const loots = await arena.getRoundLoots(1);
+      expect(loots.length).to.be.gt(0);
+    });
+  });
 });
