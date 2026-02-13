@@ -6,7 +6,6 @@ import { Arena } from './components/Arena';
 import { Agents } from './components/Agents';
 import { WalletV2 } from './components/WalletV2';
 import { Leaderboard } from './components/Leaderboard';
-import { AuthModal } from './components/AuthModal';
 import { Onboarding } from './components/Onboarding';
 import { LegalModal } from './components/LegalModal';
 import { VersionInfo } from './components/VersionInfo';
@@ -14,6 +13,8 @@ import { LayoutDashboard, Users, Wallet as WalletIcon, BrainCircuit, Trophy, Glo
 import { v4 as uuidv4 } from 'uuid';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { Logo } from './components/Logo';
+import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
+import { UserMenu } from './components/UserMenu';
 
 const AGENT_FABRICATION_COST = 100;
 
@@ -65,6 +66,8 @@ const Marquee = ({ agents }: { agents: Agent[] }) => {
 
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
+  const { setShowAuthFlow } = useDynamicContext();
+  const isLoggedIn = useIsLoggedIn();
   // --- State ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -80,7 +83,8 @@ const AppContent: React.FC = () => {
     balance: 0,
     totalPnl: 0,
     referralEarnings: 0,
-    referralCount: 0
+    referralCount: 0,
+    energy: 0
   });
 
   const [market, setMarket] = useState<MarketState>({
@@ -440,6 +444,12 @@ const AppContent: React.FC = () => {
 
   // --- Actions ---
   const handleMintAgent = async (twitterHandle?: string, nameHint?: string): Promise<Agent | null> => {
+    // Check if user is logged in
+    if (!isAuthenticated && !isLoggedIn) {
+      setShowAuthFlow(true);
+      return null;
+    }
+    
     if (wallet.balance < AGENT_FABRICATION_COST) {
       alert("Insufficient Balance!");
       return null;
@@ -531,6 +541,12 @@ const AppContent: React.FC = () => {
   };
 
   const handleDeployAgent = async (agentId: string, direction: Direction, leverage: number, collateral: number) => {
+    // Check if user is logged in
+    if (!isAuthenticated && !isLoggedIn) {
+      setShowAuthFlow(true);
+      return;
+    }
+    
     if (wallet.balance < collateral) {
       alert("Insufficient Collateral for deployment!");
       return;
@@ -575,7 +591,6 @@ const AppContent: React.FC = () => {
       
       <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
-      {!isAuthenticated && <AuthModal onLogin={handleLogin} />}
       {showOnboarding && <Onboarding onFinish={handleFinishOnboarding} />}
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
       
@@ -613,13 +628,21 @@ const AppContent: React.FC = () => {
                 <span className="text-xs font-bold">{language === 'en' ? 'EN' : '中'}</span>
              </button>
 
-             {isAuthenticated && (
-                <div className="text-right">
-                    <p className="text-[9px] text-[#836EF9] uppercase font-bold tracking-widest mb-0.5">{t('net_equity')}</p>
-                    <p className="text-lg font-mono font-bold text-white tabular-nums leading-none tracking-tight text-shadow-glow">
-                        {wallet.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs text-slate-500">$MON</span>
-                    </p>
-                </div>
+             {isAuthenticated || isLoggedIn ? (
+                <UserMenu 
+                  wallet={wallet}
+                  agents={agents}
+                  onLogout={handleLogout}
+                  onShowLegal={() => setShowLegal(true)}
+                />
+             ) : (
+                <button 
+                  onClick={() => setShowAuthFlow(true)}
+                  className="px-4 py-2 bg-[#836EF9] text-white text-sm font-bold rounded-lg hover:bg-[#6c56e0] transition-colors flex items-center gap-2"
+                >
+                  <WalletIcon size={16} />
+                  Connect
+                </button>
              )}
           </div>
         </div>
@@ -676,7 +699,15 @@ const AppContent: React.FC = () => {
             {tabs.map(tab => (
                 <button 
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as Tab)}
+                  onClick={() => {
+                    // Check if tab requires login
+                    const requiresLogin = tab.id === Tab.AGENTS || tab.id === Tab.WALLET;
+                    if (requiresLogin && !isAuthenticated && !isLoggedIn) {
+                      setShowAuthFlow(true);
+                      return;
+                    }
+                    setActiveTab(tab.id as Tab);
+                  }}
                   className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-300 ${activeTab === tab.id ? 'text-[#836EF9]' : 'text-slate-500 hover:text-slate-300'}`}
                 >
                   <div className={`p-1.5 rounded-lg mb-1 transition-all ${activeTab === tab.id ? 'bg-[#836EF9]/20 shadow-[0_0_10px_rgba(131,110,249,0.3)] scale-110' : ''}`}>

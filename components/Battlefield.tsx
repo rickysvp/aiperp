@@ -12,17 +12,18 @@ interface BattlefieldProps {
 // Configuration
 const WIDTH = 1200;
 const HEIGHT = 600;
-const MAX_DRAWN_AGENTS_PER_SIDE = 100; 
+const MAX_DRAWN_AGENTS_PER_SIDE = 80;
 
-// Colors - STANDARD FINANCIAL COLORS
-const COLOR_LONG = '#00FF9D'; // Neon Green
-const COLOR_SHORT = '#FF0055'; // Neon Red
+// Colors
+const COLOR_LONG = '#00FF9D';
+const COLOR_SHORT = '#FF0055';
 const COLOR_PROFIT = '#00FF9D';
-const COLOR_LOSS = '#FF0055'; 
+const COLOR_LOSS = '#FF0055';
 
 // Pooling & Limits
-const MAX_PARTICLES = 150;
-const MAX_BEAMS = 30;
+const MAX_PARTICLES = 200;
+const MAX_BEAMS = 40;
+const MAX_TRAILS = 150;
 const MAX_TEXTS = 20;
 
 interface Particle {
@@ -32,8 +33,10 @@ interface Particle {
   vx: number;
   vy: number;
   life: number;
+  maxLife: number;
   color: string;
   size: number;
+  type: 'spark' | 'smoke' | 'explosion';
 }
 
 interface Beam {
@@ -43,7 +46,21 @@ interface Beam {
   endX: number;
   endY: number;
   life: number;
+  maxLife: number;
   color: string;
+  width: number;
+}
+
+interface Trail {
+  active: boolean;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: string;
+  size: number;
+  agentId: string;
 }
 
 interface FloatingText {
@@ -57,126 +74,184 @@ interface FloatingText {
   scale: number;
 }
 
-// Optimization: Pre-calculated visual properties to avoid per-frame parsing
 interface RenderableAgent {
-    agent: Agent;
-    seed: number;
-    tier: number;
-    rowPos: number;
-    depthPos: number;
-    isUser: boolean;
-    isLong: boolean;
+  agent: Agent;
+  seed: number;
+  tier: number;
+  x: number;
+  y: number;
+  targetX: number;
+  targetY: number;
+  vx: number;
+  vy: number;
+  isUser: boolean;
+  isLong: boolean;
+  row: number;
+  col: number;
 }
 
-// PERFORMANCE OPTIMIZATION: Pre-render agents to offscreen canvas (Sprites)
-const createMechSprite = (isLong: boolean, tier: number): HTMLCanvasElement => {
-    const size = 64; 
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
+// Create agent sprite
+const createAgentSprite = (isLong: boolean, tier: number): HTMLCanvasElement => {
+  const size = 48;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
 
-    const cx = size / 2;
-    const cy = size / 2;
+  const cx = size / 2;
+  const cy = size / 2;
 
-    ctx.translate(cx, cy);
-    const scale = 1.0 + (tier * 0.2);
-    const dir = isLong ? 1 : -1;
-    ctx.scale(dir * scale, scale);
+  ctx.translate(cx, cy);
+  const scale = 0.8 + (tier * 0.15);
+  ctx.scale(scale, scale);
 
-    const baseColor = isLong ? COLOR_LONG : COLOR_SHORT;
-    const darkColor = isLong ? '#064e3b' : '#450a0a'; 
-    
-    ctx.shadowBlur = 4 + (tier * 2); // Reduced blur for performance
-    ctx.shadowColor = baseColor;
+  const baseColor = isLong ? COLOR_LONG : COLOR_SHORT;
+  const glowColor = isLong ? 'rgba(0, 255, 157, 0.5)' : 'rgba(255, 0, 85, 0.5)';
 
-    if (tier === 0) {
-        // TIER 1: DRONE
-        ctx.fillStyle = baseColor;
-        ctx.beginPath();
-        if (isLong) {
-            ctx.moveTo(10, 0); ctx.lineTo(-6, 5); ctx.lineTo(-2, 0); ctx.lineTo(-6, -5);
-        } else {
-            ctx.moveTo(8, 0); ctx.lineTo(-4, 6); ctx.lineTo(-8, 0); ctx.lineTo(-4, -6);
-        }
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = glowColor;
 
-    } else if (tier === 1) {
-        // TIER 2: FIGHTER
-        ctx.fillStyle = darkColor;
-        ctx.strokeStyle = baseColor;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        if (isLong) {
-            ctx.moveTo(14, 0); ctx.lineTo(-6, 8); ctx.lineTo(-4, 2); ctx.lineTo(-10, 4);
-            ctx.lineTo(-8, 0); ctx.lineTo(-10, -4); ctx.lineTo(-4, -2); ctx.lineTo(-6, -8);
-        } else {
-            ctx.moveTo(12, 0); ctx.lineTo(0, 8); ctx.lineTo(-8, 4); ctx.lineTo(-12, 0);
-            ctx.lineTo(-8, -4); ctx.lineTo(0, -8);
-        }
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.arc(-6, 0, 2, 0, Math.PI*2); ctx.fill();
-
+  if (tier === 0) {
+    // Small drone - triangle shape
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    if (isLong) {
+      ctx.moveTo(8, 0);
+      ctx.lineTo(-4, 4);
+      ctx.lineTo(-2, 0);
+      ctx.lineTo(-4, -4);
     } else {
-        // TIER 3: CAPITAL SHIP
-        ctx.fillStyle = darkColor;
-        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = baseColor; ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(16, 0); ctx.lineTo(4, 10); ctx.lineTo(-12, 6); ctx.lineTo(-12, -6); ctx.lineTo(4, -10);
-        ctx.closePath(); ctx.stroke();
-        ctx.fillStyle = baseColor; ctx.globalAlpha = 0.8;
-        ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha = 1.0;
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(4, 4);
+      ctx.lineTo(2, 0);
+      ctx.lineTo(4, -4);
     }
-    return canvas;
+    ctx.closePath();
+    ctx.fill();
+    
+    // Engine glow
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(isLong ? -2 : 2, 0, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (tier === 1) {
+    // Medium fighter
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    if (isLong) {
+      ctx.moveTo(10, 0);
+      ctx.lineTo(-4, 6);
+      ctx.lineTo(-2, 2);
+      ctx.lineTo(-8, 4);
+      ctx.lineTo(-6, 0);
+      ctx.lineTo(-8, -4);
+      ctx.lineTo(-2, -2);
+      ctx.lineTo(-4, -6);
+    } else {
+      ctx.moveTo(-10, 0);
+      ctx.lineTo(4, 6);
+      ctx.lineTo(2, 2);
+      ctx.lineTo(8, 4);
+      ctx.lineTo(6, 0);
+      ctx.lineTo(8, -4);
+      ctx.lineTo(2, -2);
+      ctx.lineTo(4, -6);
+    }
+    ctx.closePath();
+    ctx.fill();
+    
+    // Engine
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(isLong ? -4 : 4, 0, 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Heavy ship
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    if (isLong) {
+      ctx.moveTo(12, 0);
+      ctx.lineTo(-2, 8);
+      ctx.lineTo(-6, 4);
+      ctx.lineTo(-10, 6);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-10, -6);
+      ctx.lineTo(-6, -4);
+      ctx.lineTo(-2, -8);
+    } else {
+      ctx.moveTo(-12, 0);
+      ctx.lineTo(2, 8);
+      ctx.lineTo(6, 4);
+      ctx.lineTo(10, 6);
+      ctx.lineTo(8, 0);
+      ctx.lineTo(10, -6);
+      ctx.lineTo(6, -4);
+      ctx.lineTo(2, -8);
+    }
+    ctx.closePath();
+    ctx.fill();
+    
+    // Core glow
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  return canvas;
 };
 
-export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEvent, logs }) => {
+export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEvent }) => {
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const spritesRef = useRef<{ long: HTMLCanvasElement[], short: HTMLCanvasElement[] }>({ long: [], short: [] });
   const prevSymbolRef = useRef<string>(market.symbol);
 
-  // Game State Ref
   const gameState = useRef({
     battlePosition: 50,
     targetBattlePosition: 50,
     velocity: 0,
     lastPrice: market.price,
-    priceTrend: 0, // >0 UP, <0 DOWN
+    priceTrend: 0,
     time: 0,
-    
-    // Object Pools
-    particles: Array.from({ length: MAX_PARTICLES }, () => ({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, color: '#fff', size: 1 })) as Particle[],
-    beams: Array.from({ length: MAX_BEAMS }, () => ({ active: false, startX: 0, startY: 0, endX: 0, endY: 0, life: 0, color: '#fff' })) as Beam[],
-    floatingTexts: Array.from({ length: MAX_TEXTS }, () => ({ active: false, x: 0, y: 0, text: '', subText: '', color: '#fff', life: 0, scale: 1 })) as FloatingText[],
-    
-    agentFlashes: new Map<string, { color: string, life: number }>(),
+
+    particles: Array.from({ length: MAX_PARTICLES }, () => ({
+      active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1,
+      color: '#fff', size: 1, type: 'spark' as const
+    })),
+    beams: Array.from({ length: MAX_BEAMS }, () => ({
+      active: false, startX: 0, startY: 0, endX: 0, endY: 0,
+      life: 0, maxLife: 1, color: '#fff', width: 2
+    })),
+    trails: Array.from({ length: MAX_TRAILS }, () => ({
+      active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0,
+      color: '#fff', size: 1, agentId: ''
+    })),
+    floatingTexts: Array.from({ length: MAX_TEXTS }, () => ({
+      active: false, x: 0, y: 0, text: '', subText: '',
+      color: '#fff', life: 0, scale: 1
+    })),
+
+    agentFlashes: new Map<string, { color: string; life: number }>(),
     prevPnL: new Map<string, number>(),
     renderableAgents: [] as RenderableAgent[]
   });
 
-  // Reset game state when asset symbol changes
+  // Reset on asset change
   useEffect(() => {
     if (prevSymbolRef.current !== market.symbol) {
-      console.log(`[Battlefield] Asset changed from ${prevSymbolRef.current} to ${market.symbol}, resetting state...`);
       prevSymbolRef.current = market.symbol;
-      
-      // Reset game state
       gameState.current.battlePosition = 50;
       gameState.current.targetBattlePosition = 50;
       gameState.current.velocity = 0;
       gameState.current.lastPrice = market.price;
       gameState.current.priceTrend = 0;
-      
-      // Clear all active effects
       gameState.current.particles.forEach(p => p.active = false);
       gameState.current.beams.forEach(b => b.active = false);
+      gameState.current.trails.forEach(t => t.active = false);
       gameState.current.floatingTexts.forEach(t => t.active = false);
       gameState.current.agentFlashes.clear();
       gameState.current.prevPnL.clear();
@@ -184,164 +259,201 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
     }
   }, [market.symbol]);
 
-  // Helpers to spawn objects from pool
-  const spawnParticle = (x: number, y: number, color: string, speed: number = 4) => {
-      const pool = gameState.current.particles;
-      const p = pool.find(p => !p.active);
-      if (p) {
-          p.active = true;
-          p.x = x; p.y = y;
-          p.vx = (Math.random() - 0.5) * speed;
-          p.vy = (Math.random() - 0.5) * speed;
-          p.life = 1.0;
-          p.color = color;
-          p.size = Math.random() * 2 + 1;
-      }
+  // Spawn helpers
+  const spawnParticle = (x: number, y: number, color: string, speed: number = 3, type: Particle['type'] = 'spark') => {
+    const p = gameState.current.particles.find(p => !p.active);
+    if (p) {
+      p.active = true;
+      p.x = x;
+      p.y = y;
+      p.vx = (Math.random() - 0.5) * speed;
+      p.vy = (Math.random() - 0.5) * speed;
+      p.life = 1;
+      p.maxLife = 1;
+      p.color = color;
+      p.size = Math.random() * 2 + 0.5;
+      p.type = type;
+    }
   };
 
-  const spawnBeam = (startX: number, startY: number, endX: number, endY: number, color: string) => {
-      const pool = gameState.current.beams;
-      const b = pool.find(b => !b.active);
-      if (b) {
-          b.active = true;
-          b.startX = startX; b.startY = startY;
-          b.endX = endX; b.endY = endY;
-          b.life = 1.0;
-          b.color = color;
-      }
+  const spawnBeam = (startX: number, startY: number, endX: number, endY: number, color: string, width: number = 2) => {
+    const b = gameState.current.beams.find(b => !b.active);
+    if (b) {
+      b.active = true;
+      b.startX = startX;
+      b.startY = startY;
+      b.endX = endX;
+      b.endY = endY;
+      b.life = 1;
+      b.maxLife = 1;
+      b.color = color;
+      b.width = width;
+    }
+  };
+
+  const spawnTrail = (x: number, y: number, vx: number, vy: number, color: string, agentId: string) => {
+    const t = gameState.current.trails.find(t => !t.active);
+    if (t) {
+      t.active = true;
+      t.x = x;
+      t.y = y;
+      t.vx = vx;
+      t.vy = vy;
+      t.life = 1;
+      t.color = color;
+      t.size = Math.random() * 2 + 1;
+      t.agentId = agentId;
+    }
   };
 
   const spawnText = (x: number, y: number, text: string, sub: string, color: string) => {
-      const pool = gameState.current.floatingTexts;
-      const t = pool.find(item => !item.active);
-      if (t) {
-          t.active = true;
-          t.x = x; t.y = y;
-          t.text = text; t.subText = sub;
-          t.color = color;
-          t.life = 1.0;
-          t.scale = 0.1;
-      }
+    const t = gameState.current.floatingTexts.find(t => !t.active);
+    if (t) {
+      t.active = true;
+      t.x = x;
+      t.y = y;
+      t.text = text;
+      t.subText = sub;
+      t.color = color;
+      t.life = 1;
+      t.scale = 0.1;
+    }
   };
 
-  // Initialization
+  // Init sprites
   useEffect(() => {
-      spritesRef.current.long = [createMechSprite(true, 0), createMechSprite(true, 1), createMechSprite(true, 2)];
-      spritesRef.current.short = [createMechSprite(false, 0), createMechSprite(false, 1), createMechSprite(false, 2)];
+    spritesRef.current.long = [createAgentSprite(true, 0), createAgentSprite(true, 1), createAgentSprite(true, 2)];
+    spritesRef.current.short = [createAgentSprite(false, 0), createAgentSprite(false, 1), createAgentSprite(false, 2)];
   }, []);
 
-  // Prepare Agents logic
+  // Prepare agents with grid-based positioning
   useEffect(() => {
-      const active = agents.filter(a => a.status === 'ACTIVE');
+    const active = agents.filter(a => a.status === 'ACTIVE' && a.asset === market.symbol);
+    const longs = active.filter(a => a.direction === 'LONG');
+    const shorts = active.filter(a => a.direction === 'SHORT');
+
+    const sorter = (a: Agent, b: Agent) => {
+      if (a.owner === 'USER') return -1;
+      if (b.owner === 'USER') return 1;
+      return b.leverage - a.leverage;
+    };
+
+    longs.sort(sorter);
+    shorts.sort(sorter);
+
+    const visualList: RenderableAgent[] = [];
+    const rows = 8;
+    const cols = 10;
+    const cellHeight = (HEIGHT - 100) / rows;
+    const cellWidth = 35;
+
+    const processSide = (agents: Agent[], isLong: boolean) => {
+      const limited = agents.slice(0, MAX_DRAWN_AGENTS_PER_SIDE);
       
-      const longs = active.filter(a => a.direction === 'LONG');
-      const shorts = active.filter(a => a.direction === 'SHORT');
-      
-      const sorter = (a: Agent, b: Agent) => {
-          if (a.owner === 'USER') return -1;
-          if (b.owner === 'USER') return 1;
-          return b.leverage - a.leverage;
-      };
-
-      longs.sort(sorter);
-      shorts.sort(sorter);
-
-      const visualList: RenderableAgent[] = [];
-      const processAgent = (a: Agent) => {
-          // Stable Seed Generation
-          let hash = 0;
-          for (let i = 0; i < a.id.length; i++) hash = a.id.charCodeAt(i) + ((hash << 5) - hash);
-          const seed = Math.abs(hash);
-
-          const tier = a.leverage > 12 ? 2 : a.leverage > 5 ? 1 : 0;
-          
-          visualList.push({
-              agent: a,
-              seed: seed,
-              tier,
-              rowPos: (seed % 100) / 100,
-              depthPos: ((seed * 17) % 100) / 100,
-              isUser: a.owner === 'USER',
-              isLong: a.direction === 'LONG'
-          });
-      };
-
-      longs.slice(0, MAX_DRAWN_AGENTS_PER_SIDE).forEach(processAgent);
-      shorts.slice(0, MAX_DRAWN_AGENTS_PER_SIDE).forEach(processAgent);
-      
-      gameState.current.renderableAgents = visualList;
-
-      // PnL Flashes
-      const FLASH_THRESHOLD = 50;
-      active.forEach(agent => {
-        const prev = gameState.current.prevPnL.get(agent.id);
-        if (prev !== undefined) {
-            const diff = agent.pnl - prev;
-            if (Math.abs(diff) >= FLASH_THRESHOLD) {
-                const flashColor = diff > 0 ? COLOR_PROFIT : COLOR_LOSS;
-                gameState.current.agentFlashes.set(agent.id, { color: flashColor, life: 1.0 });
-            }
+      limited.forEach((a, idx) => {
+        let hash = 0;
+        for (let i = 0; i < a.id.length; i++) {
+          hash = a.id.charCodeAt(i) + ((hash << 5) - hash);
         }
-        gameState.current.prevPnL.set(agent.id, agent.pnl);
+        const seed = Math.abs(hash);
+        
+        const row = idx % rows;
+        const col = Math.floor(idx / rows);
+        
+        // Add jitter within cell
+        const jitterX = ((seed % 100) / 100 - 0.5) * cellWidth * 0.6;
+        const jitterY = (((seed * 17) % 100) / 100 - 0.5) * cellHeight * 0.6;
+        
+        const baseY = 50 + row * cellHeight + cellHeight / 2;
+        const baseX = isLong ? -col * cellWidth : col * cellWidth;
+        
+        const existing = gameState.current.renderableAgents.find(ra => ra.agent.id === a.id);
+        
+        visualList.push({
+          agent: a,
+          seed,
+          tier: a.leverage > 12 ? 2 : a.leverage > 5 ? 1 : 0,
+          x: existing ? existing.x : baseX + jitterX,
+          y: existing ? existing.y : baseY + jitterY,
+          targetX: baseX + jitterX,
+          targetY: baseY + jitterY,
+          vx: existing ? existing.vx : 0,
+          vy: existing ? existing.vy : 0,
+          isUser: a.owner === 'USER',
+          isLong,
+          row,
+          col
+        });
+      });
+    };
+
+    processSide(longs, true);
+    processSide(shorts, false);
+    
+    gameState.current.renderableAgents = visualList;
+
+    // PnL flashes
+    const FLASH_THRESHOLD = 50;
+    active.forEach(agent => {
+      const prev = gameState.current.prevPnL.get(agent.id);
+      if (prev !== undefined) {
+        const diff = agent.pnl - prev;
+        if (Math.abs(diff) >= FLASH_THRESHOLD) {
+          const flashColor = diff > 0 ? COLOR_PROFIT : COLOR_LOSS;
+          gameState.current.agentFlashes.set(agent.id, { color: flashColor, life: 1 });
+        }
+      }
+      gameState.current.prevPnL.set(agent.id, agent.pnl);
     });
+  }, [agents, market.symbol]);
 
-  }, [agents]);
-
-  // Game Logic (Loot & Market)
+  // Loot event effect
   useEffect(() => {
     if (lootEvent) {
-       const isLongWin = lootEvent.winner === 'LONG';
-       const currentBattlePos = gameState.current.battlePosition;
-       const battleX = (currentBattlePos / 100) * WIDTH;
-       const xPos = isLongWin ? battleX - 100 : battleX + 100;
-       
-       spawnText(xPos, HEIGHT/2 - 100, `+${Math.floor(lootEvent.amount).toLocaleString()} $MON`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
+      const isLongWin = lootEvent.winner === 'LONG';
+      const battleX = (gameState.current.battlePosition / 100) * WIDTH;
+      const xPos = isLongWin ? battleX - 120 : battleX + 120;
+      spawnText(xPos, HEIGHT / 2 - 80, `+${Math.floor(lootEvent.amount).toLocaleString()} $MON`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
     }
-  }, [lootEvent, t]); // Added t dependency
+  }, [lootEvent, t]);
 
+  // Market effect
   useEffect(() => {
     const priceDiff = market.price - gameState.current.lastPrice;
     const pctChange = gameState.current.lastPrice > 0 ? (priceDiff / gameState.current.lastPrice) * 100 : 0;
-    
-    // Physics Impulse
-    const movement = pctChange * 30; 
+
+    const movement = pctChange * 25;
     let newTarget = gameState.current.targetBattlePosition + movement;
-    newTarget = Math.max(15, Math.min(85, newTarget)); 
+    newTarget = Math.max(20, Math.min(80, newTarget));
     gameState.current.targetBattlePosition = newTarget;
     gameState.current.lastPrice = market.price;
-    
-    // Update Trend for Visuals
     gameState.current.priceTrend = priceDiff;
 
-    if (Math.abs(pctChange) > 0.005) {
-        const isPriceUp = priceDiff > 0;
-        
-        // 1. Beam FX
-        const count = 4;
-        const battleX = (gameState.current.battlePosition / 100) * WIDTH;
-        
-        for (let i = 0; i < count; i++) {
-             const isLongAttacking = isPriceUp;
-             const startX = isLongAttacking ? battleX - (Math.random() * 200) : battleX + (Math.random() * 200);
-             const startY = 100 + Math.random() * (HEIGHT - 200);
-             const endX = isLongAttacking ? startX + 300 : startX - 300;
-             const endY = startY + (Math.random() * 100 - 50);
+    if (Math.abs(pctChange) > 0.003) {
+      const isPriceUp = priceDiff > 0;
+      const battleX = (gameState.current.battlePosition / 100) * WIDTH;
+      const count = Math.min(6, Math.floor(Math.abs(pctChange) * 100));
 
-             spawnBeam(startX, startY, endX, endY, isLongAttacking ? COLOR_LONG : COLOR_SHORT);
-        }
+      for (let i = 0; i < count; i++) {
+        const isLongAttacking = isPriceUp;
+        const startY = 80 + Math.random() * (HEIGHT - 160);
+        const startX = isLongAttacking 
+          ? battleX - 150 - Math.random() * 100 
+          : battleX + 150 + Math.random() * 100;
+        const endX = isLongAttacking ? startX + 250 : startX - 250;
+        const endY = startY + (Math.random() - 0.5) * 80;
 
-        // 2. Particle Explosion FX
-        const explosionColor = isPriceUp ? COLOR_LONG : COLOR_SHORT;
-        // Spawn cluster of fast particles
-        for (let k = 0; k < 25; k++) {
-             const py = Math.random() * HEIGHT;
-             // Radiate fast
-             spawnParticle(battleX, py, explosionColor, 15);
+        spawnBeam(startX, startY, endX, endY, isLongAttacking ? COLOR_LONG : COLOR_SHORT, 1.5 + Math.random());
+        
+        // Impact particles
+        for (let k = 0; k < 5; k++) {
+          spawnParticle(endX, endY, isLongAttacking ? COLOR_LONG : COLOR_SHORT, 6, 'explosion');
         }
+      }
     }
-  }, [market]);
+  }, [market.price]);
 
-  // Main Render Loop
+  // Main render loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -352,274 +464,325 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
     const state = gameState.current;
 
     const render = () => {
-        state.time += 0.02;
+      state.time += 0.016;
 
-        // --- PHYSICS ---
-        const k = 0.008; 
-        const d = 0.92; 
-        const dist = state.targetBattlePosition - state.battlePosition;
-        const force = dist * k;
-        state.velocity += force;
-        state.velocity *= d; 
-        if (state.velocity > 2) state.velocity = 2;
-        if (state.velocity < -2) state.velocity = -2;
-        state.battlePosition += state.velocity;
-        state.battlePosition = Math.max(0, Math.min(100, state.battlePosition));
+      // Physics
+      const k = 0.006;
+      const d = 0.94;
+      const dist = state.targetBattlePosition - state.battlePosition;
+      const force = dist * k;
+      state.velocity += force;
+      state.velocity *= d;
+      state.velocity = Math.max(-3, Math.min(3, state.velocity));
+      state.battlePosition += state.velocity;
+      state.battlePosition = Math.max(0, Math.min(100, state.battlePosition));
+
+      const battleX = (state.battlePosition / 100) * WIDTH;
+
+      // Clear background
+      ctx.fillStyle = '#050508';
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      // Draw grid
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.strokeStyle = '#836EF9';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const horizonY = HEIGHT * 0.15;
+      const centerX = WIDTH / 2;
+      for (let i = -6; i <= 6; i++) {
+        const x1 = centerX + i * 80;
+        const x2 = centerX + i * 350;
+        ctx.moveTo(x1, horizonY);
+        ctx.lineTo(x2, HEIGHT);
+      }
+      for (let i = 0; i < 8; i++) {
+        const y = horizonY + Math.pow(i / 8, 2) * (HEIGHT - horizonY);
+        ctx.moveTo(0, y);
+        ctx.lineTo(WIDTH, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // Plasma wall
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+
+      const wallColor = state.priceTrend >= 0 ? '0, 255, 157' : '255, 0, 85';
+      const drag = -state.velocity * 8;
+      const tVal = state.time * 15;
+      const intensity = Math.abs(state.velocity) + 0.5;
+
+      const getWallX = (y: number, jitter: number = 0) => {
+        const ny = (y / HEIGHT) * 2 - 1;
+        const parabola = 1 - ny * ny;
+        const dragOffset = drag * parabola;
+        const wave = Math.sin(y * 0.4 + tVal) * intensity * 3;
+        const j = jitter > 0 ? (Math.random() - 0.5) * jitter : 0;
+        return battleX + dragOffset + wave + j;
+      };
+
+      // Outer glow
+      ctx.beginPath();
+      for (let y = 0; y <= HEIGHT; y += 15) {
+        const x = getWallX(y, 0);
+        if (y === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = `rgba(${wallColor}, 0.25)`;
+      ctx.lineWidth = 20 + Math.sin(state.time * 8) * 5;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = `rgba(${wallColor}, 0.6)`;
+      ctx.stroke();
+
+      // Middle glow
+      ctx.beginPath();
+      for (let y = 0; y <= HEIGHT; y += 10) {
+        const x = getWallX(y, 0);
+        if (y === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = `rgba(${wallColor}, 0.5)`;
+      ctx.lineWidth = 8;
+      ctx.shadowBlur = 15;
+      ctx.stroke();
+
+      // Core line
+      ctx.beginPath();
+      for (let y = 0; y <= HEIGHT; y += 5) {
+        const x = getWallX(y, 0);
+        if (y === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+
+      // Sparks from wall
+      if (Math.random() < 0.15 * intensity) {
+        const py = Math.random() * HEIGHT;
+        const px = getWallX(py, 8);
+        spawnParticle(px, py, `rgba(${wallColor}, 1)`, 4, 'spark');
+      }
+
+      ctx.restore();
+
+      // Update and render trails
+      state.trails.forEach(t => {
+        if (!t.active) return;
         
-        const battleX = (state.battlePosition / 100) * WIDTH;
-
-        // 1. Clear & Background
-        ctx.fillStyle = '#050508';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        t.x += t.vx;
+        t.y += t.vy;
+        t.life -= 0.025;
+        
+        if (t.life <= 0) {
+          t.active = false;
+          return;
+        }
 
         ctx.save();
-        ctx.globalAlpha = 0.1;
-        ctx.strokeStyle = '#836EF9';
-        ctx.lineWidth = 1;
+        ctx.globalAlpha = t.life * 0.6;
+        ctx.fillStyle = t.color;
         ctx.beginPath();
-        // Grid
-        const horizonY = HEIGHT * 0.1;
-        const centerX = WIDTH / 2;
-        for (let i = -5; i <= 5; i++) {
-            const x1 = centerX + i * 100;
-            const x2 = centerX + i * 400;
-            ctx.moveTo(x1, horizonY); ctx.lineTo(x2, HEIGHT);
-        }
-        for (let i = 0; i < 10; i++) {
-            const y = horizonY + Math.pow(i / 10, 2) * (HEIGHT - horizonY);
-            ctx.moveTo(0, y); ctx.lineTo(WIDTH, y);
-        }
-        ctx.stroke();
+        ctx.arc(t.x, t.y, t.size * t.life, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
+      });
 
-        // 2. Plasma Wall & Heat Effects
+      // Render agents
+      const agentsToRender = state.renderableAgents;
+      if (spritesRef.current.long.length > 0) {
+        const time = state.time;
+
+        agentsToRender.forEach(ra => {
+          // Smooth movement to target
+          const dx = ra.targetX - ra.x;
+          const dy = ra.targetY - ra.y;
+          ra.vx += dx * 0.02;
+          ra.vy += dy * 0.02;
+          ra.vx *= 0.85;
+          ra.vy *= 0.85;
+          ra.x += ra.vx;
+          ra.y += ra.vy;
+
+          // Add marching animation
+          const marchOffset = Math.sin(time * 2 + ra.row * 0.5 + ra.col * 0.3) * 3;
+          const thrustOffset = Math.sin(time * 10 + ra.seed) * 1;
+
+          const finalX = battleX + ra.x + marchOffset + (ra.isLong ? -40 : 40);
+          const finalY = ra.y + thrustOffset;
+
+          // Cull offscreen
+          if (finalX < -50 || finalX > WIDTH + 50) return;
+
+          const drawSize = ra.isUser ? 44 : 28 + ra.tier * 4;
+          const offset = drawSize / 2;
+
+          // Spawn trail
+          if (Math.random() < 0.3) {
+            const trailX = ra.isLong ? finalX - offset + 5 : finalX + offset - 5;
+            const trailY = finalY;
+            const trailVx = (Math.random() - 0.5) * 0.5;
+            const trailVy = (Math.random() - 0.5) * 0.5;
+            const trailColor = ra.isLong 
+              ? `rgba(0, 255, 157, ${0.3 + Math.random() * 0.3})` 
+              : `rgba(255, 0, 85, ${0.3 + Math.random() * 0.3})`;
+            spawnTrail(trailX, trailY, trailVx, trailVy, trailColor, ra.agent.id);
+          }
+
+          // Flash effect
+          const flash = state.agentFlashes.get(ra.agent.id);
+          if (flash && flash.life > 0) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = flash.life * 0.5;
+            ctx.fillStyle = flash.color;
+            ctx.beginPath();
+            ctx.arc(finalX, finalY, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            flash.life -= 0.04;
+          }
+
+          // Glow for user or high tier
+          if (ra.tier === 2 || ra.isUser) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = ra.isUser ? 0.4 : 0.15;
+            ctx.fillStyle = ra.isUser ? '#FFD700' : (ra.isLong ? COLOR_LONG : COLOR_SHORT);
+            ctx.beginPath();
+            ctx.arc(finalX, finalY, ra.isUser ? 20 : 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          // Draw sprite
+          const sprite = ra.isLong 
+            ? spritesRef.current.long[ra.tier] 
+            : spritesRef.current.short[ra.tier];
+          ctx.drawImage(sprite, Math.floor(finalX - offset), Math.floor(finalY - offset), drawSize, drawSize);
+
+          // User indicator
+          if (ra.isUser) {
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(finalX - 12, finalY - 20);
+            ctx.lineTo(finalX + 12, finalY - 20);
+            ctx.lineTo(finalX, finalY - 10);
+            ctx.closePath();
+            ctx.stroke();
+          }
+        });
+      }
+
+      // Render beams
+      const activeBeams = state.beams.filter(b => b.active);
+      if (activeBeams.length > 0) {
         ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        
-        // Determine Wall Color based on TREND (Green if Up, Red if Down)
-        let wallColorRGB = '255, 255, 255';
-        if (state.priceTrend >= 0) {
-            // GREEN
-            wallColorRGB = '0, 255, 157';
-        } else {
-            // RED
-            wallColorRGB = '255, 0, 85';
+        for (const b of activeBeams) {
+          const progress = 1 - b.life / b.maxLife;
+          const alpha = Math.sin(progress * Math.PI) * 0.9;
+          
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = b.color;
+          ctx.lineWidth = b.width;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = b.color;
+          ctx.beginPath();
+          ctx.moveTo(b.startX, b.startY);
+          ctx.lineTo(b.endX, b.endY);
+          ctx.stroke();
+          
+          b.life -= 0.04;
+          if (b.life <= 0) b.active = false;
         }
-
-        const drag = -state.velocity * 10; 
-        const tVal = state.time * 20;
-        const absVel = Math.abs(state.velocity) + 1;
-        
-        // Helper to get X coordinate of wall at specific Y with optional jitter
-        const getWallX = (y: number, jitterIntensity: number = 0) => {
-            const ny = (y / HEIGHT) * 2 - 1; 
-            const parabola = 1 - ny*ny; 
-            const dragOffset = drag * parabola;
-            const tension = Math.sin(y * 0.5 + tVal) * absVel;
-            const jitter = jitterIntensity > 0 ? (Math.random() - 0.5) * jitterIntensity : 0;
-            return battleX + dragOffset + tension + jitter;
-        };
-
-        // Layer A: Wide Glow / Heat Haze
-        ctx.beginPath();
-        const step = 20;
-        for(let y=0; y<=HEIGHT; y+=step) {
-            const x = getWallX(y, 0);
-            if(y===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = `rgba(${wallColorRGB}, 0.3)`;
-        ctx.lineWidth = 12 + Math.sin(state.time * 10) * 4; // Pulsing
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = `rgba(${wallColorRGB}, 0.8)`;
-        ctx.stroke();
-
-        // Layer B: Core Energy Line
-        ctx.beginPath();
-        for(let y=0; y<=HEIGHT; y+=step) {
-            const x = getWallX(y, 0);
-            if(y===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.lineWidth = 3;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `rgba(${wallColorRGB}, 1)`;
-        ctx.stroke();
-
-        // Layer C: Static / High Energy Jitter (If intense)
-        if (absVel > 1.2) {
-             ctx.beginPath();
-             const fineStep = 10;
-             for(let y=0; y<=HEIGHT; y+=fineStep) {
-                 // Jitter proportional to velocity/intensity
-                 const x = getWallX(y, 10 * (absVel - 1)); 
-                 if(y===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-             }
-             ctx.strokeStyle = `rgba(${wallColorRGB}, 0.6)`;
-             ctx.lineWidth = 1;
-             ctx.stroke();
-        }
-
-        // Emit Wall Particles (Sparks) based on intensity
-        if (Math.random() < 0.1 * absVel) {
-            const py = Math.random() * HEIGHT;
-            const px = getWallX(py, 5);
-            spawnParticle(px, py, `rgba(${wallColorRGB}, 1)`);
-        }
-
         ctx.restore();
+      }
 
-        // 3. Render Agents
-        const agentsToRender = state.renderableAgents;
-        if (spritesRef.current.long.length > 0) {
-            const spread = 450; 
-            const gap = 50; 
-            const timeMove = state.time * 2;
-            const timeThrust = state.time * 8;
-
-            for (let i = 0; i < agentsToRender.length; i++) {
-                const ra = agentsToRender[i];
-                const y = 80 + (ra.rowPos * (HEIGHT - 160));
-                
-                // Optimized Math
-                const march = Math.sin(timeMove + i) * 3;
-                const thrust = Math.sin(timeThrust + i) * 1.5; 
-
-                let x = 0;
-                if (ra.isLong) {
-                    x = battleX - gap - (ra.depthPos * ra.depthPos * spread) + march;
-                } else {
-                    x = battleX + gap + (ra.depthPos * ra.depthPos * spread) - march;
-                }
-
-                // Cull offscreen
-                if (x < -30 || x > WIDTH + 30) continue;
-
-                const drawSize = ra.isUser ? 48 : 32; 
-                const offset = drawSize / 2;
-                const finalY = y + thrust;
-
-                // Flash Logic
-                const flash = state.agentFlashes.get(ra.agent.id);
-                if (flash) {
-                    if (flash.life > 0) {
-                        ctx.save();
-                        ctx.globalCompositeOperation = 'screen';
-                        ctx.globalAlpha = flash.life * 0.6; 
-                        ctx.fillStyle = flash.color;
-                        ctx.beginPath();
-                        ctx.arc(x, finalY, 20, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.restore();
-                        flash.life -= 0.05;
-                    } else {
-                        state.agentFlashes.delete(ra.agent.id);
-                    }
-                }
-
-                // Tier 3 or User Glow
-                if (ra.tier === 2 || ra.isUser) {
-                    ctx.save();
-                    ctx.globalCompositeOperation = 'screen';
-                    ctx.globalAlpha = ra.isUser ? 0.5 : 0.2;
-                    ctx.fillStyle = ra.isUser ? '#FFD700' : (ra.isLong ? COLOR_LONG : COLOR_SHORT);
-                    ctx.beginPath();
-                    ctx.arc(x, finalY, ra.isUser ? 18 : 12, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                }
-
-                const sprite = ra.isLong ? spritesRef.current.long[ra.tier] : spritesRef.current.short[ra.tier];
-                ctx.drawImage(sprite, Math.floor(x - offset), Math.floor(finalY - offset), drawSize, drawSize);
-
-                if (ra.isUser) {
-                    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(x - 10, finalY - 18); ctx.lineTo(x + 10, finalY - 18); ctx.lineTo(x, finalY - 10); ctx.closePath();
-                    ctx.stroke();
-                }
-            }
+      // Render particles
+      const activeParticles = state.particles.filter(p => p.active);
+      if (activeParticles.length > 0) {
+        for (const p of activeParticles) {
+          ctx.save();
+          ctx.globalAlpha = p.life;
+          
+          if (p.type === 'smoke') {
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (2 - p.life), 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          ctx.restore();
+          
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.98;
+          p.vy *= 0.98;
+          p.life -= p.type === 'explosion' ? 0.06 : 0.025;
+          if (p.life <= 0) p.active = false;
         }
+      }
 
-        // 4. Effects (Batched)
-        // Beams
-        const activeBeams = state.beams.filter(b => b.active);
-        if (activeBeams.length > 0) {
-            ctx.save();
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.8;
-            for (const b of activeBeams) {
-                ctx.strokeStyle = b.color;
-                ctx.beginPath();
-                ctx.moveTo(b.startX, b.startY); ctx.lineTo(b.endX, b.endY);
-                ctx.stroke();
-                b.life -= 0.1;
-                if (b.life <= 0) b.active = false;
-            }
-            ctx.restore();
+      // Render floating texts
+      const activeTexts = state.floatingTexts.filter(t => t.active);
+      if (activeTexts.length > 0) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        for (const t of activeTexts) {
+          const scale = t.life > 0.85 ? 1 + (1 - t.life) * 3 : 1;
+          
+          ctx.font = `900 ${Math.floor(28 * scale)}px Orbitron, sans-serif`;
+          ctx.fillStyle = t.color;
+          ctx.fillText(t.text, t.x, t.y);
+          
+          ctx.font = '600 11px Rajdhani, sans-serif';
+          ctx.fillStyle = '#fff';
+          ctx.fillText(t.subText, t.x, t.y + 16);
+
+          t.y -= 0.8;
+          t.life -= 0.012;
+          if (t.life <= 0) t.active = false;
         }
+        ctx.restore();
+      }
 
-        // Particles
-        const activeParticles = state.particles.filter(p => p.active);
-        if (activeParticles.length > 0) {
-             for (const p of activeParticles) {
-                 ctx.fillStyle = p.color;
-                 ctx.globalAlpha = p.life;
-                 ctx.beginPath();
-                 ctx.rect(p.x, p.y, p.size, p.size);
-                 ctx.fill();
-                 p.x += p.vx; p.y += p.vy;
-                 p.life -= 0.05;
-                 if (p.life <= 0) p.active = false;
-             }
-             ctx.globalAlpha = 1.0;
-        }
-
-        // Text
-        const activeTexts = state.floatingTexts.filter(t => t.active);
-        if (activeTexts.length > 0) {
-            ctx.save();
-            ctx.textAlign = 'center';
-            for (const t of activeTexts) {
-                const scale = t.life > 0.9 ? 1 + (1 - t.life) * 5 : 1;
-                ctx.font = `900 ${Math.floor(36 * scale)}px Orbitron`;
-                ctx.fillStyle = t.color;
-                ctx.fillText(t.text, t.x, t.y);
-                
-                ctx.font = '700 12px Rajdhani';
-                ctx.fillStyle = '#fff';
-                ctx.fillText(t.subText, t.x, t.y + 20);
-
-                t.y -= 1;
-                t.life -= 0.01;
-                if (t.life <= 0) t.active = false;
-            }
-            ctx.restore();
-        }
-
-        frameId = requestAnimationFrame(render);
+      frameId = requestAnimationFrame(render);
     };
 
     render();
     return () => cancelAnimationFrame(frameId);
-  }, [agents]); 
+  }, []);
 
   return (
     <div className="relative w-full h-[300px] lg:h-[500px] rounded-2xl overflow-hidden border border-[#836EF9]/30 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#020203]">
-        <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="w-full h-full object-cover" />
-        
-        {/* HUD Overlay Top */}
-        <div className="absolute top-0 left-0 w-full p-4 lg:p-6 flex flex-col justify-between pointer-events-none">
-             <div className="flex justify-between items-start">
-                 <div className="bg-black/40 backdrop-blur-sm border-l-2 border-[#00FF9D] pl-3 py-1">
-                     <div className="text-[#00FF9D] text-xs font-bold tracking-widest">{t('alliance')}</div>
-                     <div className="text-white font-mono text-xl">{agents.filter(a => a.direction === 'LONG' && a.status === 'ACTIVE').length} {t('units')}</div>
-                 </div>
-                 <div className="bg-black/40 backdrop-blur-sm border-r-2 border-[#FF0055] pr-3 py-1 text-right">
-                     <div className="text-[#FF0055] text-xs font-bold tracking-widest">{t('syndicate')}</div>
-                     <div className="text-white font-mono text-xl">{agents.filter(a => a.direction === 'SHORT' && a.status === 'ACTIVE').length} {t('units')}</div>
-                 </div>
-             </div>
+      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="w-full h-full object-cover" />
+
+      {/* HUD Overlay */}
+      <div className="absolute top-0 left-0 w-full p-4 lg:p-6 flex flex-col justify-between pointer-events-none">
+        <div className="flex justify-between items-start">
+          <div className="bg-black/50 backdrop-blur-sm border-l-2 border-[#00FF9D] pl-3 py-2 rounded-r">
+            <div className="text-[#00FF9D] text-xs font-bold tracking-widest uppercase">{t('alliance')}</div>
+            <div className="text-white font-mono text-lg">
+              {agents.filter(a => a.direction === 'LONG' && a.status === 'ACTIVE' && a.asset === market.symbol).length} {t('units')}
+            </div>
+          </div>
+          <div className="bg-black/50 backdrop-blur-sm border-r-2 border-[#FF0055] pr-3 py-2 rounded-l text-right">
+            <div className="text-[#FF0055] text-xs font-bold tracking-widest uppercase">{t('syndicate')}</div>
+            <div className="text-white font-mono text-lg">
+              {agents.filter(a => a.direction === 'SHORT' && a.status === 'ACTIVE' && a.asset === market.symbol).length} {t('units')}
+            </div>
+          </div>
         </div>
+      </div>
     </div>
   );
 };

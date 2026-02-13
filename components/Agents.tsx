@@ -22,7 +22,7 @@ interface AgentsProps {
   agents: Agent[];
   market: MarketState;
   onMint: (twitterHandle?: string, nameHint?: string) => Promise<Agent | null>;
-  onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number) => Promise<void>;
+  onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number, takeProfit?: number, stopLoss?: number) => Promise<void>;
   onWithdraw: (agentId: string) => Promise<void>;
   onAddAgent: (agent: Agent) => void;
   walletBalance: number;
@@ -34,16 +34,16 @@ const MIN_COLLATERAL = 100;
 
 export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, onAddAgent, walletBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
-  // Group Agents
+  // Group Agents - filter by current market asset
   const { activeAgents, idleAgents, deadAgents, hasAgents } = useMemo(() => {
-    const userAgents = agents.filter(a => a.owner === 'USER');
+    const userAgents = agents.filter(a => a.owner === 'USER' && a.asset === market.symbol);
     return {
         activeAgents: userAgents.filter(a => a.status === 'ACTIVE'),
         idleAgents: userAgents.filter(a => a.status === 'IDLE'),
         deadAgents: userAgents.filter(a => a.status === 'LIQUIDATED').reverse(),
         hasAgents: userAgents.length > 0
     };
-  }, [agents]);
+  }, [agents, market.symbol]);
 
   // Selection State: 'FABRICATE' or agentId or '' (dashboard)
   // Default to dashboard if user has agents, otherwise show FABRICATE page
@@ -72,6 +72,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [deployLeverage, setDeployLeverage] = useState(5);
   const [deployCollateral, setDeployCollateral] = useState(400);
   const [deployAsset, setDeployAsset] = useState<'BTC' | 'ETH' | 'SOL' | 'MON'>('BTC');
+  const [deployTakeProfit, setDeployTakeProfit] = useState<number | undefined>(undefined);
+  const [deployStopLoss, setDeployStopLoss] = useState<number | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'DEPLOY' | 'CHAT'>('DEPLOY');
 
   // Available trading assets
@@ -165,7 +167,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   };
 
   const handleDeployClick = async (agentId: string) => {
-    await onDeploy(agentId, deployDirection, deployLeverage, deployCollateral);
+    await onDeploy(agentId, deployDirection, deployLeverage, deployCollateral, deployTakeProfit, deployStopLoss);
     setSelection(agentId);
   };
 
@@ -285,7 +287,10 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
                 <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
-                        <h4 className={`text-xs font-bold font-display truncate ${selection === agent.id ? 'text-white' : 'text-slate-300'}`}>{agent.name}</h4>
+                        <div className="flex items-center gap-2">
+                            <h4 className={`text-xs font-bold font-display truncate ${selection === agent.id ? 'text-white' : 'text-slate-300'}`}>{agent.name}</h4>
+                            <span className="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] font-mono text-slate-400">{agent.asset}</span>
+                        </div>
                         {agent.status === 'ACTIVE' && (
                             <span className={`text-[10px] font-mono ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
                                 {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} $MON
@@ -862,6 +867,54 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      className="w-full h-2 bg-slate-800 rounded-lg accent-[#836EF9]"
                                  />
                                  <p className="text-center text-sm font-mono text-white mt-1">{deployCollateral} $MON</p>
+                             </div>
+                         </div>
+
+                         {/* TP/SL Settings */}
+                         <div className="grid grid-cols-2 gap-4 mb-4">
+                             <div>
+                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block flex items-center gap-1">
+                                     <TrendingUp size={12} className="text-emerald-400" />
+                                     Take Profit
+                                 </label>
+                                 <div className="flex items-center gap-2">
+                                     <input
+                                         type="number"
+                                         min="0"
+                                         max="1000"
+                                         placeholder="Optional"
+                                         value={deployTakeProfit || ''}
+                                         onChange={(e) => {
+                                             const val = parseInt(e.target.value);
+                                             setDeployTakeProfit(isNaN(val) ? undefined : val);
+                                         }}
+                                         className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                                     />
+                                     <span className="text-xs text-slate-500">%</span>
+                                 </div>
+                                 <p className="text-[10px] text-slate-500 mt-1">Auto-exit at +{deployTakeProfit || '?'}% profit</p>
+                             </div>
+                             <div>
+                                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block flex items-center gap-1">
+                                     <TrendingDown size={12} className="text-rose-400" />
+                                     Stop Loss
+                                 </label>
+                                 <div className="flex items-center gap-2">
+                                     <input
+                                         type="number"
+                                         min="0"
+                                         max="100"
+                                         placeholder="Optional"
+                                         value={deployStopLoss || ''}
+                                         onChange={(e) => {
+                                             const val = parseInt(e.target.value);
+                                             setDeployStopLoss(isNaN(val) ? undefined : val);
+                                         }}
+                                         className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                                     />
+                                     <span className="text-xs text-slate-500">%</span>
+                                 </div>
+                                 <p className="text-[10px] text-slate-500 mt-1">Auto-exit at -{deployStopLoss || '?'}% loss</p>
                              </div>
                          </div>
 

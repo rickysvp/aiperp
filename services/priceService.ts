@@ -126,7 +126,8 @@ const stopMONSimulation = () => {
   monSubscribers = [];
 };
 
-// WebSocket subscription for real-time price
+// WebSocket subscription for real-time MARK PRICE (for futures/perps)
+// Uses Binance Futures Mark Price Stream - more suitable for trading simulations
 export const subscribePrice = (
   symbol: AssetSymbol,
   onUpdate: (price: number, change24h: number) => void,
@@ -155,18 +156,23 @@ export const subscribePrice = (
     };
   }
   
-  // For other assets, use Binance WebSocket
+  // For other assets, use Binance FUTURES WebSocket
+  // Subscribe to both Mark Price (for accurate pricing) and Ticker (for 24h change)
   const binanceSymbol = SYMBOL_MAP[symbol].toLowerCase();
-  const wsUrl = `${BINANCE_WS_STREAM}/${binanceSymbol}@ticker`;
   
-  console.log(`[PriceService] Connecting to ${wsUrl}`);
+  // Combined stream for mark price and ticker
+  const wsUrl = `wss://fstream.binance.com/stream?streams=${binanceSymbol}@markPrice@1s/${binanceSymbol}@ticker`;
+  
+  console.log(`[PriceService] Connecting to combined stream: ${wsUrl}`);
   
   const ws = new WebSocket(wsUrl);
   let isActive = true;
+  let lastMarkPrice = 0;
+  let lastChange24h = 0;
   
   ws.onopen = () => {
     if (isActive) {
-      console.log(`[PriceService] Connected to ${symbol}`);
+      console.log(`[PriceService] Connected to ${symbol} combined stream`);
     }
   };
   
@@ -174,10 +180,27 @@ export const subscribePrice = (
     if (!isActive) return;
     
     try {
-      const data = JSON.parse(event.data);
-      const price = parseFloat(data.c);
-      const change24h = parseFloat(data.P);
-      onUpdate(price, change24h);
+      const message = JSON.parse(event.data);
+      const stream = message.stream;
+      const data = message.data;
+      
+      if (stream.includes('@markPrice')) {
+        // Mark Price update (1s interval)
+        // p: mark price, i: index price, r: funding rate
+        lastMarkPrice = parseFloat(data.p);
+        // Only update if we have both price and change
+        if (lastMarkPrice > 0) {
+          onUpdate(lastMarkPrice, lastChange24h);
+        }
+      } else if (stream.includes('@ticker')) {
+        // Ticker update (for 24h change percentage)
+        // P: price change percent
+        lastChange24h = parseFloat(data.P);
+        // If we already have a mark price, update with new change
+        if (lastMarkPrice > 0) {
+          onUpdate(lastMarkPrice, lastChange24h);
+        }
+      }
     } catch (error) {
       console.error('[PriceService] Parse error:', error);
     }

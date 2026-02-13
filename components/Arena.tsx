@@ -118,7 +118,8 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
   const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
   const [isSwitchingAsset, setIsSwitchingAsset] = useState(false);
 
-  const activeAgents = agents.filter(a => a.status === 'ACTIVE');
+  // Filter agents by current selected asset and active status
+  const activeAgents = agents.filter(a => a.status === 'ACTIVE' && a.asset === selectedAsset);
   
   // Sort Logic: User Agents First, then by Balance descending
   const sortAgents = (a: Agent, b: Agent) => {

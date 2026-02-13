@@ -306,7 +306,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto h-full pb-6">
+    <div className="max-w-6xl mx-auto h-full">
       {/* Top Section - Wallet Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         {/* Main Card - Available Balance Focus */}
@@ -317,33 +317,6 @@ export const WalletV2: React.FC<WalletV2Props> = ({
               <h3 className="text-sm font-semibold text-slate-400 uppercase flex items-center gap-2">
                 <Wallet2 size={14} className="text-[#836EF9]" /> BALANCE ACCOUNT
               </h3>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setHideBalance(!hideBalance)}
-                  className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
-                  title={hideBalance ? "Show" : "Hide"}
-                >
-                  {hideBalance ? <Eye size={18} /> : <EyeOff size={18} />}
-                </button>
-                {onShowLegal && (
-                  <button 
-                    onClick={onShowLegal}
-                    className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
-                    title="Legal & Privacy"
-                  >
-                    <FileText size={18} />
-                  </button>
-                )}
-                {onLogout && (
-                  <button 
-                    onClick={onLogout}
-                    className="p-2 rounded-lg bg-[#FF0055]/10 hover:bg-[#FF0055]/20 border border-[#FF0055]/30 text-[#FF0055] transition-all"
-                    title="Disconnect"
-                  >
-                    <LogOut size={18} />
-                  </button>
-                )}
-              </div>
             </div>
 
             {/* Balance Account - Primary Display */}
@@ -442,12 +415,11 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <span>Withdraw</span>
               </button>
               <button
-                onClick={() => alert('SWAP feature coming soon!')}
-                disabled={liquid <= 0}
-                className="group flex-1 py-3 px-4 bg-gradient-to-r from-[#836EF9] to-[#6c56e0] hover:from-[#836EF9]/90 hover:to-[#6c56e0]/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-white rounded-xl flex items-center justify-center gap-2 transition-all duration-300 text-sm font-semibold shadow-lg shadow-[#836EF9]/20 hover:shadow-xl hover:shadow-[#836EF9]/30 hover:-translate-y-0.5 active:translate-y-0"
+                onClick={() => setShowHistoryModal(true)}
+                className="group flex-1 py-3 px-4 bg-gradient-to-r from-[#836EF9] to-[#6c56e0] hover:from-[#836EF9]/90 hover:to-[#6c56e0]/90 text-white rounded-xl flex items-center justify-center gap-2 transition-all duration-300 text-sm font-semibold shadow-lg shadow-[#836EF9]/20 hover:shadow-xl hover:shadow-[#836EF9]/30 hover:-translate-y-0.5 active:translate-y-0"
               >
-                <ArrowLeftRight size={16} className="group-hover:rotate-180 transition-transform duration-500" /> 
-                <span>Swap</span>
+                <History size={16} className="group-hover:scale-110 transition-transform" /> 
+                <span>History</span>
               </button>
             </div>
           </div>
@@ -655,61 +627,8 @@ export const WalletV2: React.FC<WalletV2Props> = ({
         </div>
       </div>
 
-      {/* Energy & Referral Section - Side by Side */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Energy Section */}
-        <div className="group bg-gradient-to-br from-[#0f111a] to-[#151825] border border-slate-800 hover:border-amber-500/30 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/5">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/30 transition-shadow">
-                <Zap size={18} className="text-white relative z-10" />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity blur-md"></div>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wide">Energy</h3>
-                <p className="text-[10px] text-slate-500">Battle · Earn · Invite</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-amber-400 group-hover:scale-110 transition-transform">{currentEnergy}</p>
-              <p className="text-[10px] text-slate-500">Total: {totalEnergy}</p>
-            </div>
-          </div>
-
-          {/* Energy Sources */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-2.5 bg-slate-900/60 hover:bg-slate-900/80 rounded-xl border border-slate-800/50 hover:border-[#836EF9]/30 transition-all cursor-pointer group/item">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#836EF9]/20 flex items-center justify-center group-hover/item:bg-[#836EF9]/30 transition-colors">
-                  <Sword size={13} className="text-[#836EF9]" />
-                </div>
-                <span className="text-xs text-slate-400 group-hover/item:text-slate-300 transition-colors">Arena Combat</span>
-              </div>
-              <span className="text-sm font-bold text-white">{Math.floor(currentEnergy * 0.5)}</span>
-            </div>
-            <div className="flex items-center justify-between p-2.5 bg-slate-900/60 hover:bg-slate-900/80 rounded-xl border border-slate-800/50 hover:border-[#00FF9D]/30 transition-all cursor-pointer group/item">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#00FF9D]/20 flex items-center justify-center group-hover/item:bg-[#00FF9D]/30 transition-colors">
-                  <Coins size={13} className="text-[#00FF9D]" />
-                </div>
-                <span className="text-xs text-slate-400 group-hover/item:text-slate-300 transition-colors">Liquidity Mining</span>
-              </div>
-              <span className="text-sm font-bold text-white">{Math.floor(currentEnergy * 0.3)}</span>
-            </div>
-            <div className="flex items-center justify-between p-2.5 bg-slate-900/60 hover:bg-slate-900/80 rounded-xl border border-slate-800/50 hover:border-[#1DA1F2]/30 transition-all cursor-pointer group/item">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#1DA1F2]/20 flex items-center justify-center group-hover/item:bg-[#1DA1F2]/30 transition-colors">
-                  <Users size={13} className="text-[#1DA1F2]" />
-                </div>
-                <span className="text-xs text-slate-400 group-hover/item:text-slate-300 transition-colors">Invite Friends</span>
-              </div>
-              <span className="text-sm font-bold text-white">{Math.floor(currentEnergy * 0.2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Referral Section */}
+      {/* Referral Section */}
+      <div className="mb-6">
         <div className="group bg-gradient-to-br from-[#0f111a] to-[#151825] border border-slate-800 hover:border-[#836EF9]/30 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[#836EF9]/5">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -723,9 +642,17 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                 <p className="text-[10px] text-slate-500">Dual Rewards</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-[#00FF9D] group-hover:scale-110 transition-transform">+{formatNumber(referralEarnings)}</p>
-              <p className="text-[10px] text-slate-500">$MON earned</p>
+            <div className="flex items-center gap-4">
+              {/* Invited Count */}
+              <div className="text-right">
+                <p className="text-xl font-bold text-[#836EF9] group-hover:scale-110 transition-transform">{referralCount}</p>
+                <p className="text-[10px] text-slate-500">Friends Invited</p>
+              </div>
+              {/* Earnings */}
+              <div className="text-right pl-4 border-l border-slate-700">
+                <p className="text-xl font-bold text-[#00FF9D] group-hover:scale-110 transition-transform">+{formatNumber(referralEarnings)}</p>
+                <p className="text-[10px] text-slate-500">$MON earned</p>
+              </div>
             </div>
           </div>
 
@@ -797,46 +724,8 @@ export const WalletV2: React.FC<WalletV2Props> = ({
         </div>
       </div>
 
-      {/* Transaction History - At Bottom */}
-      <div className="bg-[#0f111a] border border-slate-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <History size={16} className="text-[#836EF9]" /> Transaction History
-          </h3>
-          <div className="flex gap-1">
-            {(['7d', '30d', '90d', 'all'] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
-                  timeRange === range ? 'bg-[#836EF9] text-white' : 'text-slate-500 hover:text-white'
-                }`}
-              >
-                {range === 'all' ? 'All' : range}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="divide-y divide-slate-800/50 max-h-[300px] overflow-y-auto custom-scrollbar">
-          {transactions.map((tx) => (
-            <div key={tx.id} className="p-3 flex items-center gap-3 hover:bg-slate-900/30 transition-colors">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getTxBgColor(tx.type)}`}>
-                {getTxIcon(tx.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{tx.description}</p>
-                <p className="text-[10px] text-slate-500">{formatTime(tx.timestamp)}</p>
-              </div>
-              <div className="text-right">
-                <p className={`text-sm font-semibold ${tx.amount > 0 ? 'text-[#00FF9D]' : 'text-white'}`}>
-                  {tx.amount > 0 ? '+' : ''}{hideBalance ? maskNumber() : tx.amount.toFixed(0)}
-                </p>
-                <p className="text-[10px] text-slate-500">$MON</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Bottom Spacer for Tab Bar */}
+      <div className="h-24"></div>
 
       {/* Deposit Modal */}
       {showDepositModal && (
