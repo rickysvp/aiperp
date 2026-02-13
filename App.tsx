@@ -154,9 +154,12 @@ const AppContent: React.FC = () => {
     // Initialize System Bots (500-1000 agents per asset)
     const systemBots: Agent[] = [];
     const botCount = Math.floor(Math.random() * 501) + 500; // 500-1000 agents
+    const assets: AssetSymbol[] = ['BTC', 'ETH', 'SOL', 'MON'];
+    
     for (let i = 0; i < botCount; i++) {
         const dir = Math.random() > 0.5 ? 'LONG' : 'SHORT';
         const leverage = Math.floor(Math.random() * 19) + 1;
+        const asset = assets[Math.floor(Math.random() * assets.length)];
         const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
             if (lev <= 3) return 'LOW';
             if (lev <= 8) return 'MEDIUM';
@@ -179,7 +182,8 @@ const AppContent: React.FC = () => {
             wins: 0,
             losses: 0,
             status: 'ACTIVE',
-            riskLevel: getRiskLevel(leverage)
+            riskLevel: getRiskLevel(leverage),
+            asset: asset  // 随机分配到不同资产
         });
     }
     setAgents(systemBots);
@@ -494,7 +498,8 @@ const AppContent: React.FC = () => {
         losses: 0,
         status: 'IDLE',
         riskLevel: getRiskLevel(1),
-        twitterHandle: twitterHandle
+        twitterHandle: twitterHandle,
+        asset: 'BTC' // Default asset, will be set on deploy
       };
 
       // Agent is returned but NOT added to list yet
