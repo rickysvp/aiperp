@@ -326,9 +326,9 @@ export const translations = {
     enter_name: "Enter Name",
 
     // Agent Detail
-    live_pnl: "Live PnL",
+
     final_status: "Final Status",
-    final_pnl: "Final PnL",
+
     collateral_health: "Collateral Health",
     agent_config: "Agent Configuration",
     risk_level: "Risk Level",
@@ -337,12 +337,12 @@ export const translations = {
     deploy_section: "Deploy to Arena",
     direction: "Direction",
     leverage: "Leverage",
-    collateral: "Collateral",
+
     insufficient_balance: "Insufficient Balance",
     deploy_with: "Deploy",
-    share_status: "Share Status",
+
     share_agent: "Share Agent",
-    share_report: "Share Report",
+
     withdraw: "Withdraw",
     back_to_list: "Back to List",
 
@@ -353,7 +353,7 @@ export const translations = {
     withdraw_warning: "Withdrawing will exit your agent from the arena. You can redeploy later.",
     cancel: "Cancel",
     confirm: "Confirm",
-    processing: "Processing...",
+
     withdraw_success: "Withdrawal Successful!",
 
     // NFT3DCard - Deploy Page
@@ -396,7 +396,7 @@ export const translations = {
     insufficient_funds: "余额不足",
     init_fabrication: "开始制造",
     gemini_terminal: "GEMINI-3 终端",
-    processing: "_处理中_",
+
     fabrication_complete: "制造完成",
     generated_strategy: "生成策略",
     add_to_fleet: "加入舰队",
@@ -408,15 +408,15 @@ export const translations = {
     est_liquidation: "预估强平价",
     away: "距离",
     deploy_unit: "部署单位",
-    live_pnl: "实时盈亏",
+
     health_collateral: "生命值 / 抵押",
     wins: "胜",
     losses: "负",
-    share_status: "分享状态",
+
     signal_lost: "信号丢失",
     liquidated_msg: "在上一次波动高峰中被强平。",
     final_collateral: "最终抵押",
-    share_report: "分享战报",
+
     back_to_fleet: "返回舰队",
     standby: "待命",
     long: "做多",
@@ -532,7 +532,7 @@ export const translations = {
     commander: "指挥官",
     terminated: "已终结",
     share_replay: "分享回放",
-    collateral: "抵押物",
+
     unrealized_pnl: "未实现盈亏",
     recruit: "招募",
     deactivate: "停用单位",
@@ -541,7 +541,7 @@ export const translations = {
     minted_by: "铸造者",
     edition: "版本",
     agent_exited: "特工已退出",
-    final_pnl: "最终盈亏",
+
     share_results: "分享结果",
 
     roi_24h: "24H 收益率",
@@ -670,9 +670,9 @@ export const translations = {
     enter_name: "输入名称",
 
     // Agent Detail
-    live_pnl: "实时盈亏",
+
     final_status: "最终状态",
-    final_pnl: "最终盈亏",
+
     collateral_health: "抵押健康度",
     agent_config: "特工配置",
     risk_level: "风险等级",
@@ -681,12 +681,12 @@ export const translations = {
     deploy_section: "部署到竞技场",
     direction: "方向",
     leverage: "杠杆",
-    collateral: "抵押物",
+
     insufficient_balance: "余额不足",
     deploy_with: "部署",
-    share_status: "分享状态",
+
     share_agent: "分享特工",
-    share_report: "分享战报",
+
     withdraw: "收回",
     back_to_list: "返回列表",
 
@@ -697,7 +697,7 @@ export const translations = {
     withdraw_warning: "收回将让您的特工退出竞技场。您可以稍后重新部署。",
     cancel: "取消",
     confirm: "确认",
-    processing: "处理中...",
+
     withdraw_success: "收回成功!",
 
     // NFT3DCard - Deploy Page
