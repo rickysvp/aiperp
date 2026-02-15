@@ -461,7 +461,7 @@ const AppContent: React.FC = () => {
     }, AGENT_ROTATION_INTERVAL);
 
     return () => clearInterval(rotationInterval);
-  }, []);
+  }, [agentsLoaded]);
 
   // --- Actions ---
   const handleMintAgent = async (twitterHandle?: string, nameHint?: string): Promise<Agent | null> => {
