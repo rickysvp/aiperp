@@ -145,17 +145,18 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
     setTimeout(() => setShowSuccess(false), 3000);
   };
   
-  const handleUnstake = () => {
+  const handleUnstake = async () => {
     const amount = parseFloat(unstakeAmount);
     if (isNaN(amount) || amount <= 0) return;
     if (!userStake || amount > userStake.amount) return;
     
     updateMonBalance(amount);
     
+    const newAmount = userStake.amount - amount;
     setUserStake(prev => prev ? {
       ...prev,
-      amount: prev.amount - amount,
-      pendingRewards: prev.amount - amount <= 0 ? 0 : prev.pendingRewards
+      amount: newAmount,
+      pendingRewards: newAmount <= 0 ? 0 : prev.pendingRewards
     } : null);
     
     setPool(prev => ({
@@ -163,22 +164,35 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
       totalStaked: Math.max(0, prev.totalStaked - amount)
     }));
     
+    // Sync to Supabase
+    if (userId && isSupabaseConfigured() && userStake) {
+      console.log('[Liquidity] Syncing unstake to Supabase...');
+      await upsertUserStake(userId, 'mon-lp-1', -amount, 0, newAmount <= 0 ? 0 : userStake.pendingRewards);
+    }
+    
     setUnstakeAmount('');
     setSuccessMessage(t('liquidity_unstake_success'));
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
   };
   
-  const handleClaimRewards = () => {
+  const handleClaimRewards = async () => {
     if (!userStake || userStake.pendingRewards <= 0) return;
     
-    updateMonBalance(userStake.pendingRewards);
+    const claimedAmount = userStake.pendingRewards;
+    updateMonBalance(claimedAmount);
     
     setUserStake(prev => prev ? {
       ...prev,
       rewards: prev.rewards + prev.pendingRewards,
       pendingRewards: 0
     } : null);
+    
+    // Sync to Supabase
+    if (userId && isSupabaseConfigured() && userStake) {
+      console.log('[Liquidity] Syncing claim rewards to Supabase...');
+      await claimRewards(userStake.id);
+    }
     
     setSuccessMessage(t('liquidity_claim_success'));
     setShowSuccess(true);

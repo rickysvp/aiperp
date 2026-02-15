@@ -130,7 +130,7 @@ const AppContent: React.FC = () => {
 
   // --- Game Loop (Market Simulation) ---
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const currentAsset = assetRef.current;
       const assetConfig = ASSETS[currentAsset];
       
@@ -170,6 +170,24 @@ const AppContent: React.FC = () => {
         totalShortStaked
       });
 
+      // Sync Market Data to Supabase (every 30 ticks to avoid too many requests)
+      if (Math.random() < 0.033 && isSupabaseConfigured()) {
+        const { updateMarketData, recordPriceHistory } = await import('./lib/api/market');
+        updateMarketData(currentAsset, {
+          price: newPrice,
+          trend,
+          last_change_pct: change * 100,
+          long_earnings_per_second: longEarningsPerSecond,
+          short_earnings_per_second: shortEarningsPerSecond,
+          total_long_staked: totalLongStaked,
+          total_short_staked: totalShortStaked
+        }).catch(err => console.error('[App] Failed to update market data:', err));
+        
+        recordPriceHistory(currentAsset, newPrice).catch(err => 
+          console.error('[App] Failed to record price history:', err)
+        );
+      }
+
       // Update Agents PnL and record history
       setAgents(prev => prev.map(agent => {
         if (agent.status !== 'ACTIVE' || agent.asset !== currentAsset) return agent;
@@ -201,6 +219,13 @@ const AppContent: React.FC = () => {
           ? [...agent.pnlHistory, { time: new Date().toISOString(), value: rawPnl }].slice(-30)
           : agent.pnlHistory;
         
+        // Sync PnL to Supabase
+        if (shouldRecordHistory && isSupabaseConfigured()) {
+          recordAgentPnLHistory(agent.id, rawPnl).catch(err => 
+            console.error('[App] Failed to record PnL history:', err)
+          );
+        }
+        
         return { ...agent, pnl: rawPnl, pnlHistory: newPnlHistory };
       }));
 
@@ -210,13 +235,25 @@ const AppContent: React.FC = () => {
   }, []);
 
   // --- Helper: Add Log ---
-  const addLog = (msg: string, type: BattleLog['type']) => {
-    setLogs(prev => [{
+  const addLog = async (msg: string, type: BattleLog['type'], amount?: number) => {
+    const newLog = {
       id: uuidv4(),
       timestamp: Date.now(),
       message: msg,
       type
-    }, ...prev].slice(0, 100));
+    };
+    
+    setLogs(prev => [newLog, ...prev].slice(0, 100));
+    
+    // Sync to Supabase
+    if (userId && isSupabaseConfigured()) {
+      try {
+        const { addBattleLog } = await import('./lib/api/logs');
+        await addBattleLog(userId, msg, type, amount);
+      } catch (err) {
+        console.error('[App] Failed to sync battle log:', err);
+      }
+    }
   };
 
   // --- Agent Management System (500-1000 Agents) ---
