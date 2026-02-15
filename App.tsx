@@ -97,6 +97,7 @@ const AppContent: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [logs, setLogs] = useState<BattleLog[]>([]);
   const [lastLootEvent, setLastLootEvent] = useState<LootEvent | null>(null);
+  const [agentsLoaded, setAgentsLoaded] = useState(false);
 
   // Refs for loop
   const marketRef = useRef(market);
@@ -347,6 +348,7 @@ const AppContent: React.FC = () => {
             pnlHistory: []
           }));
           setAgents(transformedAgents);
+          setAgentsLoaded(true);
           addLog(`Loaded ${transformedAgents.length} agents from database`, 'MINT');
           return;
         }
@@ -371,6 +373,7 @@ const AppContent: React.FC = () => {
       }
       
       setAgents(initialAgents);
+      setAgentsLoaded(true);
       addLog(`Agent pool initialized: ${AGENT_POOL_SIZE} agents ready`, 'MINT');
       addLog(`120 LONG agents entered the MON arena`, 'MINT');
       addLog(`120 SHORT agents entered the MON arena`, 'MINT');
@@ -381,6 +384,8 @@ const AppContent: React.FC = () => {
 
   // Continuous agent rotation system - only for generated AI agents (not database agents)
   useEffect(() => {
+    if (!agentsLoaded) return; // Wait for agents to be loaded first
+    
     const rotationInterval = setInterval(() => {
       setAgents(prev => {
         const now = Date.now();
