@@ -98,6 +98,53 @@ const AppContent: React.FC = () => {
   const [logs, setLogs] = useState<BattleLog[]>([]);
   const [lastLootEvent, setLastLootEvent] = useState<LootEvent | null>(null);
 
+  // Load agents from Supabase on mount
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    
+    const loadAgentsFromDb = async () => {
+      console.log('[App] Loading agents from Supabase...');
+      const { getAllAgents } = await import('./lib/api/agents');
+      const dbAgents = await getAllAgents();
+      
+      if (dbAgents && dbAgents.length > 0) {
+        console.log('[App] Loaded', dbAgents.length, 'agents from Supabase');
+        // Transform database format to app format
+        const transformedAgents: Agent[] = dbAgents.map(dbAgent => ({
+          id: dbAgent.id,
+          owner: (dbAgent.owner_id ? 'USER' : 'SYSTEM') as import('./types').AgentOwner,
+          minter: dbAgent.minter,
+          minterTwitter: dbAgent.minter_twitter || undefined,
+          name: dbAgent.name,
+          nftId: dbAgent.nft_id || undefined,
+          bio: dbAgent.bio || '',
+          avatarSeed: dbAgent.avatar_seed,
+          direction: (dbAgent.direction || 'LONG') as import('./types').Direction,
+          leverage: dbAgent.leverage,
+          balance: dbAgent.balance,
+          pnl: dbAgent.pnl,
+          wins: dbAgent.wins,
+          losses: dbAgent.losses,
+          status: dbAgent.status,
+          strategy: dbAgent.strategy || '',
+          riskLevel: (dbAgent.risk_level || 'MEDIUM') as Agent['riskLevel'],
+          asset: (dbAgent.asset || 'MON') as import('./types').AssetSymbol,
+          takeProfit: dbAgent.take_profit || undefined,
+          stopLoss: dbAgent.stop_loss || undefined,
+          entryPrice: dbAgent.entry_price || 0,
+          twitterHandle: dbAgent.twitter_handle || undefined,
+          effectiveDirection: dbAgent.effective_direction || undefined,
+          pnlHistory: []
+        }));
+        setAgents(transformedAgents);
+      } else {
+        console.log('[App] No agents found in Supabase');
+      }
+    };
+    
+    loadAgentsFromDb();
+  }, []);
+
   // Refs for loop
   const marketRef = useRef(market);
   marketRef.current = market;
