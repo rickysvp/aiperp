@@ -322,7 +322,7 @@ const AppContent: React.FC = () => {
           // Transform database format to app format
           const transformedAgents: Agent[] = dbAgents.map(dbAgent => ({
             id: dbAgent.id,
-            owner: (dbAgent.owner_id ? 'USER' : 'SYSTEM') as import('./types').AgentOwner,
+            owner: (dbAgent.minter === 'Protocol' ? 'SYSTEM' : 'USER') as import('./types').AgentOwner,
             minter: dbAgent.minter,
             minterTwitter: dbAgent.minter_twitter || undefined,
             name: dbAgent.name,
@@ -379,25 +379,26 @@ const AppContent: React.FC = () => {
     initAgents();
   }, []);
 
-  // Continuous agent rotation system - only for AI agents (owner !== 'USER')
+  // Continuous agent rotation system - only for generated AI agents (not database agents)
   useEffect(() => {
     const rotationInterval = setInterval(() => {
       setAgents(prev => {
         const now = Date.now();
         
-        // Separate user agents (keep all) and AI agents (manage rotation)
+        // Separate user agents (keep all), database agents (keep all), and generated AI agents (manage rotation)
         const userAgents = prev.filter(a => a.owner === 'USER');
-        const aiAgents = prev.filter(a => a.owner !== 'USER');
+        const dbAgents = prev.filter(a => a.owner === 'SYSTEM' && !a.id.startsWith('bot-'));
+        const generatedAiAgents = prev.filter(a => a.owner === 'SYSTEM' && a.id.startsWith('bot-'));
         
-        // Remove AI agents that have been active too long (liquidated or retired)
-        const activeAiAgents = aiAgents.filter(a => {
+        // Remove generated AI agents that have been active too long
+        const activeAiAgents = generatedAiAgents.filter(a => {
           const age = now - parseInt(a.id.split('-')[2] || '0');
           // Remove if liquidated or been active for too long (30-120 seconds)
           const maxAge = 30000 + Math.random() * 90000;
           return a.status === 'ACTIVE' && age < maxAge;
         });
         
-        // Check for liquidations based on current PnL (only for AI agents)
+        // Check for liquidations based on current PnL (only for generated AI agents)
         const processedAiAgents = activeAiAgents.map(agent => {
           // Check liquidation (balance + PnL <= 0)
           if (agent.balance + agent.pnl <= 0) {
@@ -423,7 +424,6 @@ const AppContent: React.FC = () => {
           const toAdd = Math.min(3, targetCount - stillActiveAi.length); // Add up to 3 at a time
           for (let i = 0; i < toAdd; i++) {
             // Determine direction based on which side needs more agents
-            // If balanced, random; otherwise favor the side with fewer agents
             let direction: Direction;
             if (longCount < shortCount) {
               direction = 'LONG';
@@ -450,8 +450,8 @@ const AppContent: React.FC = () => {
           return a.status === 'ACTIVE' || age < 5000; // Keep liquidated for 5 seconds
         });
         
-        // Combine user agents (unchanged) with managed AI agents
-        return [...userAgents, ...finalAiAgents];
+        // Combine all agents: user (unchanged) + database (unchanged) + managed AI
+        return [...userAgents, ...dbAgents, ...finalAiAgents];
       });
     }, AGENT_ROTATION_INTERVAL);
 
