@@ -4,6 +4,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useWallet } from '../contexts/WalletContext';
 import { LiquidityPool, UserLiquidityStake, Agent } from '../types';
 import { formatNumber, formatPercentage } from '../utils/financialUtils';
+import { getUserLiquidityStakes, upsertUserStake, claimRewards, updateLiquidityPool, getLiquidityPool } from '../lib/api/liquidity';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface LiquidityProps {
   agents: Agent[];
@@ -14,7 +16,7 @@ const BASE_APR = 100;
 
 export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   const { t } = useLanguage();
-  const { wallet, updateMonBalance } = useWallet();
+  const { wallet, updateMonBalance, userId } = useWallet();
   
   const [activeTab, setActiveTab] = useState<'stake' | 'unstake'>('stake');
   const [stakeAmount, setStakeAmount] = useState('');
@@ -51,8 +53,31 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
     setPool(prev => ({ ...prev, apr: clampedApr, dailyVolume: dailyFees * 100 }));
   }, [dailyFees, pool.totalStaked, pool.feeShare]);
   
-  // Mock user stake data
+  // User stake data - loaded from Supabase
   const [userStake, setUserStake] = useState<UserLiquidityStake | null>(null);
+  
+  // Load user stake from Supabase
+  useEffect(() => {
+    if (!userId || !isSupabaseConfigured()) return;
+    
+    const loadUserStake = async () => {
+      const stakes = await getUserLiquidityStakes(userId);
+      if (stakes && stakes.length > 0) {
+        // Transform database format to app format
+        const dbStake = stakes[0];
+        setUserStake({
+          id: dbStake.id,
+          amount: dbStake.amount,
+          stakedAt: new Date(dbStake.staked_at).getTime(),
+          rewards: dbStake.rewards,
+          pendingRewards: dbStake.pending_rewards,
+          lockPeriod: dbStake.lock_period
+        });
+      }
+    };
+    
+    loadUserStake();
+  }, [userId]);
   
   // Calculate real-time rewards based on current APR
   useEffect(() => {
@@ -81,34 +106,38 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
     return (userStake.amount / pool.totalStaked) * 100;
   }, [userStake, pool.totalStaked]);
   
-  const handleStake = () => {
+  const handleStake = async () => {
     const amount = parseFloat(stakeAmount);
     if (isNaN(amount) || amount <= 0) return;
     if (amount > wallet.monBalance) return;
     
     updateMonBalance(-amount);
     
-    if (userStake) {
-      setUserStake({
-        ...userStake,
-        amount: userStake.amount + amount,
-        pendingRewards: userStake.pendingRewards
-      });
-    } else {
-      setUserStake({
-        id: `stake-${Date.now()}`,
-        amount: amount,
-        stakedAt: Date.now(),
-        rewards: 0,
-        pendingRewards: 0,
-        lockPeriod: 0
-      });
-    }
+    const newStake = userStake ? {
+      ...userStake,
+      amount: userStake.amount + amount,
+      pendingRewards: userStake.pendingRewards
+    } : {
+      id: `stake-${Date.now()}`,
+      amount: amount,
+      stakedAt: Date.now(),
+      rewards: 0,
+      pendingRewards: 0,
+      lockPeriod: 0
+    };
+    
+    setUserStake(newStake);
     
     setPool(prev => ({
       ...prev,
       totalStaked: prev.totalStaked + amount
     }));
+    
+    // Sync to Supabase
+    if (userId && isSupabaseConfigured()) {
+      console.log('[Liquidity] Syncing stake to Supabase...');
+      await upsertUserStake(userId, 'mon-lp-1', amount, 0, newStake.pendingRewards);
+    }
     
     setStakeAmount('');
     setSuccessMessage(t('liquidity_stake_success'));
