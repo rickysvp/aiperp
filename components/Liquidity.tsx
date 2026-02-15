@@ -56,6 +56,28 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   // User stake data - loaded from Supabase
   const [userStake, setUserStake] = useState<UserLiquidityStake | null>(null);
   
+  // Load liquidity pool data from Supabase
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    
+    const loadPoolData = async () => {
+      const dbPool = await getLiquidityPool('mon-lp-1');
+      if (dbPool) {
+        console.log('[Liquidity] Loaded pool data from Supabase:', dbPool);
+        setPool({
+          id: dbPool.pool_id,
+          totalStaked: dbPool.total_staked,
+          totalRewards: dbPool.total_rewards,
+          apr: dbPool.apr,
+          feeShare: dbPool.fee_share,
+          dailyVolume: dbPool.daily_volume
+        });
+      }
+    };
+    
+    loadPoolData();
+  }, []);
+  
   // Load user stake from Supabase
   useEffect(() => {
     if (!userId || !isSupabaseConfigured()) return;
@@ -128,15 +150,22 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
     
     setUserStake(newStake);
     
+    const newTotalStaked = pool.totalStaked + amount;
     setPool(prev => ({
       ...prev,
-      totalStaked: prev.totalStaked + amount
+      totalStaked: newTotalStaked
     }));
     
     // Sync to Supabase
     if (userId && isSupabaseConfigured()) {
       console.log('[Liquidity] Syncing stake to Supabase...');
       await upsertUserStake(userId, 'mon-lp-1', amount, 0, newStake.pendingRewards);
+      
+      // Sync pool total staked
+      console.log('[Liquidity] Syncing pool total staked:', newTotalStaked);
+      await updateLiquidityPool('mon-lp-1', {
+        total_staked: newTotalStaked
+      });
     }
     
     setStakeAmount('');
@@ -159,15 +188,22 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
       pendingRewards: newAmount <= 0 ? 0 : prev.pendingRewards
     } : null);
     
+    const newTotalStaked = Math.max(0, pool.totalStaked - amount);
     setPool(prev => ({
       ...prev,
-      totalStaked: Math.max(0, prev.totalStaked - amount)
+      totalStaked: newTotalStaked
     }));
     
     // Sync to Supabase
     if (userId && isSupabaseConfigured() && userStake) {
       console.log('[Liquidity] Syncing unstake to Supabase...');
       await upsertUserStake(userId, 'mon-lp-1', -amount, 0, newAmount <= 0 ? 0 : userStake.pendingRewards);
+      
+      // Sync pool total staked
+      console.log('[Liquidity] Syncing pool total staked after unstake:', newTotalStaked);
+      await updateLiquidityPool('mon-lp-1', {
+        total_staked: newTotalStaked
+      });
     }
     
     setUnstakeAmount('');
