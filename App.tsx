@@ -17,6 +17,9 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { Logo } from './components/Logo';
 import { UserMenu } from './components/UserMenu';
 import { useWallet } from './contexts/WalletContext';
+import { useSupabaseAgents } from './hooks/useSupabaseAgents';
+import { createAgent, deployAgent, withdrawAgent, liquidateAgent, updateAgentPnL, recordAgentPnLHistory } from './lib/api/agents';
+import { isSupabaseConfigured } from './lib/supabase';
 
 const AGENT_FABRICATION_COST = 100;
 
@@ -68,7 +71,7 @@ const Marquee = ({ agents }: { agents: Agent[] }) => {
 
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
-  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updatePnl, updateMonBalance } = useWallet();
+  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updatePnl, updateMonBalance, userId } = useWallet();
   
   // --- State ---
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -417,6 +420,35 @@ const AppContent: React.FC = () => {
     
     console.log('Adding new agent to state:', newAgent);
     setAgents(prev => [...prev, newAgent]);
+    
+    // Sync to Supabase
+    if (userId && isSupabaseConfigured()) {
+      console.log('[App] Syncing agent to Supabase...');
+      createAgent({
+        owner_id: userId,
+        minter: wallet.address,
+        name: newAgent.name,
+        avatar_seed: newAgent.avatarSeed,
+        bio: newAgent.bio,
+        strategy: newAgent.strategy,
+        risk_level: newAgent.riskLevel,
+        twitter_handle: newAgent.twitterHandle,
+        direction: newAgent.direction,
+        leverage: newAgent.leverage,
+        balance: newAgent.balance,
+        pnl: newAgent.pnl,
+        wins: newAgent.wins,
+        losses: newAgent.losses,
+        status: newAgent.status
+      }).then(dbAgent => {
+        if (dbAgent) {
+          console.log('[App] Agent synced to Supabase:', dbAgent.id);
+        } else {
+          console.error('[App] Failed to sync agent to Supabase');
+        }
+      });
+    }
+    
     addLog(`Agent ${newAgent.name} fabricated`, 'MINT');
     console.log('=== App.handleMintAgent completed ===');
     return newAgent;

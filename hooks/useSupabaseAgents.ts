@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Agent } from '../types';
+import { Agent, AgentOwner, Direction, AssetSymbol } from '../types';
 import {
   getAllAgents,
   getAgentsByOwner,
@@ -30,23 +30,23 @@ export function useSupabaseAgents(userId: string | null) {
         // Transform database format to app format
         const transformedAgents: Agent[] = data.map(dbAgent => ({
           id: dbAgent.id,
-          owner: dbAgent.owner_id === userId ? 'USER' : dbAgent.minter,
+          owner: (dbAgent.owner_id === userId ? 'USER' : 'SYSTEM') as AgentOwner,
           minter: dbAgent.minter,
           minterTwitter: dbAgent.minter_twitter || undefined,
           name: dbAgent.name,
           nftId: dbAgent.nft_id || undefined,
-          bio: dbAgent.bio || undefined,
+          bio: dbAgent.bio || '',
           avatarSeed: dbAgent.avatar_seed,
-          direction: dbAgent.direction || 'LONG',
+          direction: (dbAgent.direction || 'LONG') as Direction,
           leverage: dbAgent.leverage,
           balance: dbAgent.balance,
           pnl: dbAgent.pnl,
           wins: dbAgent.wins,
           losses: dbAgent.losses,
           status: dbAgent.status,
-          strategy: dbAgent.strategy || undefined,
-          riskLevel: dbAgent.risk_level || 'MEDIUM',
-          asset: dbAgent.asset || 'MON',
+          strategy: dbAgent.strategy || '',
+          riskLevel: (dbAgent.risk_level || 'MEDIUM') as Agent['riskLevel'],
+          asset: (dbAgent.asset || 'MON') as AssetSymbol,
           takeProfit: dbAgent.take_profit || undefined,
           stopLoss: dbAgent.stop_loss || undefined,
           entryPrice: dbAgent.entry_price || 0,
@@ -170,6 +170,22 @@ export function useSupabaseAgents(userId: string | null) {
     }
   }, []);
 
+  // Liquidate an agent
+  const handleLiquidateAgent = useCallback(async (agentId: string) => {
+    if (!isSupabaseConfigured()) return false;
+    
+    try {
+      const updated = await liquidateAgent(agentId);
+      if (updated) {
+        await loadAgents();
+        return true;
+      }
+    } catch (err) {
+      console.error('Error liquidating agent:', err);
+    }
+    return false;
+  }, [loadAgents]);
+
   return {
     agents,
     isLoading,
@@ -178,6 +194,7 @@ export function useSupabaseAgents(userId: string | null) {
     createAgent: handleCreateAgent,
     deployAgent: handleDeployAgent,
     withdrawAgent: handleWithdrawAgent,
+    liquidateAgent: handleLiquidateAgent,
     updateAgentPnL: handleUpdatePnL
   };
 }
