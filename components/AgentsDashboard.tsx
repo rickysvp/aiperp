@@ -5,11 +5,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface AgentsDashboardProps {
   agents: Agent[];
+  market: any;
   onSelectAgent: (agentId: string) => void;
-  onMintNew: () => void;
+  onFabricate: () => void;
+  walletBalance: number;
 }
 
-export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSelectAgent, onMintNew }) => {
+export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, market, onSelectAgent, onFabricate, walletBalance }) => {
   const { t } = useLanguage();
 
   // Calculate statistics
@@ -80,25 +82,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
     );
   };
 
-  if (totalAgents === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
-        <div className="w-24 h-24 rounded-full bg-[#836EF9]/10 flex items-center justify-center mb-4">
-          <Bot size={40} className="text-[#836EF9]" />
-        </div>
-        <h2 className="text-xl font-bold text-white mb-2">No Agents Yet</h2>
-        <p className="text-slate-500 text-center mb-6 max-w-md">
-          Start your trading journey by creating your first AI agent
-        </p>
-        <button
-          onClick={onMintNew}
-          className="px-6 py-3 bg-gradient-to-r from-[#836EF9] to-[#00FF9D] rounded-xl text-black font-bold flex items-center gap-2 hover:opacity-90 transition-all"
-        >
-          <Zap size={18} /> Mint Your First Agent
-        </button>
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6">
@@ -113,7 +97,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
           </p>
         </div>
         <button
-          onClick={onMintNew}
+          onClick={onFabricate}
           className="px-4 py-2 bg-[#836EF9] hover:bg-[#6c56e0] rounded-lg text-white font-bold text-sm flex items-center gap-2 transition-all"
         >
           <Zap size={16} /> Mint New
@@ -125,7 +109,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
         <StatCard
           title="Total PnL"
           value={`${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`}
-          unit="USDT"
+          unit="MON"
           subtext="All time profit/loss"
           icon={totalPnl >= 0 ? TrendingUp : TrendingDown}
           color={totalPnl >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}
@@ -133,7 +117,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
         <StatCard
           title="Total Staked"
           value={totalBalance.toFixed(2)}
-          unit="USDT"
+          unit="MON"
           subtext="Active collateral"
           icon={Wallet}
           color="bg-blue-500"
@@ -216,7 +200,7 @@ export const AgentsDashboard: React.FC<AgentsDashboardProps> = ({ agents, onSele
               <p className="text-xs text-slate-500">{bestAgent.strategy}</p>
             </div>
             <div className="text-right">
-              <p className="text-xl font-bold text-emerald-400">+{bestAgent.pnl.toFixed(2)} USDT</p>
+              <p className="text-xl font-bold text-emerald-400">+{bestAgent.pnl.toFixed(2)} MON</p>
               <p className="text-xs text-slate-500">Best profit</p>
             </div>
             <button

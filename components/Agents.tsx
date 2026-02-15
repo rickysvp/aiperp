@@ -8,7 +8,7 @@ import { AgentCard } from './AgentCard';
 import { MintingLoader } from './MintingLoader';
 import { NFT3DCard } from './NFT3DCard';
 import { AgentsDashboard } from './AgentsDashboard';
-import { AgentAvatar } from './AgentAvatar';
+
 import {
   formatNumber,
   formatCurrency,
@@ -22,48 +22,40 @@ interface AgentsProps {
   agents: Agent[];
   market: MarketState;
   onMint: (twitterHandle?: string, nameHint?: string) => Promise<Agent | null>;
-  onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number, takeProfit?: number, stopLoss?: number) => Promise<void>;
+  onDeploy: (agentId: string, direction: Direction, leverage: number, collateral: number, takeProfit?: number, stopLoss?: number, asset?: string) => Promise<void>;
   onWithdraw: (agentId: string) => Promise<void>;
-  onAddAgent: (agent: Agent) => void;
   walletBalance: number;
+  monBalance: number;
   shouldHighlightFab?: boolean;
 }
 
 const FABRICATION_COST = 100;
 const MIN_COLLATERAL = 100;
 
-export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, onAddAgent, walletBalance, shouldHighlightFab }) => {
+export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy, onWithdraw, walletBalance, monBalance, shouldHighlightFab }) => {
   const { t } = useLanguage();
-  // Group Agents - filter by current market asset
-  const { activeAgents, idleAgents, deadAgents, hasAgents } = useMemo(() => {
-    const userAgents = agents.filter(a => a.owner === 'USER' && a.asset === market.symbol);
+  // Group Agents - show all user agents regardless of asset
+  const { activeAgents, idleAgents, deadAgents, hasAgents, allUserAgents } = useMemo(() => {
+    const userAgents = agents.filter(a => a.owner === 'USER');
     return {
         activeAgents: userAgents.filter(a => a.status === 'ACTIVE'),
         idleAgents: userAgents.filter(a => a.status === 'IDLE'),
         deadAgents: userAgents.filter(a => a.status === 'LIQUIDATED').reverse(),
-        hasAgents: userAgents.length > 0
+        hasAgents: userAgents.length > 0,
+        allUserAgents: userAgents
     };
-  }, [agents, market.symbol]);
+  }, [agents]);
 
   // Selection State: 'FABRICATE' or agentId or '' (dashboard)
   // Default to dashboard if user has agents, otherwise show FABRICATE page
   const [selection, setSelection] = useState<string>(hasAgents ? '' : 'FABRICATE');
-
-  // Update selection when first agent is created (from FABRICATE to dashboard)
-  useEffect(() => {
-    // Only run when hasAgents changes from false to true, not on every selection change
-    if (hasAgents && selection === 'FABRICATE') {
-      setSelection('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasAgents]);
   
   // Mobile Navigation State (List vs Detail)
   const [showDetailOnMobile, setShowDetailOnMobile] = useState(false);
 
   // Minting State
   const [fabricationStep, setFabricationStep] = useState<'IDLE' | 'CONFIG' | 'GENERATING' | 'REVEAL'>('IDLE');
-  const [twitterHandle, setTwitterHandle] = useState('');
+
   const [nameHint, setNameHint] = useState('');
   const [generatedAgent, setGeneratedAgent] = useState<Agent | null>(null);
 
@@ -71,10 +63,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const [deployDirection, setDeployDirection] = useState<Direction>('AUTO');
   const [deployLeverage, setDeployLeverage] = useState(5);
   const [deployCollateral, setDeployCollateral] = useState(400);
-  const [deployAsset, setDeployAsset] = useState<'BTC' | 'ETH' | 'SOL' | 'MON'>('BTC');
+  const [deployAsset, setDeployAsset] = useState<'BTC' | 'ETH' | 'SOL' | 'MON'>('MON');
   const [deployTakeProfit, setDeployTakeProfit] = useState<number | undefined>(undefined);
   const [deployStopLoss, setDeployStopLoss] = useState<number | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'DEPLOY' | 'CHAT'>('DEPLOY');
+
+  // Local agent view state - used when agent is selected but not yet in agents list
+  const [localViewAgent, setLocalViewAgent] = useState<Agent | null>(null);
 
   // Available trading assets
   const tradingAssets = [
@@ -93,7 +88,34 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   // Withdraw State - Simple toast notification
   const [withdrawToast, setWithdrawToast] = useState<{show: boolean; agentName: string; amount: number}>({show: false, agentName: '', amount: 0});
 
-  const selectedAgent = agents.find(a => a.id === selection);
+  // Use localViewAgent if available (for newly minted agents), otherwise find in agents list
+  const selectedAgent = localViewAgent || agents.find(a => a.id === selection);
+
+  // Clear localViewAgent when agent is found in global list
+  useEffect(() => {
+    if (localViewAgent && agents.find(a => a.id === localViewAgent.id)) {
+      console.log('Agent found in global list, clearing localViewAgent');
+      setLocalViewAgent(null);
+    }
+  }, [agents, localViewAgent]);
+
+  // Debug: log selectedAgent changes
+  useEffect(() => {
+    console.log('selectedAgent changed:', selectedAgent?.name || 'null', 'selection:', selection, 'localViewAgent:', localViewAgent?.name || 'null');
+  }, [selectedAgent, selection, localViewAgent]);
+
+  // Debug: log agents list changes
+  useEffect(() => {
+    console.log('Agents list updated:', {
+      total: agents.length,
+      userAgents: agents.filter(a => a.owner === 'USER').length,
+      idleAgents: idleAgents.length,
+      activeAgents: activeAgents.length,
+      deadAgents: deadAgents.length,
+      hasAgents,
+      allUserAgents: allUserAgents.map(a => ({ id: a.id, name: a.name, status: a.status }))
+    });
+  }, [agents, idleAgents, activeAgents, deadAgents, hasAgents, allUserAgents]);
 
   // Reset states when selection changes
   useEffect(() => {
@@ -103,12 +125,16 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
 
 
 
-  // Reset collateral when wallet balance changes
+  // Initialize and reset collateral based on monBalance
   useEffect(() => {
-     if (deployCollateral > walletBalance && walletBalance >= MIN_COLLATERAL) {
-         setDeployCollateral(walletBalance);
-     }
-  }, [walletBalance]);
+    if (monBalance < MIN_COLLATERAL) {
+      // Not enough balance, keep default but button will be disabled
+      return;
+    }
+    // Set initial collateral to min of default (400) or available balance
+    const initialCollateral = Math.min(400, monBalance);
+    setDeployCollateral(initialCollateral);
+  }, [monBalance]);
 
   // Scroll chat to bottom
   useEffect(() => {
@@ -130,44 +156,61 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       setShowDetailOnMobile(false);
   };
 
-  const mintPromiseRef = useRef<Promise<Agent | null> | null>(null);
-
-  const handleConfirmFabrication = () => {
-    console.log('handleConfirmFabrication called', { nameHint, twitterHandle, walletBalance, FABRICATION_COST });
+  const handleConfirmFabrication = async () => {
+    console.log('=== handleConfirmFabrication called ===', { nameHint, monBalance, FABRICATION_COST });
+    
+    if (monBalance < FABRICATION_COST) {
+      console.log('Insufficient balance', { monBalance, FABRICATION_COST });
+      return;
+    }
+    
+    console.log('Setting fabricationStep to GENERATING');
     setFabricationStep('GENERATING');
-    // 立即开始铸造，与加载动画并行
-    mintPromiseRef.current = onMint(twitterHandle.replace('@', ''), nameHint || "Anonymous");
-  };
-
-  const handleMintingComplete = async () => {
-    // 等待铸造完成（如果还没完成的话）
-    if (mintPromiseRef.current) {
-      const newAgent = await mintPromiseRef.current;
+    
+    // Start mint immediately while showing animation
+    try {
+      console.log('Calling onMint...');
+      const newAgent = await onMint(undefined, nameHint || "Anonymous");
+      console.log('onMint returned:', newAgent);
+      
       if (newAgent) {
-          setGeneratedAgent(newAgent);
+        console.log('Mint successful, will show REVEAL after animation');
+        // Store the agent and wait for animation
+        setGeneratedAgent(newAgent);
+        // Keep GENERATING state for animation, then switch to REVEAL
+        setTimeout(() => {
           setFabricationStep('REVEAL');
+        }, 2500);
       } else {
-          setFabricationStep('CONFIG'); // Failed
+        console.log('Mint returned null, going back to CONFIG');
+        setFabricationStep('CONFIG');
       }
-      mintPromiseRef.current = null;
+    } catch (error) {
+      console.error('Minting failed with error:', error);
+      setFabricationStep('CONFIG');
     }
   };
 
   const handleAcceptAgent = () => {
-      if (generatedAgent) {
-          // Add agent to list first
-          onAddAgent(generatedAgent);
-          // Then select it for deployment
-          setSelection(generatedAgent.id);
-          setFabricationStep('IDLE');
-          setGeneratedAgent(null);
-          setNameHint('');
-          // twitterHandle保留，因为部署页面可能需要
-      }
+    if (generatedAgent) {
+      // Agent is already added by onMint in App.tsx
+      const agentId = generatedAgent.id;
+      console.log('handleAcceptAgent called, selecting agent:', agentId);
+      
+      // Store agent in local view state to display immediately
+      // This avoids waiting for agents list to update from parent
+      setLocalViewAgent(generatedAgent);
+      
+      // Clear fabrication state and select agent
+      setFabricationStep('IDLE');
+      setGeneratedAgent(null);
+      setNameHint('');
+      setSelection(agentId);
+    }
   };
 
   const handleDeployClick = async (agentId: string) => {
-    await onDeploy(agentId, deployDirection, deployLeverage, deployCollateral, deployTakeProfit, deployStopLoss);
+    await onDeploy(agentId, deployDirection, deployLeverage, deployCollateral, deployTakeProfit, deployStopLoss, deployAsset);
     setSelection(agentId);
   };
 
@@ -213,9 +256,9 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
   const handleSocialShare = (agent: Agent) => {
       let text = '';
       if (agent.status === 'LIQUIDATED') {
-          text = `My agent ${agent.name} was destroyed in the @AIperp Arena. -${agent.balance} USDT. The market is ruthless. 💀 #AIperp`;
+          text = `My agent ${agent.name} was destroyed in the @AIperp Arena. -${agent.balance} MON. The market is ruthless. 💀 #AIperp`;
       } else if (agent.pnl > 0) {
-          text = `Reporting live: Agent ${agent.name} is printing! +${agent.pnl.toFixed(0)} USDT. Strategy: ${agent.strategy}. Join the winning side at aiperp.fun 🚀`;
+          text = `Reporting live: Agent ${agent.name} is printing! +${agent.pnl.toFixed(0)} MON. Strategy: ${agent.strategy}. Join the winning side at aiperp.fun 🚀`;
       } else {
           text = `Deploying ${agent.name} to the @AIperp Arena. ${agent.direction} on BTC with ${agent.leverage}x leverage. Wish me luck. ⚔️`;
       }
@@ -232,12 +275,9 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
       setIsChatLoading(true);
 
       try {
-          const result = await refineAgentStrategy(selectedAgent.strategy, userMsg, selectedAgent.name);
+          const result = await refineAgentStrategy(selectedAgent.strategy, userMsg);
           
-          setChatHistory(prev => [...prev, { role: 'agent', text: result.reply }]);
-          
-          // Update Agent Strategy Locally (In a real app, this would be a prop call to update state)
-          selectedAgent.strategy = result.newStrategy; 
+          setChatHistory(prev => [...prev, { role: 'agent', text: result }]);
 
       } catch (e) {
           setChatHistory(prev => [...prev, { role: 'agent', text: "ERROR: NEURAL LINK DISRUPTED." }]);
@@ -282,7 +322,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                 className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
             >
                 <div className={`w-10 h-10 rounded-lg bg-black shrink-0 overflow-hidden border ${agent.status === 'LIQUIDATED' ? 'border-slate-800 grayscale opacity-50' : 'border-slate-700'}`}>
-                    <AgentAvatar seed={agent.avatarSeed} size={40} className="w-full h-full" />
+                    <img src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${agent.avatarSeed}`} className="w-full h-full object-cover" alt={agent.name} />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -293,7 +333,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                         </div>
                         {agent.status === 'ACTIVE' && (
                             <span className={`text-[10px] font-mono ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} USDT
+                                {agent.pnl > 0 ? '+' : ''}{agent.pnl.toFixed(0)} MON
                             </span>
                         )}
                     </div>
@@ -362,13 +402,15 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              )}
 
              {/* Idle Section */}
-             {idleAgents.length > 0 && (
+             {idleAgents.length > 0 ? (
                  <div>
                      <h3 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-2 flex items-center gap-1">
                          <Terminal size={10} /> {t('awaiting_orders')} ({idleAgents.length})
                      </h3>
                      {idleAgents.map((agent, idx) => renderAgentListItem(agent, activeAgents.length + idx))}
                  </div>
+             ) : (
+                 <div className="text-[10px] text-slate-600">DEBUG: idleAgents is empty (length: {idleAgents.length})</div>
              )}
 
              {/* Graveyard Section */}
@@ -378,6 +420,15 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          <Skull size={10} /> {t('decommissioned')} ({deadAgents.length})
                      </h3>
                      {deadAgents.map((agent, idx) => renderAgentListItem(agent, activeAgents.length + idleAgents.length + idx))}
+                 </div>
+             )}
+
+             {/* Empty State - No Agents */}
+             {activeAgents.length === 0 && idleAgents.length === 0 && deadAgents.length === 0 && (
+                 <div className="flex flex-col items-center justify-center h-40 text-center">
+                     <Bot size={32} className="text-slate-700 mb-3" />
+                     <p className="text-slate-500 text-sm mb-1">No agents in your fleet</p>
+                     <p className="text-slate-600 text-xs">Click "New Fabrication" to create one</p>
                  </div>
              )}
          </div>
@@ -397,17 +448,27 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
              </button>
          </div>
 
-         {/* SCENARIO D: DASHBOARD OVERVIEW - Default view when no agent selected */}
-         {selection !== 'FABRICATE' && !selectedAgent && (
+         {/* SCENARIO D: DASHBOARD OVERVIEW - Default view when no agent selected and selection is empty */}
+         {selection !== 'FABRICATE' && !selectedAgent && !selection && (
              <div className="flex-1 relative z-10">
                  <AgentsDashboard
-                     agents={agents.filter(a => a.owner === 'USER')}
+                     agents={allUserAgents}
                      onSelectAgent={(id) => {
                          setSelection(id);
                          setShowDetailOnMobile(true);
                      }}
                      onMintNew={handleStartFabrication}
                  />
+             </div>
+         )}
+
+         {/* LOADING STATE - When selection is set but agent not yet found in list */}
+         {selection !== 'FABRICATE' && !selectedAgent && selection && (
+             <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
+                 <div className="text-center">
+                     <div className="w-12 h-12 mx-auto mb-4 border-2 border-[#836EF9] border-t-transparent rounded-full animate-spin"></div>
+                     <p className="text-slate-400 text-sm">Loading agent...</p>
+                 </div>
              </div>
          )}
 
@@ -450,42 +511,24 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                     </div>
                                 </div>
 
-                                {/* Twitter Handle Input */}
-                                 <div className="space-y-1">
-                                     <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                                         <AtSign size={12} className="text-[#836EF9]" />
-                                         {t('twitter_optional')}
-                                     </label>
-                                     <div className="relative">
-                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">@</span>
-                                         <input
-                                             type="text"
-                                             value={twitterHandle}
-                                             onChange={(e) => setTwitterHandle(e.target.value.replace('@', ''))}
-                                             placeholder={t('twitter_placeholder')}
-                                             className="w-full bg-black/50 border-2 border-slate-700 rounded-lg py-2.5 pl-7 pr-3 text-sm text-white placeholder:text-slate-600 focus:border-[#836EF9] focus:outline-none transition-all"
-                                         />
-                                     </div>
-                                 </div>
-
                                 {/* Cost & Action - Compact */}
                                  <div className="pt-3 border-t border-slate-800 space-y-3">
                                      <div className="flex items-center justify-between">
                                          <span className="text-xs text-slate-400">{t('cost')}</span>
                                          <div className="flex items-center gap-1">
                                              <span className="text-lg font-mono font-bold text-white">{FABRICATION_COST}</span>
-                                             <span className="text-xs text-slate-500">USDT</span>
+                                             <span className="text-xs text-purple-400 font-bold">MON</span>
                                          </div>
                                      </div>
 
                                      <button
                                          onClick={handleConfirmFabrication}
-                                         disabled={walletBalance < FABRICATION_COST}
+                                         disabled={monBalance < FABRICATION_COST}
                                          className="w-full py-3 text-sm font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg text-black flex items-center justify-center gap-2"
                                      >
-                                         {walletBalance < FABRICATION_COST ? (
+                                         {monBalance < FABRICATION_COST ? (
                                              <>
-                                                 <AlertTriangle size={16} /> {t('insufficient')}
+                                                 <AlertTriangle size={16} /> {t('insufficient')} MON
                                              </>
                                          ) : (
                                              <>
@@ -502,7 +545,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  {/* Step 2: Minting Loading with Progress */}
                  {fabricationStep === 'GENERATING' && (
                      <div className="flex-1 flex flex-col items-center justify-center animate-fade-in">
-                         <MintingLoader onComplete={handleMintingComplete} agentName={nameHint || 'Neural Agent'} />
+                         <MintingLoader agentName={nameHint || 'Neural Agent'} />
                      </div>
                  )}
 
@@ -513,7 +556,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                             agent={generatedAgent}
                             userName={nameHint}
                             nftNumber={agents.length + 1}
-                            minterTwitter={twitterHandle}
+                            minterTwitter=""
                             onDeployNow={handleAcceptAgent}
                          />
                      </div>
@@ -564,11 +607,8 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  )}
                              </div>
                              <p className="text-sm text-slate-400 italic mb-3">"{selectedAgent.bio}"</p>
-                             <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                                 <span className="px-3 py-1.5 bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700">
-                                     {selectedAgent.strategy}
-                                 </span>
-                                 {selectedAgent.status === 'ACTIVE' && (
+                            <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                                {selectedAgent.status === 'ACTIVE' && (
                                      <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#00FF9D]/20 text-[#00FF9D] border border-[#00FF9D]/30">
                                          Active
                                      </span>
@@ -598,12 +638,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Live PnL</p>
                                          <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} USDT
+                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} MON
                                          </p>
                                      </div>
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Balance</p>
-                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} USDT</p>
+                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} MON</p>
                                      </div>
                                      {/* ROI */}
                                      <div>
@@ -623,7 +663,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      </div>
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Collateral</p>
-                                         <p className="text-lg font-mono font-bold text-red-400">0 USDT</p>
+                                         <p className="text-lg font-mono font-bold text-red-400">0 MON</p>
                                      </div>
                                  </>
                              ) : (
@@ -631,12 +671,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Final PnL</p>
                                          <p className={`text-2xl lg:text-3xl font-mono font-bold ${selectedAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} USDT
+                                             {selectedAgent.pnl > 0 ? '+' : ''}{selectedAgent.pnl.toFixed(2)} MON
                                          </p>
                                      </div>
                                      <div>
                                          <p className="text-xs text-slate-500 uppercase tracking-widest">Returned</p>
-                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} USDT</p>
+                                         <p className="text-lg font-mono font-bold text-white">{selectedAgent.balance.toFixed(2)} MON</p>
                                      </div>
                                      {/* ROI for exited agents */}
                                      {selectedAgent.wins + selectedAgent.losses > 0 && (
@@ -672,7 +712,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  style={{ width: `${Math.min(100, (selectedAgent.balance / 1000) * 100)}%` }}
                              />
                          </div>
-                         <p className="text-[10px] text-slate-600 mt-1">Based on initial 1000 USDT collateral scale</p>
+                         <p className="text-[10px] text-slate-600 mt-1">Based on initial 1000 MON collateral scale</p>
                      </div>
                  )}
 
@@ -706,57 +746,48 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                  )}
 
                  {/* Agent Configuration */}
-                 <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
-                     <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                         <Brain size={18} className="text-[#836EF9]" />
-                         Agent Configuration
-                     </h3>
+                <div className="bg-[#0f111a] border border-slate-800 rounded-2xl p-4 lg:p-6 mb-4">
+                    <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <Brain size={18} className="text-[#836EF9]" />
+                        Agent Configuration
+                    </h3>
 
-                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                         <div className="bg-slate-900/50 rounded-lg p-3">
-                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Strategy</p>
-                             <p className="text-sm font-bold text-white">{selectedAgent.strategy}</p>
-                         </div>
-                         <div className="bg-slate-900/50 rounded-lg p-3">
-                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Risk Level</p>
-                             <p className="text-sm font-bold text-white">{selectedAgent.riskLevel}</p>
-                         </div>
-                         {selectedAgent.status === 'ACTIVE' ? (
-                             <>
-                                 <div className="bg-slate-900/50 rounded-lg p-3">
-                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Direction</p>
-                                     <p className="text-sm font-bold text-white">{selectedAgent.direction}</p>
-                                 </div>
-                                 <div className="bg-slate-900/50 rounded-lg p-3">
-                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Leverage</p>
-                                     <p className="text-sm font-bold text-white">{selectedAgent.leverage}X</p>
-                                 </div>
-                             </>
-                         ) : selectedAgent.status === 'LIQUIDATED' ? (
-                             <>
-                                 <div className="bg-slate-900/50 rounded-lg p-3">
-                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
-                                     <p className="text-sm font-bold text-red-400">Destroyed</p>
-                                 </div>
-                                 <div className="bg-slate-900/50 rounded-lg p-3">
-                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
-                                     <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
-                                 </div>
-                             </>
-                         ) : (
-                             <>
-                                 <div className="bg-slate-900/50 rounded-lg p-3">
-                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
-                                     <p className="text-sm font-bold text-slate-400">Exited Arena</p>
-                                 </div>
-                                 <div className="bg-slate-900/50 rounded-lg p-3">
-                                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
-                                     <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
-                                 </div>
-                             </>
-                         )}
-                     </div>
-                 </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-slate-900/50 rounded-lg p-3">
+                            <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Risk Level</p>
+                            <p className="text-sm font-bold text-white">{selectedAgent.riskLevel}</p>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-3">
+                            <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
+                            <p className={`text-sm font-bold ${
+                                selectedAgent.status === 'ACTIVE' ? 'text-emerald-400' :
+                                selectedAgent.status === 'LIQUIDATED' ? 'text-red-400' : 'text-slate-400'
+                            }`}>
+                                {selectedAgent.status === 'ACTIVE' ? 'Active' :
+                                 selectedAgent.status === 'LIQUIDATED' ? 'Destroyed' : 'Exited Arena'}
+                            </p>
+                        </div>
+                        {selectedAgent.status === 'ACTIVE' ? (
+                            <>
+                                <div className="bg-slate-900/50 rounded-lg p-3">
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Direction</p>
+                                    <p className="text-sm font-bold text-white">{selectedAgent.direction}</p>
+                                </div>
+                                <div className="bg-slate-900/50 rounded-lg p-3">
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Leverage</p>
+                                    <p className="text-sm font-bold text-white">{selectedAgent.leverage}X</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="bg-slate-900/50 rounded-lg p-3">
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Trades</p>
+                                    <p className="text-sm font-bold text-white">{selectedAgent.wins + selectedAgent.losses}</p>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
 
                  {/* IDLE Agent: Deploy Section */}
                 {selectedAgent.status === 'IDLE' && (
@@ -765,39 +796,6 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                             <Rocket size={18} className="text-[#836EF9]" />
                             {t('deploy_section')}
                         </h3>
-
-                        {/* Asset Selection */}
-                        <div className="mb-4">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
-                                <Coins size={14} /> Trading Asset
-                            </label>
-                            <div className="grid grid-cols-4 gap-2">
-                                {tradingAssets.map((asset) => (
-                                    <button
-                                        key={asset.symbol}
-                                        onClick={() => setDeployAsset(asset.symbol as 'BTC' | 'ETH' | 'SOL' | 'MON')}
-                                        className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                                            deployAsset === asset.symbol
-                                            ? 'bg-slate-800 border-[#836EF9]'
-                                            : 'bg-slate-900 border-slate-700 hover:border-slate-500'
-                                        }`}
-                                    >
-                                        <span 
-                                            className="text-lg font-bold"
-                                            style={{ color: deployAsset === asset.symbol ? asset.color : '#64748b' }}
-                                        >
-                                            {asset.icon}
-                                        </span>
-                                        <span className={`text-[10px] font-bold ${deployAsset === asset.symbol ? 'text-white' : 'text-slate-400'}`}>
-                                            {asset.symbol}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                            <p className="text-[10px] text-slate-500 mt-2">
-                                Selected: <span className="text-[#836EF9]">{tradingAssets.find(a => a.symbol === deployAsset)?.name}</span>
-                            </p>
-                        </div>
 
                         {/* Direction Selection */}
                         <div className="mb-4">
@@ -860,13 +858,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                                  <input
                                      type="range"
                                      min={MIN_COLLATERAL}
-                                     max={Math.max(MIN_COLLATERAL, walletBalance)}
+                                     max={Math.max(MIN_COLLATERAL, monBalance)}
                                      step="10"
                                      value={deployCollateral}
                                      onChange={(e) => setDeployCollateral(parseInt(e.target.value))}
                                      className="w-full h-2 bg-slate-800 rounded-lg accent-[#836EF9]"
                                  />
-                                 <p className="text-center text-sm font-mono text-white mt-1">{deployCollateral} USDT</p>
+                                 <p className="text-center text-sm font-mono text-white mt-1">{deployCollateral} MON</p>
                              </div>
                          </div>
 
@@ -919,13 +917,13 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                          </div>
 
                          {/* Deploy Button */}
-                         <Button
-                             onClick={() => handleDeployClick(selectedAgent.id)}
-                             disabled={walletBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
-                             className="w-full py-3 text-base font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black disabled:opacity-50 rounded-xl"
-                         >
-                             {walletBalance < deployCollateral ? t('insufficient_balance') : `${t('deploy_with')} ${deployCollateral} USDT`}
-                         </Button>
+                        <Button
+                            onClick={() => handleDeployClick(selectedAgent.id)}
+                            disabled={monBalance < deployCollateral || deployCollateral < MIN_COLLATERAL}
+                            className="w-full py-3 text-base font-bold bg-gradient-to-r from-[#836EF9] to-[#00FF9D] hover:opacity-90 text-black disabled:opacity-50 rounded-xl"
+                        >
+                            {monBalance < deployCollateral ? t('insufficient_balance') : `${t('deploy_with')} ${deployCollateral} MON`}
+                        </Button>
                      </div>
                  )}
 
@@ -1048,12 +1046,12 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{t('current_balance')}</p>
-                  <p className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} USDT</p>
+                  <p className="text-xl font-mono font-bold text-white">{withdrawingAgent.balance.toFixed(2)} MON</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">PnL</p>
                   <p className={`text-xl font-mono font-bold ${withdrawingAgent.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {withdrawingAgent.pnl > 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} USDT
+                    {withdrawingAgent.pnl > 0 ? '+' : ''}{withdrawingAgent.pnl.toFixed(2)} MON
                   </p>
                 </div>
               </div>
@@ -1076,7 +1074,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             {/* Amount to Receive */}
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
               <p className="text-xs text-emerald-500/70 uppercase tracking-wider mb-1">{t('to_receive')}</p>
-              <p className="text-3xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} USDT</p>
+              <p className="text-3xl font-mono font-bold text-emerald-400">{withdrawingAgent.balance.toFixed(2)} MON</p>
             </div>
 
             {/* Warning */}
@@ -1152,7 +1150,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
                     <ArrowRight size={16} className="text-emerald-400 relative z-10 animate-bounce" />
                   </div>
                   <div className="text-emerald-400 font-mono font-bold text-sm animate-pulse">
-                    +{withdrawSuccess.amount.toFixed(2)} USDT
+                    +{withdrawSuccess.amount.toFixed(2)} MON
                   </div>
                 </div>
 
@@ -1169,7 +1167,7 @@ export const Agents: React.FC<AgentsProps> = ({ agents, market, onMint, onDeploy
             {/* Balance Update */}
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-500">Wallet Balance Updated</span>
-              <span className="text-emerald-400 font-mono">+{withdrawSuccess.amount.toFixed(2)} USDT</span>
+              <span className="text-emerald-400 font-mono">+{withdrawSuccess.amount.toFixed(2)} MON</span>
             </div>
           </div>
         </div>

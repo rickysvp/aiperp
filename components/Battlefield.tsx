@@ -12,7 +12,7 @@ interface BattlefieldProps {
 // Configuration
 const WIDTH = 1200;
 const HEIGHT = 600;
-const MAX_DRAWN_AGENTS_PER_SIDE = 80;
+const MAX_DRAWN_AGENTS_PER_SIDE = 120;
 
 // Colors
 const COLOR_LONG = '#00FF9D';
@@ -25,6 +25,7 @@ const MAX_PARTICLES = 200;
 const MAX_BEAMS = 40;
 const MAX_TRAILS = 150;
 const MAX_TEXTS = 20;
+const MAX_FLOATING_PROFITS = 100;
 
 interface Particle {
   active: boolean;
@@ -74,6 +75,17 @@ interface FloatingText {
   scale: number;
 }
 
+interface FloatingProfit {
+  active: boolean;
+  x: number;
+  y: number;
+  amount: number;
+  life: number;
+  maxLife: number;
+  velocityY: number;
+  agentId: string;
+}
+
 interface RenderableAgent {
   agent: Agent;
   seed: number;
@@ -88,6 +100,8 @@ interface RenderableAgent {
   isLong: boolean;
   row: number;
   col: number;
+  isEntering: boolean; // New: agent is flying in
+  entryProgress: number; // New: 0 to 1 entry animation
 }
 
 // Create agent sprite
@@ -234,9 +248,13 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
       active: false, x: 0, y: 0, text: '', subText: '',
       color: '#fff', life: 0, scale: 1
     })),
+    floatingProfits: Array.from({ length: MAX_FLOATING_PROFITS }, () => ({
+      active: false, x: 0, y: 0, amount: 0, life: 0, maxLife: 1, velocityY: 0, agentId: ''
+    })),
 
     agentFlashes: new Map<string, { color: string; life: number }>(),
     prevPnL: new Map<string, number>(),
+    prevFactionPnL: { long: 0, short: 0 } as { long: number; short: number },
     renderableAgents: [] as RenderableAgent[]
   });
 
@@ -253,8 +271,10 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
       gameState.current.beams.forEach(b => b.active = false);
       gameState.current.trails.forEach(t => t.active = false);
       gameState.current.floatingTexts.forEach(t => t.active = false);
+      gameState.current.floatingProfits.forEach(p => p.active = false);
       gameState.current.agentFlashes.clear();
       gameState.current.prevPnL.clear();
+      gameState.current.prevFactionPnL = { long: 0, short: 0 };
       gameState.current.renderableAgents = [];
     }
   }, [market.symbol]);
@@ -291,6 +311,22 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
     }
   };
 
+  // Subtle battle line glow - minimal visual effect
+  const spawnBattleLineGlow = (x: number, color: string, intensity: number) => {
+    const b = gameState.current.beams.find(b => !b.active);
+    if (b) {
+      b.active = true;
+      b.startX = x;
+      b.startY = HEIGHT * 0.3; // Start from top of battle area
+      b.endX = x;
+      b.endY = HEIGHT * 0.7;   // End at bottom of battle area
+      b.life = 0.8;
+      b.maxLife = 0.8;
+      b.color = color;
+      b.width = Math.min(80, 20 + intensity); // Subtle width
+    }
+  };
+
   const spawnTrail = (x: number, y: number, vx: number, vy: number, color: string, agentId: string) => {
     const t = gameState.current.trails.find(t => !t.active);
     if (t) {
@@ -317,6 +353,20 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
       t.color = color;
       t.life = 1;
       t.scale = 0.1;
+    }
+  };
+
+  const spawnFloatingProfit = (x: number, y: number, amount: number, agentId: string) => {
+    const p = gameState.current.floatingProfits.find(p => !p.active);
+    if (p) {
+      p.active = true;
+      p.x = x + (Math.random() - 0.5) * 30; // Slight random offset
+      p.y = y - 20;
+      p.amount = amount;
+      p.life = 1;
+      p.maxLife = 1;
+      p.velocityY = -0.5 - Math.random() * 0.5; // Float upward
+      p.agentId = agentId;
     }
   };
 
@@ -369,12 +419,24 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
         
         const existing = gameState.current.renderableAgents.find(ra => ra.agent.id === a.id);
         
+        // Check if this is a new agent (not in existing list, or existing hasn't finished entering)
+        const isNewAgent = !existing || (existing.isEntering && existing.entryProgress < 1);
+        
+        // For new agents, start from far outside the screen (sides)
+        // LONG agents fly in from the left, SHORT agents fly in from the right
+        const startX = isNewAgent && !existing
+          ? (isLong ? -WIDTH * 0.8 - Math.random() * 300 : WIDTH * 0.8 + Math.random() * 300) // Start far off-screen on sides
+          : (existing ? existing.x : baseX + jitterX);
+        const startY = isNewAgent && !existing
+          ? baseY + jitterY + (Math.random() - 0.5) * 100 // Y variation on entry
+          : (existing ? existing.y : baseY + jitterY);
+        
         visualList.push({
           agent: a,
           seed,
           tier: a.leverage > 12 ? 2 : a.leverage > 5 ? 1 : 0,
-          x: existing ? existing.x : baseX + jitterX,
-          y: existing ? existing.y : baseY + jitterY,
+          x: startX,
+          y: startY,
           targetX: baseX + jitterX,
           targetY: baseY + jitterY,
           vx: existing ? existing.vx : 0,
@@ -382,7 +444,9 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
           isUser: a.owner === 'USER',
           isLong,
           row,
-          col
+          col,
+          isEntering: isNewAgent,
+          entryProgress: existing ? existing.entryProgress : 0
         });
       });
     };
@@ -392,8 +456,8 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
     
     gameState.current.renderableAgents = visualList;
 
-    // PnL flashes
-    const FLASH_THRESHOLD = 50;
+    // PnL flashes for individual agents
+    const FLASH_THRESHOLD = 10;
     active.forEach(agent => {
       const prev = gameState.current.prevPnL.get(agent.id);
       if (prev !== undefined) {
@@ -405,6 +469,33 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
       }
       gameState.current.prevPnL.set(agent.id, agent.pnl);
     });
+
+    // Calculate and display faction-level floating profit
+    const longPnL = longs.reduce((sum, a) => sum + a.pnl, 0);
+    const shortPnL = shorts.reduce((sum, a) => sum + a.pnl, 0);
+    const prevLongPnL = gameState.current.prevFactionPnL?.long ?? 0;
+    const prevShortPnL = gameState.current.prevFactionPnL?.short ?? 0;
+    const longDiff = longPnL - prevLongPnL;
+    const shortDiff = shortPnL - prevShortPnL;
+    
+    const FACTION_PROFIT_THRESHOLD = 5;
+    const battleX = (gameState.current.battlePosition / 100) * WIDTH;
+
+    // Show faction profit in the center battle area (only show profits, not losses)
+    if (longDiff >= FACTION_PROFIT_THRESHOLD) {
+      // Position on the long side (left of battle line)
+      const xPos = battleX - 150 - Math.random() * 50;
+      const yPos = HEIGHT * 0.3 + Math.random() * HEIGHT * 0.4;
+      spawnFloatingProfit(xPos, yPos, longDiff, 'LONG_FACTION');
+    }
+    if (shortDiff >= FACTION_PROFIT_THRESHOLD) {
+      // Position on the short side (right of battle line)
+      const xPos = battleX + 150 + Math.random() * 50;
+      const yPos = HEIGHT * 0.3 + Math.random() * HEIGHT * 0.4;
+      spawnFloatingProfit(xPos, yPos, shortDiff, 'SHORT_FACTION');
+    }
+    
+    gameState.current.prevFactionPnL = { long: longPnL, short: shortPnL };
   }, [agents, market.symbol]);
 
   // Loot event effect
@@ -413,11 +504,11 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
       const isLongWin = lootEvent.winner === 'LONG';
       const battleX = (gameState.current.battlePosition / 100) * WIDTH;
       const xPos = isLongWin ? battleX - 120 : battleX + 120;
-      spawnText(xPos, HEIGHT / 2 - 80, `+${Math.floor(lootEvent.amount).toLocaleString()} USDT`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
+      spawnText(xPos, HEIGHT / 2 - 80, `+${Math.floor(lootEvent.amount).toLocaleString()} MON`, t('plundered'), isLongWin ? COLOR_LONG : COLOR_SHORT);
     }
   }, [lootEvent, t]);
 
-  // Market effect
+  // Market effect - Update battle position only
   useEffect(() => {
     const priceDiff = market.price - gameState.current.lastPrice;
     const pctChange = gameState.current.lastPrice > 0 ? (priceDiff / gameState.current.lastPrice) * 100 : 0;
@@ -428,29 +519,6 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
     gameState.current.targetBattlePosition = newTarget;
     gameState.current.lastPrice = market.price;
     gameState.current.priceTrend = priceDiff;
-
-    if (Math.abs(pctChange) > 0.003) {
-      const isPriceUp = priceDiff > 0;
-      const battleX = (gameState.current.battlePosition / 100) * WIDTH;
-      const count = Math.min(6, Math.floor(Math.abs(pctChange) * 100));
-
-      for (let i = 0; i < count; i++) {
-        const isLongAttacking = isPriceUp;
-        const startY = 80 + Math.random() * (HEIGHT - 160);
-        const startX = isLongAttacking 
-          ? battleX - 150 - Math.random() * 100 
-          : battleX + 150 + Math.random() * 100;
-        const endX = isLongAttacking ? startX + 250 : startX - 250;
-        const endY = startY + (Math.random() - 0.5) * 80;
-
-        spawnBeam(startX, startY, endX, endY, isLongAttacking ? COLOR_LONG : COLOR_SHORT, 1.5 + Math.random());
-        
-        // Impact particles
-        for (let k = 0; k < 5; k++) {
-          spawnParticle(endX, endY, isLongAttacking ? COLOR_LONG : COLOR_SHORT, 6, 'explosion');
-        }
-      }
-    }
   }, [market.price]);
 
   // Main render loop
@@ -597,39 +665,91 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
         const time = state.time;
 
         agentsToRender.forEach(ra => {
+          // Handle entry animation for new agents
+          if (ra.isEntering) {
+            ra.entryProgress += 0.005;
+            if (ra.entryProgress >= 1) {
+              ra.entryProgress = 1;
+              ra.isEntering = false;
+            }
+          }
+
           // Smooth movement to target
           const dx = ra.targetX - ra.x;
           const dy = ra.targetY - ra.y;
-          ra.vx += dx * 0.02;
-          ra.vy += dy * 0.02;
-          ra.vx *= 0.85;
-          ra.vy *= 0.85;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // Simple smooth follow - always move towards target at reasonable speed
+          // Cap max speed to prevent jitter
+          const maxSpeed = ra.isEntering ? 8 : 2;
+          const acceleration = ra.isEntering ? 0.03 : 0.02;
+          
+          // Normalize direction and apply speed
+          if (distance > 0.5) {
+            const targetVx = (dx / distance) * Math.min(distance * acceleration, maxSpeed);
+            const targetVy = (dy / distance) * Math.min(distance * acceleration, maxSpeed);
+            
+            // Smooth velocity transition
+            ra.vx += (targetVx - ra.vx) * 0.1;
+            ra.vy += (targetVy - ra.vy) * 0.1;
+          } else {
+            // Close enough, slow down
+            ra.vx *= 0.8;
+            ra.vy *= 0.8;
+          }
+          
           ra.x += ra.vx;
           ra.y += ra.vy;
 
-          // Add marching animation
-          const marchOffset = Math.sin(time * 2 + ra.row * 0.5 + ra.col * 0.3) * 3;
+          // Add marching animation (only when not entering)
+          const marchOffset = ra.isEntering ? 0 : Math.sin(time * 2 + ra.row * 0.5 + ra.col * 0.3) * 3;
           const thrustOffset = Math.sin(time * 10 + ra.seed) * 1;
 
           const finalX = battleX + ra.x + marchOffset + (ra.isLong ? -40 : 40);
           const finalY = ra.y + thrustOffset;
 
-          // Cull offscreen
-          if (finalX < -50 || finalX > WIDTH + 50) return;
+          // Cull offscreen (but allow entering agents to be visible)
+          if (!ra.isEntering && (finalX < -50 || finalX > WIDTH + 50)) return;
 
           const drawSize = ra.isUser ? 44 : 28 + ra.tier * 4;
           const offset = drawSize / 2;
 
-          // Spawn trail
-          if (Math.random() < 0.3) {
-            const trailX = ra.isLong ? finalX - offset + 5 : finalX + offset - 5;
-            const trailY = finalY;
-            const trailVx = (Math.random() - 0.5) * 0.5;
-            const trailVy = (Math.random() - 0.5) * 0.5;
-            const trailColor = ra.isLong 
-              ? `rgba(0, 255, 157, ${0.3 + Math.random() * 0.3})` 
-              : `rgba(255, 0, 85, ${0.3 + Math.random() * 0.3})`;
-            spawnTrail(trailX, trailY, trailVx, trailVy, trailColor, ra.agent.id);
+          // Enhanced trail during entry (long jet trail effect)
+          const trailIntensity = ra.isEntering ? 0.95 : 0.3;
+          if (Math.random() < trailIntensity) {
+            // Many trail particles during entry for long tail effect
+            const trailCount = ra.isEntering ? 8 : 1;
+            for (let ti = 0; ti < trailCount; ti++) {
+              // Trail extends behind the agent based on direction
+              const trailOffset = ti * 15; // Longer trail spacing
+              const trailX = ra.isLong 
+                ? finalX - offset - 10 - trailOffset
+                : finalX + offset + 10 + trailOffset;
+              const trailY = finalY + (Math.random() - 0.5) * 6;
+              // Trail moves opposite to agent direction
+              const trailVx = (Math.random() - 0.5) * 0.3 + (ra.isLong ? -3 : 3);
+              const trailVy = (Math.random() - 0.5) * 0.3;
+              // Fade alpha based on trail position
+              const alpha = ra.isEntering ? 0.8 - (ti * 0.08) : 0.3 + Math.random() * 0.3;
+              const trailColor = ra.isLong 
+                ? `rgba(0, 255, 157, ${Math.max(0.1, alpha)})` 
+                : `rgba(255, 0, 85, ${Math.max(0.1, alpha)})`;
+              spawnTrail(trailX, trailY, trailVx, trailVy, trailColor, ra.agent.id);
+            }
+          }
+
+          // Entry glow effect (pulsing glow during fly-in)
+          if (ra.isEntering) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const entryGlow = 1 - ra.entryProgress;
+            const pulseGlow = 0.5 + Math.sin(time * 10) * 0.3; // Pulsing effect
+            ctx.globalAlpha = entryGlow * pulseGlow;
+            ctx.fillStyle = ra.isLong ? COLOR_LONG : COLOR_SHORT;
+            ctx.beginPath();
+            ctx.arc(finalX, finalY, 40 + entryGlow * 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
           }
 
           // Flash effect
@@ -658,11 +778,21 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
             ctx.restore();
           }
 
-          // Draw sprite
+          // Draw sprite with rotation during entry (banking effect)
+          ctx.save();
+          if (ra.isEntering) {
+            // Bank inward during entry
+            const bankAngle = ra.isLong ? -15 * (1 - ra.entryProgress) : 15 * (1 - ra.entryProgress);
+            ctx.translate(finalX, finalY);
+            ctx.rotate(bankAngle * Math.PI / 180);
+            ctx.translate(-finalX, -finalY);
+          }
+          
           const sprite = ra.isLong 
             ? spritesRef.current.long[ra.tier] 
             : spritesRef.current.short[ra.tier];
           ctx.drawImage(sprite, Math.floor(finalX - offset), Math.floor(finalY - offset), drawSize, drawSize);
+          ctx.restore();
 
           // User indicator
           if (ra.isUser) {
@@ -678,29 +808,7 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
         });
       }
 
-      // Render beams
-      const activeBeams = state.beams.filter(b => b.active);
-      if (activeBeams.length > 0) {
-        ctx.save();
-        for (const b of activeBeams) {
-          const progress = 1 - b.life / b.maxLife;
-          const alpha = Math.sin(progress * Math.PI) * 0.9;
-          
-          ctx.globalAlpha = alpha;
-          ctx.strokeStyle = b.color;
-          ctx.lineWidth = b.width;
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = b.color;
-          ctx.beginPath();
-          ctx.moveTo(b.startX, b.startY);
-          ctx.lineTo(b.endX, b.endY);
-          ctx.stroke();
-          
-          b.life -= 0.04;
-          if (b.life <= 0) b.active = false;
-        }
-        ctx.restore();
-      }
+      // Beams disabled - keeping battlefield clean
 
       // Render particles
       const activeParticles = state.particles.filter(p => p.active);
@@ -755,6 +863,54 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
         ctx.restore();
       }
 
+      // Render floating profit numbers (faction-level)
+      const activeProfits = state.floatingProfits.filter(p => p.active);
+      if (activeProfits.length > 0) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        for (const p of activeProfits) {
+          const alpha = p.life > 0.3 ? 1 : p.life / 0.3;
+          const scale = 1.2 + (1 - p.life) * 0.6; // Larger scale for faction profits
+          const isProfit = p.amount >= 0;
+          const isFaction = p.agentId.includes('FACTION');
+          
+          ctx.globalAlpha = alpha;
+          
+          if (isFaction) {
+            // Faction profits - larger and more prominent
+            ctx.font = `900 ${Math.floor(24 * scale)}px Orbitron, sans-serif`;
+            ctx.fillStyle = isProfit ? COLOR_PROFIT : COLOR_LOSS;
+            ctx.shadowColor = isProfit ? COLOR_PROFIT : COLOR_LOSS;
+            ctx.shadowBlur = 20;
+            
+            const sign = isProfit ? '+' : '';
+            const label = p.agentId === 'LONG_FACTION' ? 'LONG ' : 'SHORT ';
+            ctx.fillText(`${label}${sign}${p.amount.toFixed(0)}`, p.x, p.y);
+            
+            // Add MON label below
+            ctx.font = `bold ${Math.floor(12 * scale)}px Rajdhani, sans-serif`;
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 5;
+            ctx.fillText('MON', p.x, p.y + 20);
+          } else {
+            // Individual agent profits (if any)
+            ctx.font = `bold ${Math.floor(14 * scale)}px Rajdhani, sans-serif`;
+            ctx.fillStyle = isProfit ? COLOR_PROFIT : COLOR_LOSS;
+            ctx.shadowColor = isProfit ? COLOR_PROFIT : COLOR_LOSS;
+            ctx.shadowBlur = 10;
+            
+            const sign = isProfit ? '+' : '';
+            ctx.fillText(`${sign}${p.amount.toFixed(1)}`, p.x, p.y);
+          }
+          
+          // Update position and life
+          p.y += p.velocityY;
+          p.life -= 0.012;
+          if (p.life <= 0) p.active = false;
+        }
+        ctx.restore();
+      }
+
       frameId = requestAnimationFrame(render);
     };
 
@@ -765,24 +921,6 @@ export const Battlefield: React.FC<BattlefieldProps> = ({ agents, market, lootEv
   return (
     <div className="relative w-full h-[300px] lg:h-[500px] rounded-2xl overflow-hidden border border-[#836EF9]/30 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#020203]">
       <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="w-full h-full object-cover" />
-
-      {/* HUD Overlay */}
-      <div className="absolute top-0 left-0 w-full p-4 lg:p-6 flex flex-col justify-between pointer-events-none">
-        <div className="flex justify-between items-start">
-          <div className="bg-black/50 backdrop-blur-sm border-l-2 border-[#00FF9D] pl-3 py-2 rounded-r">
-            <div className="text-[#00FF9D] text-xs font-bold tracking-widest uppercase">{t('alliance')}</div>
-            <div className="text-white font-mono text-lg">
-              {agents.filter(a => a.direction === 'LONG' && a.status === 'ACTIVE' && a.asset === market.symbol).length} {t('units')}
-            </div>
-          </div>
-          <div className="bg-black/50 backdrop-blur-sm border-r-2 border-[#FF0055] pr-3 py-2 rounded-l text-right">
-            <div className="text-[#FF0055] text-xs font-bold tracking-widest uppercase">{t('syndicate')}</div>
-            <div className="text-white font-mono text-lg">
-              {agents.filter(a => a.direction === 'SHORT' && a.status === 'ACTIVE' && a.asset === market.symbol).length} {t('units')}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

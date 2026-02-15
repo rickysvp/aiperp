@@ -6,10 +6,12 @@ import { Arena } from './components/Arena';
 import { Agents } from './components/Agents';
 import { WalletV2 } from './components/WalletV2';
 import { Leaderboard } from './components/Leaderboard';
+import { Liquidity } from './components/Liquidity';
 import { Onboarding } from './components/Onboarding';
 import { LegalModal } from './components/LegalModal';
 import { VersionInfo } from './components/VersionInfo';
-import { LayoutDashboard, Users, Wallet as WalletIcon, BrainCircuit, Trophy, Globe } from 'lucide-react';
+import { WalletGenerationModal } from './components/WalletGenerationModal';
+import { LayoutDashboard, Users, Wallet as WalletIcon, BrainCircuit, Trophy, Globe, Droplets } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { Logo } from './components/Logo';
@@ -18,12 +20,12 @@ import { useWallet } from './contexts/WalletContext';
 
 const AGENT_FABRICATION_COST = 100;
 
-// Asset Configs
+// Asset Configs - 1 MON = 0.02 MON standard
 const ASSETS: Record<AssetSymbol, { startPrice: number, vol: number }> = {
   BTC: { startPrice: 65000, vol: 0.003 },
   ETH: { startPrice: 3500, vol: 0.004 },
   SOL: { startPrice: 150, vol: 0.006 },
-  MON: { startPrice: 15, vol: 0.008 }
+  MON: { startPrice: 0.02, vol: 0.015 } // 1 MON = 0.02 MON standard
 };
 
 // --- Marquee Component ---
@@ -66,22 +68,27 @@ const Marquee = ({ agents }: { agents: Agent[] }) => {
 
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
-  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updatePnl } = useWallet();
+  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updatePnl, updateMonBalance } = useWallet();
   
   // --- State ---
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [highlightMint, setHighlightMint] = useState(false); // For tutorial guidance
+  const [showWalletGeneration, setShowWalletGeneration] = useState(false);
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.ARENA);
-  const [selectedAsset, setSelectedAsset] = useState<AssetSymbol>('BTC');
+  const [selectedAsset, setSelectedAsset] = useState<AssetSymbol>('MON');
 
   const [market, setMarket] = useState<MarketState>({
-    symbol: 'BTC',
-    price: ASSETS.BTC.startPrice, 
-    history: Array.from({ length: 30 }, (_, i) => ({ time: i.toString(), price: ASSETS.BTC.startPrice })),
+    symbol: 'MON',
+    price: ASSETS.MON.startPrice, 
+    history: Array.from({ length: 30 }, (_, i) => ({ time: i.toString(), price: ASSETS.MON.startPrice })),
     trend: 'FLAT',
-    lastChangePct: 0
+    lastChangePct: 0,
+    longEarningsPerSecond: 0,
+    shortEarningsPerSecond: 0,
+    totalLongStaked: 0,
+    totalShortStaked: 0
   });
 
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -104,435 +111,409 @@ const AppContent: React.FC = () => {
   const handleAssetChange = (asset: AssetSymbol) => {
       setSelectedAsset(asset);
       assetRef.current = asset;
-      // Reset Market for new asset
-      const startPrice = ASSETS[asset].startPrice;
+      // Reset market data for new asset
       setMarket({
           symbol: asset,
-          price: startPrice,
-          history: Array.from({ length: 30 }, (_, i) => ({ time: i.toString(), price: startPrice })),
+          price: ASSETS[asset].startPrice,
+          history: Array.from({ length: 30 }, (_, i) => ({ time: i.toString(), price: ASSETS[asset].startPrice })),
           trend: 'FLAT',
-          lastChangePct: 0
+          lastChangePct: 0,
+          longEarningsPerSecond: 0,
+          shortEarningsPerSecond: 0,
+          totalLongStaked: 0,
+          totalShortStaked: 0
       });
-      addLog(`Market switched to ${asset}-USD Perps.`, 'MINT');
   };
 
-  // --- Auth & Init ---
-  useEffect(() => {
-    // Initialize System Bots (500-1000 agents per asset)
-    const systemBots: Agent[] = [];
-    const botCount = Math.floor(Math.random() * 501) + 500; // 500-1000 agents
-    const assets: AssetSymbol[] = ['BTC', 'ETH', 'SOL', 'MON'];
-    
-    for (let i = 0; i < botCount; i++) {
-        const dir = Math.random() > 0.5 ? 'LONG' : 'SHORT';
-        const leverage = Math.floor(Math.random() * 19) + 1;
-        const asset = assets[Math.floor(Math.random() * assets.length)];
-        const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
-            if (lev <= 3) return 'LOW';
-            if (lev <= 8) return 'MEDIUM';
-            if (lev <= 15) return 'HIGH';
-            return 'EXTREME';
-        };
-        systemBots.push({
-            id: uuidv4(),
-            owner: 'SYSTEM',
-            minter: 'Protocol',
-            name: `Unit-${Math.floor(Math.random() * 9999)}`,
-            bio: "System Drone",
-            strategy: "Swarm",
-            avatarSeed: Math.random().toString(36),
-            direction: dir,
-            leverage: leverage,
-            balance: MINT_COST + (Math.random() * 500),
-            pnl: 0,
-            pnlHistory: [],
-            wins: 0,
-            losses: 0,
-            status: 'ACTIVE',
-            riskLevel: getRiskLevel(leverage),
-            asset: asset  // 随机分配到不同资产
-        });
-    }
-    setAgents(systemBots);
-    addLog("System Swarm Initialized.", "MINT");
-
-    // Check onboarding
-    const hasSeen = localStorage.getItem('hasSeenOnboarding');
-    if (!hasSeen && isConnected) {
-        setShowOnboarding(true);
-    }
-  }, [isConnected]);
-
-  const handleLogout = () => {
-    disconnect();
-    setActiveTab(Tab.ARENA);
-    // Remove user agents
-    setAgents(prev => prev.filter(a => a.owner !== 'USER'));
-  };
-
-  const handleFinishOnboarding = () => {
-      setShowOnboarding(false);
-      localStorage.setItem('hasSeenOnboarding', 'true');
-      setActiveTab(Tab.AGENTS); // Send to agents page to start
-      setHighlightMint(true); // Enable visual cue
-      // Remove highlight after 5 seconds
-      setTimeout(() => setHighlightMint(false), 8000);
-  };
-
-  // --- Helpers ---
-  const addLog = (message: string, type: BattleLog['type'], amount?: number) => {
-    const newLog: BattleLog = {
-      id: uuidv4(),
-      timestamp: Date.now(),
-      message,
-      type,
-      amount
-    };
-    setLogs(prev => [newLog, ...prev].slice(0, 50));
-  };
-
-  // --- Game Loop ---
+  // --- Game Loop (Market Simulation) ---
   useEffect(() => {
     const interval = setInterval(() => {
       const currentAsset = assetRef.current;
       const assetConfig = ASSETS[currentAsset];
-
-      // 1. Update Market Price (Volatile Random Walk)
-      const change = (Math.random() - 0.5) * 2 * assetConfig.vol;
-      const currentPrice = marketRef.current.price;
-      const newPrice = currentPrice * (1 + change);
       
-      const newHistory = [...marketRef.current.history, { time: Date.now().toString(), price: newPrice }].slice(-40);
-      const priceChangePct = (newPrice - currentPrice) / currentPrice;
-
-      const marketUpdate: MarketState = {
+      // Price random walk
+      const change = (Math.random() - 0.5) * assetConfig.vol;
+      // Use asset-specific minimum price (0.001 for low-priced assets like MON)
+      const minPrice = currentAsset === 'MON' ? 0.001 : 1;
+      const newPrice = Math.max(minPrice, marketRef.current.price * (1 + change));
+      const trend: 'UP' | 'DOWN' | 'FLAT' = change > 0.001 ? 'UP' : change < -0.001 ? 'DOWN' : 'FLAT';
+      
+      // Calculate faction earnings per second based on price change
+      // Get current active agents for this asset
+      const currentAgents = agentsRef.current.filter(a => a.status === 'ACTIVE' && a.asset === currentAsset);
+      const longAgents = currentAgents.filter(a => a.direction === 'LONG' || (a.direction === 'AUTO' && trend === 'UP'));
+      const shortAgents = currentAgents.filter(a => a.direction === 'SHORT' || (a.direction === 'AUTO' && trend === 'DOWN'));
+      
+      const totalLongStaked = longAgents.reduce((sum, a) => sum + a.balance, 0);
+      const totalShortStaked = shortAgents.reduce((sum, a) => sum + a.balance, 0);
+      
+      // Calculate earnings per second based on price movement
+      // If price goes up, LONG earns, SHORT loses (and vice versa)
+      // Earnings = staked amount * price change % * leverage (simplified for display)
+      const longEarningsPerSecond = change > 0 ? totalLongStaked * change * 1.5 : totalLongStaked * change * 1.5;
+      const shortEarningsPerSecond = change < 0 ? totalShortStaked * Math.abs(change) * 1.5 : -totalShortStaked * Math.abs(change) * 1.5;
+      
+      // Update Market with settlement data
+      const newHistory = [...marketRef.current.history.slice(1), { time: new Date().toLocaleTimeString(), price: newPrice }];
+      setMarket({
         symbol: currentAsset,
         price: newPrice,
         history: newHistory,
-        trend: change > 0 ? 'UP' : 'DOWN',
-        lastChangePct: priceChangePct * 100 
-      };
-      
-      setMarket(marketUpdate);
+        trend,
+        lastChangePct: change * 100,
+        longEarningsPerSecond,
+        shortEarningsPerSecond,
+        totalLongStaked,
+        totalShortStaked
+      });
 
-      // 2. Battle Logic / Settlement
-      const currentAgents = [...agentsRef.current];
-      let userBalanceChange = 0; // Only track user's change
-      let roundTotalLoot = 0;
-      
-      // Determine Winning Side
-      const marketDirection = priceChangePct > 0 ? 'LONG' : 'SHORT';
-      const isSignificantMove = Math.abs(priceChangePct) > 0.00005;
-
-      // Optimization: Separate logic lists once
-      const activeAgents = [];
-      const winners = [];
-      const losers = [];
-
-      for (const agent of currentAgents) {
-          if (agent.status === 'ACTIVE') {
-              activeAgents.push(agent);
-              
-              // RESOLVE EFFECTIVE DIRECTION
-              let effectiveDirection = agent.direction;
-              if (agent.direction === 'AUTO') {
-                  // Auto Agents follow momentum (aligned with market direction)
-                  effectiveDirection = marketDirection;
-              }
-
-              if (effectiveDirection === marketDirection) winners.push(agent);
-              else losers.push(agent);
-          }
-      }
-
-      if (isSignificantMove) {
-        // --- A. Base PnL Update ---
-        for (const agent of activeAgents) {
-          // Resolve effective direction again for PnL calc
-          let effectiveDirection = agent.direction;
-          if (agent.direction === 'AUTO') {
-              effectiveDirection = marketDirection;
-          }
-
-          const directionMultiplier = effectiveDirection === 'LONG' ? 1 : -1;
-          const tickPnl = agent.balance * agent.leverage * priceChangePct * directionMultiplier;
-          
-          agent.pnl += tickPnl;
-          agent.balance += tickPnl;
-          
-          // Record PnL history for charts (keep last 24 data points)
-          if (!agent.pnlHistory) agent.pnlHistory = [];
-          agent.pnlHistory.push({
-            time: new Date().toISOString(),
-            value: agent.pnl
-          });
-          if (agent.pnlHistory.length > 24) {
-            agent.pnlHistory.shift();
-          }
-          
-          if (tickPnl > 0) agent.wins++;
-          else agent.losses++;
-
-          // Only update wallet if it belongs to user
-          if (agent.owner === 'USER') {
-            userBalanceChange += tickPnl;
-          }
-        }
-
-        // --- B. Looting / Plunder Mechanic ---
-        if (winners.length > 0 && losers.length > 0) {
-            // Optimization: Limit looting events per tick to avoid spam
-            const lootAttemps = Math.min(winners.length, 5); 
-            
-            for (let i = 0; i < lootAttemps; i++) {
-                if (Math.random() < 0.3) {
-                    const winnerIndex = Math.floor(Math.random() * winners.length);
-                    const winner = winners[winnerIndex];
-                    
-                    const victimIndex = Math.floor(Math.random() * losers.length);
-                    const victim = losers[victimIndex];
-                    
-                    const lootAmount = Math.min(victim.balance * 0.05, 50); 
-                    
-                    if (lootAmount > 1) {
-                        const fee = lootAmount * 0.01;
-                        const netLoot = lootAmount - fee;
-
-                        victim.balance -= lootAmount;
-                        winner.balance += netLoot;
-                        
-                        winner.pnl += netLoot;
-                        victim.pnl -= lootAmount;
-                        roundTotalLoot += netLoot;
-
-                        // Adjust User Wallet if they are involved in looting
-                        if (winner.owner === 'USER') userBalanceChange += netLoot;
-                        if (victim.owner === 'USER') userBalanceChange -= lootAmount;
-                    }
-                }
-            }
-        }
-
-        // --- C. Exit Arena Check (Auto-withdraw when balance is low) ---
-        for (const agent of activeAgents) {
-             if (agent.balance <= 50) {
-                 // Return remaining balance to user
-                 const remainingBalance = agent.balance;
-                 if (agent.owner === 'USER') {
-                     userBalanceChange += remainingBalance;
-                     addLog(`${agent.name} exited arena with ${remainingBalance.toFixed(0)} USDT remaining.`, 'EXIT');
-                 }
-                 // Reset agent to IDLE state
-                 agent.status = 'IDLE';
-                 agent.balance = 0;
-                 agent.pnl = 0;
-                 agent.leverage = 1;
-                 agent.direction = 'LONG';
-             }
-        }
-
-        // --- D. Update State ---
-        setAgents([...currentAgents]);
+      // Update Agents PnL and record history
+      setAgents(prev => prev.map(agent => {
+        if (agent.status !== 'ACTIVE' || agent.asset !== currentAsset) return agent;
         
-        // Update wallet through context
-        if (userBalanceChange !== 0) {
-          updateBalance(userBalanceChange);
-          updatePnl(userBalanceChange);
+        const priceDiff = (newPrice - agent.entryPrice) / agent.entryPrice;
+        // AUTO mode: randomly choose direction like a real trader (50/50 chance)
+        // This makes AUTO mode have realistic win rates around 50%, not 100%
+        let directionMultiplier: number;
+        if (agent.direction === 'LONG') {
+          directionMultiplier = 1;
+        } else if (agent.direction === 'SHORT') {
+          directionMultiplier = -1;
+        } else {
+          // AUTO: use a fixed random direction determined at entry, not based on price movement
+          // We use agent.id to create a deterministic but random-like behavior
+          directionMultiplier = (agent.id.charCodeAt(0) % 2 === 0) ? 1 : -1;
         }
-
-        if (Math.abs(priceChangePct) > 0.002) {
-             const winningSide = priceChangePct > 0 ? "BULLS" : "BEARS";
-             addLog(`${winningSide} PUSHING ${currentAsset} LINE.`, priceChangePct > 0 ? 'WIN' : 'LOSS');
+        const rawPnl = agent.balance * priceDiff * directionMultiplier * agent.leverage;
+        
+        // Liquidation check
+        if (agent.balance + rawPnl <= 0) {
+          addLog(`${agent.name} liquidated on ${agent.asset}!`, 'LIQUIDATION');
+          return { ...agent, status: 'LIQUIDATED', pnl: -agent.balance, balance: 0, pnlHistory: [...agent.pnlHistory, { time: new Date().toISOString(), value: -agent.balance }].slice(-30) };
         }
-
-        if (roundTotalLoot > 0) {
-            setLastLootEvent({
-                amount: roundTotalLoot,
-                winner: marketDirection,
-                timestamp: Date.now()
-            });
-        }
-      }
+        
+        // Record PnL history every 10 ticks (to avoid too much data)
+        const shouldRecordHistory = Math.random() < 0.1;
+        const newPnlHistory = shouldRecordHistory 
+          ? [...agent.pnlHistory, { time: new Date().toISOString(), value: rawPnl }].slice(-30)
+          : agent.pnlHistory;
+        
+        return { ...agent, pnl: rawPnl, pnlHistory: newPnlHistory };
+      }));
 
     }, GAME_TICK_MS);
 
     return () => clearInterval(interval);
-  }, [isConnected, updateBalance, updatePnl]); 
+  }, []);
+
+  // --- Helper: Add Log ---
+  const addLog = (msg: string, type: BattleLog['type']) => {
+    setLogs(prev => [{
+      id: uuidv4(),
+      timestamp: Date.now(),
+      message: msg,
+      type
+    }, ...prev].slice(0, 100));
+  };
+
+  // --- Agent Management System (500-1000 Agents) ---
+  const AGENT_POOL_SIZE = 800; // Total pool of agents
+  const MAX_ACTIVE_AGENTS = 200; // Max active at any time for performance
+  const AGENT_ROTATION_INTERVAL = 3000; // New agents enter every 3 seconds
+  
+  // Generate a random agent
+  const generateAgent = (id: number, forceAsset?: AssetSymbol): Agent => {
+    const botNames = [
+      'AlphaBot', 'BetaMax', 'GammaRay', 'DeltaForce', 'EpsilonX', 'ZetaWave', 'EtaStorm', 'ThetaMind',
+      'IotaPulse', 'KappaRush', 'LambdaCore', 'MuStream', 'NuSpark', 'XiStorm', 'OmicronX', 'PiLogic',
+      'RhoFlow', 'SigmaPrime', 'TauBlade', 'UpsilonX', 'PhiMind', 'ChiWave', 'PsiCore', 'OmegaX',
+      'NeonBot', 'CyberX', 'QuantumAI', 'NeuralNet', 'DeepTrade', 'MatrixBot', 'SynthMind', 'CryptoHawk',
+      'BullRunner', 'BearHunter', 'TrendMaster', 'VolatilityKing', 'ScalpPro', 'SwingTrader', 'DayBot', 'PositionX',
+      'MomentumX', 'ReversionAI', 'BreakoutPro', 'ArbitrageBot', 'GridMaster', 'DCAPro', 'MartingaleX', 'KellyBot',
+      'SharpeX', 'SortinoPro', 'AlphaSeeker', 'BetaHedge', 'GammaScalper', 'DeltaNeutral', 'VegaTrader', 'ThetaDecay'
+    ];
+    const strategies = [
+      'Momentum Hunter', 'Mean Reversion', 'Breakout Surfer', 'Scalping Ninja', 'Trend Follower', 
+      'Volatility Trader', 'Grid Trading', 'Arbitrage Hunter', 'DCA Strategist', 'Martingale Pro',
+      'Kelly Criterion', 'Sharpe Optimizer', 'Alpha Generator', 'Beta Hedger', 'Gamma Scalper'
+    ];
+    const directions: Direction[] = ['LONG', 'SHORT'];
+    const assets: AssetSymbol[] = ['MON']; // Default to MON
+    
+    const asset = forceAsset || assets[Math.floor(Math.random() * assets.length)];
+    const direction = directions[Math.floor(Math.random() * 2)];
+    const leverage = Math.floor(Math.random() * 45) + 5;
+    const balance = Math.floor(Math.random() * 8000) + 1000;
+    const riskLevel = leverage > 30 ? 'EXTREME' : leverage > 20 ? 'HIGH' : leverage > 10 ? 'MEDIUM' : 'LOW';
+    
+    return {
+      id: `bot-${id}-${Date.now()}`,
+      name: `${botNames[Math.floor(Math.random() * botNames.length)]}-${Math.floor(Math.random() * 9999)}`,
+      avatarSeed: Math.random().toString(),
+      owner: 'SYSTEM',
+      minter: 'Protocol',
+      bio: `AI trading agent specializing in ${strategies[Math.floor(Math.random() * strategies.length)]}`,
+      status: 'ACTIVE',
+      direction,
+      leverage,
+      asset,
+      balance,
+      pnl: 0,
+      pnlHistory: [],
+      wins: 0,
+      losses: 0,
+      entryPrice: ASSETS[asset].startPrice * (0.95 + Math.random() * 0.1),
+      strategy: strategies[Math.floor(Math.random() * strategies.length)],
+      riskLevel
+    };
+  };
+
+  // Initialize agent pool with 120 LONG and 120 SHORT agents (240 total)
+  useEffect(() => {
+    const initAgents = () => {
+      const initialAgents: Agent[] = [];
+      
+      // Create 120 LONG agents
+      for (let i = 0; i < 120; i++) {
+        const agent = generateAgent(i, 'MON');
+        agent.direction = 'LONG';
+        initialAgents.push(agent);
+      }
+      
+      // Create 120 SHORT agents
+      for (let i = 120; i < 240; i++) {
+        const agent = generateAgent(i, 'MON');
+        agent.direction = 'SHORT';
+        initialAgents.push(agent);
+      }
+      
+      setAgents(initialAgents);
+      addLog(`Agent pool initialized: ${AGENT_POOL_SIZE} agents ready`, 'MINT');
+      addLog(`120 LONG agents entered the MON arena`, 'MINT');
+      addLog(`120 SHORT agents entered the MON arena`, 'MINT');
+    };
+    
+    initAgents();
+  }, []);
+
+  // Continuous agent rotation system - only for AI agents (owner !== 'USER')
+  useEffect(() => {
+    const rotationInterval = setInterval(() => {
+      setAgents(prev => {
+        const now = Date.now();
+        
+        // Separate user agents (keep all) and AI agents (manage rotation)
+        const userAgents = prev.filter(a => a.owner === 'USER');
+        const aiAgents = prev.filter(a => a.owner !== 'USER');
+        
+        // Remove AI agents that have been active too long (liquidated or retired)
+        const activeAiAgents = aiAgents.filter(a => {
+          const age = now - parseInt(a.id.split('-')[2] || '0');
+          // Remove if liquidated or been active for too long (30-120 seconds)
+          const maxAge = 30000 + Math.random() * 90000;
+          return a.status === 'ACTIVE' && age < maxAge;
+        });
+        
+        // Check for liquidations based on current PnL (only for AI agents)
+        const processedAiAgents = activeAiAgents.map(agent => {
+          // Check liquidation (balance + PnL <= 0)
+          if (agent.balance + agent.pnl <= 0) {
+            addLog(`${agent.name} liquidated on ${agent.asset}!`, 'LIQUIDATION');
+            return { ...agent, status: 'LIQUIDATED' as const, pnl: -agent.balance };
+          }
+          
+          return agent;
+        });
+        
+        // Filter out liquidated AI agents
+        const stillActiveAi = processedAiAgents.filter(a => a.status === 'ACTIVE');
+        
+        // Count LONG and SHORT agents to maintain balance
+        const longCount = stillActiveAi.filter(a => a.direction === 'LONG').length;
+        const shortCount = stillActiveAi.filter(a => a.direction === 'SHORT').length;
+        
+        // Add new AI agents if below target
+        const targetCount = 60 + Math.floor(Math.random() * 80); // 60-140 active agents
+        const newAgents: Agent[] = [];
+        
+        if (stillActiveAi.length < targetCount && stillActiveAi.length < MAX_ACTIVE_AGENTS) {
+          const toAdd = Math.min(3, targetCount - stillActiveAi.length); // Add up to 3 at a time
+          for (let i = 0; i < toAdd; i++) {
+            // Determine direction based on which side needs more agents
+            // If balanced, random; otherwise favor the side with fewer agents
+            let direction: Direction;
+            if (longCount < shortCount) {
+              direction = 'LONG';
+            } else if (shortCount < longCount) {
+              direction = 'SHORT';
+            } else {
+              direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+            }
+            
+            const newAgent = generateAgent(Math.floor(Math.random() * AGENT_POOL_SIZE), 'MON');
+            newAgent.direction = direction;
+            newAgents.push(newAgent);
+          }
+          
+          if (toAdd > 0) {
+            const names = newAgents.map(a => a.name.split('-')[0]).join(', ');
+            addLog(`${toAdd} new agents entered: ${names}`, 'MINT');
+          }
+        }
+        
+        // Remove exited AI agents from state (keep only active + recently liquidated)
+        const finalAiAgents = [...stillActiveAi, ...newAgents].filter(a => {
+          const age = now - parseInt(a.id.split('-')[2] || '0');
+          return a.status === 'ACTIVE' || age < 5000; // Keep liquidated for 5 seconds
+        });
+        
+        // Combine user agents (unchanged) with managed AI agents
+        return [...userAgents, ...finalAiAgents];
+      });
+    }, AGENT_ROTATION_INTERVAL);
+
+    return () => clearInterval(rotationInterval);
+  }, []);
 
   // --- Actions ---
   const handleMintAgent = async (twitterHandle?: string, nameHint?: string): Promise<Agent | null> => {
-    // Check if user is logged in
-    if (!isConnected) {
-      await connect();
+    console.log('=== App.handleMintAgent called ===', { twitterHandle, nameHint, monBalance: wallet.monBalance });
+    
+    // Deduct MON balance
+    if (wallet.monBalance < AGENT_FABRICATION_COST) {
+      console.log('Insufficient MON balance');
+      addLog('Insufficient MON balance', 'LOSS');
       return null;
     }
     
-    if (wallet.balance < AGENT_FABRICATION_COST) {
-      alert("Insufficient Balance!");
-      return null;
-    }
-
-    const userInputName = nameHint || "Agent";
-    // Generate Random 4-digit NFT ID
-    const nftId = Math.floor(1000 + Math.random() * 9000);
-    const finalName = `${userInputName} #${nftId}`;
-
-    // Deduct cost immediately
-    updateBalance(-AGENT_FABRICATION_COST);
-    addLog(`Fabricating ${finalName}...`, 'MINT');
-
-    try {
-      // Just pass the user name, let Gemini generate bio/strategy but we force the name
-      const persona = await generateAgentPersona('AUTO', userInputName);
-      
-      // Calculate risk level based on leverage (default 1 = LOW)
-      const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
-        if (lev <= 3) return 'LOW';
-        if (lev <= 8) return 'MEDIUM';
-        if (lev <= 15) return 'HIGH';
-        return 'EXTREME';
-      };
-
-      const newAgent: Agent = {
-        id: uuidv4(),
-        owner: 'USER',
-        minter: wallet.address,
-        minterTwitter: twitterHandle && twitterHandle.startsWith('@') ? twitterHandle : twitterHandle ? `@${twitterHandle}` : undefined,
-        name: finalName,
-        bio: persona.bio,
-        strategy: persona.strategy,
-        avatarSeed: finalName, // Use name as seed for consistent pixel art
-        direction: 'LONG', // Default, will be set on deploy
-        leverage: 1,
-        balance: 0,
-        pnl: 0,
-        pnlHistory: [],
-        wins: 0,
-        losses: 0,
-        status: 'IDLE',
-        riskLevel: getRiskLevel(1),
-        twitterHandle: twitterHandle,
-        asset: 'BTC' // Default asset, will be set on deploy
-      };
-
-      // Agent is returned but NOT added to list yet
-      // It will be added when user accepts in the UI
-      return newAgent;
-    } catch (e) {
-      console.error(e);
-      // Refund on error
-      updateBalance(AGENT_FABRICATION_COST);
-      return null;
-    }
+    console.log('Deducting MON balance...');
+    updateMonBalance(-AGENT_FABRICATION_COST);
+    
+    console.log('Generating agent persona...');
+    const persona = await generateAgentPersona('AUTO', nameHint);
+    console.log('Persona generated:', persona);
+    
+    const newAgent: Agent = {
+      id: uuidv4(),
+      name: persona.name,
+      avatarSeed: Math.random().toString(),
+      owner: 'USER',
+      minter: wallet.address,
+      bio: persona.strategy,
+      status: 'IDLE',
+      direction: 'LONG',
+      leverage: 10,
+      asset: selectedAsset,
+      balance: 0,
+      pnl: 0,
+      pnlHistory: [],
+      wins: 0,
+      losses: 0,
+      entryPrice: 0,
+      strategy: persona.strategy,
+      riskLevel: 'MEDIUM',
+      twitterHandle
+    };
+    
+    console.log('Adding new agent to state:', newAgent);
+    setAgents(prev => [...prev, newAgent]);
+    addLog(`Agent ${newAgent.name} fabricated`, 'MINT');
+    console.log('=== App.handleMintAgent completed ===');
+    return newAgent;
   };
 
-  const handleAddAgent = (agent: Agent) => {
-    setAgents(prev => [...prev, agent]);
-    addLog(`${agent.name} fabricated. Awaiting orders.`, 'MINT');
+  const handleDeployAgent = async (agentId: string, direction: Direction, leverage: number, collateral: number, takeProfit?: number, stopLoss?: number, asset?: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent || wallet.monBalance < collateral) return;
+
+    updateMonBalance(-collateral);
+    
+    // Use the asset passed from UI, fallback to selectedAsset
+    const targetAsset = (asset as AssetSymbol) || selectedAsset;
+    
+    setAgents(prev => prev.map(a => {
+      if (a.id !== agentId) return a;
+      return {
+        ...a,
+        status: 'ACTIVE',
+        direction,
+        leverage,
+        balance: collateral,
+        entryPrice: market.price,
+        asset: targetAsset,
+        takeProfit,
+        stopLoss
+      };
+    }));
+    
+    addLog(`${agent.name} deployed ${direction} ${leverage}x with ${collateral} MON on ${targetAsset}`, 'MINT');
   };
 
   const handleWithdrawAgent = async (agentId: string) => {
     const agent = agents.find(a => a.id === agentId);
     if (!agent || agent.status !== 'ACTIVE') return;
 
-    const withdrawAmount = agent.balance;
-
-    // Return balance to wallet
-    updateBalance(withdrawAmount);
-
-    // Reset agent to IDLE state
+    const finalBalance = agent.balance + agent.pnl;
+    updateMonBalance(finalBalance);
+    updatePnl(agent.pnl);
+    
+    // Record win/loss based on PnL when exiting
+    // PnL > 0 = Win, PnL < 0 = Loss, PnL = 0 = No record
+    const isWin = agent.pnl > 0;
+    const isLoss = agent.pnl < 0;
+    
     setAgents(prev => prev.map(a => {
-        if (a.id === agentId) {
-            return {
-                ...a,
-                status: 'IDLE',
-                balance: 0,
-                pnl: 0,
-                leverage: 1,
-                direction: 'LONG'
-            };
-        }
-        return a;
+      if (a.id !== agentId) return a;
+      return { 
+        ...a, 
+        status: 'IDLE', 
+        balance: 0, 
+        pnl: 0,
+        wins: isWin ? a.wins + 1 : a.wins,
+        losses: isLoss ? a.losses + 1 : a.losses
+      };
     }));
-
-    addLog(`${agent.name} withdrawn with ${withdrawAmount.toFixed(0)} USDT returned.`, 'EXIT');
+    
+    const resultText = isWin ? 'win' : isLoss ? 'loss' : 'break-even';
+    addLog(`${agent.name} withdrawn with ${finalBalance.toFixed(0)} MON returned (${resultText}).`, 'EXIT');
   };
 
-  const handleDeployAgent = async (agentId: string, direction: Direction, leverage: number, collateral: number) => {
-    // Check if user is logged in
-    if (!isConnected) {
-      await connect();
-      return;
-    }
-    
-    if (wallet.balance < collateral) {
-      alert("Insufficient Collateral for deployment!");
-      return;
-    }
+  const handleAddAgent = (agent: Agent) => {
+    // Agent already added in handleMintAgent
+  };
 
-    updateBalance(-collateral);
-    
-    setAgents(prev => prev.map(agent => {
-        if (agent.id === agentId) {
-            const getRiskLevel = (lev: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME' => {
-                if (lev <= 3) return 'LOW';
-                if (lev <= 8) return 'MEDIUM';
-                if (lev <= 15) return 'HIGH';
-                return 'EXTREME';
-            };
-            return {
-                ...agent,
-                status: 'ACTIVE',
-                direction: direction,
-                leverage: leverage,
-                balance: collateral,
-                pnl: 0,
-                riskLevel: getRiskLevel(leverage)
-            };
-        }
-        return agent;
-    }));
-
-    addLog(`Unit Deployed ${direction} @ ${leverage}x (${collateral} USDT)`, 'MINT');
+  const handleLogout = () => {
+    disconnect();
+    setAgents([]);
+    setLogs([]);
     setActiveTab(Tab.ARENA);
   };
 
-  const tabs = [
-    { id: Tab.ARENA, icon: LayoutDashboard, label: t('tab_arena') },
-    { id: Tab.AGENTS, icon: Users, label: t('tab_agents') },
-    { id: Tab.LEADERBOARD, icon: Trophy, label: t('tab_legends') },
-    { id: Tab.WALLET, icon: WalletIcon, label: t('tab_wallet') }
-  ];
-
+  // --- Render ---
   return (
-    <div className="h-screen bg-[#030305] text-slate-200 font-sans flex flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#030305] to-[#030305]">
+    <div className="h-screen w-full bg-[#030305] text-white flex flex-col overflow-hidden font-sans selection:bg-[#836EF9] selection:text-white">
       
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-
-      {showOnboarding && <Onboarding onFinish={handleFinishOnboarding} />}
-      {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
-      
-      {/* Version Info */}
-      <VersionInfo />
-
-      {/* Top Header - Modern Design */}
-      <nav className="border-b border-white/5 bg-[#030305]/90 backdrop-blur-xl sticky top-0 z-50 shrink-0">
-        <div className="max-w-full mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Logo Container with enhanced glow */}
-            <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-cyan-500 to-emerald-500 blur-lg opacity-60 group-hover:opacity-100 transition-all duration-500"></div>
-                <div className="relative w-11 h-11 bg-[#0f111a] border border-white/10 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] group-hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all duration-300">
-                    <Logo size={28} />
-                </div>
+      {/* Top Navigation Bar */}
+      <nav className="flex-none h-16 px-4 md:px-6 border-b border-white/5 bg-[#030305]/95 backdrop-blur-md flex items-center justify-between relative z-50">
+        <div className="flex items-center gap-4">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Logo size={36} />
+              </div>
             </div>
             {/* Title with modern typography */}
-            <div className="flex flex-col">
+            <div className="flex flex-col relative">
                  <span className="font-display font-black text-2xl tracking-tight text-white leading-none">
                    {t('app_title_root')}
-                   <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">{t('app_title_suffix')}</span>
+                   <span className="bg-gradient-to-r from-violet-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent relative">
+                     {t('app_title_suffix')}
+                     {/* Demo Mode Badge */}
+                     <span className="absolute top-0 -right-5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[7px] font-bold px-1 py-0.5 rounded shadow-lg whitespace-nowrap">
+                       DEMO
+                     </span>
+                   </span>
                  </span>
-                 <span className="text-[10px] text-slate-400 uppercase tracking-[0.25em] pl-0.5 font-medium">{t('nav_subtitle')}</span>
             </div>
           </div>
 
@@ -555,16 +536,27 @@ const AppContent: React.FC = () => {
                 />
              ) : (
                 <button 
-                  onClick={connect}
+                  onClick={() => setShowWalletGeneration(true)}
                   disabled={isConnecting}
-                  className="px-4 py-2 bg-[#836EF9] text-white text-sm font-bold rounded-lg hover:bg-[#6c56e0] transition-colors flex items-center gap-2 disabled:opacity-50"
+                  className="relative px-4 py-2 bg-gradient-to-r from-[#836EF9] to-[#6c56e0] text-white text-sm font-bold rounded-lg hover:shadow-[0_0_20px_rgba(131,110,249,0.5)] transition-all flex items-center gap-2 disabled:opacity-70 overflow-hidden group"
                 >
-                  <WalletIcon size={16} />
-                  {isConnecting ? 'Connecting...' : 'Connect'}
+                  {isConnecting && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                  )}
+                  <WalletIcon size={16} className={isConnecting ? 'animate-pulse' : ''} />
+                  <span className="relative">
+                    {isConnecting ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        Generating
+                      </span>
+                    ) : 'Connect'}
+                  </span>
                 </button>
              )}
           </div>
-        </div>
       </nav>
 
       <Marquee agents={agents} />
@@ -589,33 +581,39 @@ const AppContent: React.FC = () => {
                 onMint={handleMintAgent}
                 onDeploy={handleDeployAgent}
                 onWithdraw={handleWithdrawAgent}
-                onAddAgent={handleAddAgent}
                 walletBalance={wallet.balance}
+                monBalance={wallet.monBalance}
                 shouldHighlightFab={highlightMint}
             />
           )}
           {activeTab === Tab.LEADERBOARD && (
              <Leaderboard agents={agents} />
           )}
+          {activeTab === Tab.LIQUIDITY && (
+            <Liquidity agents={agents} />
+          )}
           {activeTab === Tab.WALLET && (
             <WalletV2 
                 wallet={wallet} 
                 agents={agents}
-                logs={logs}
                 onLogout={handleLogout} 
                 onShowLegal={() => setShowLegal(true)}
-                referralCode={wallet.referralCode || ''}
-                referralCount={wallet.referralCount || 0}
-                referralEarnings={wallet.referralEarnings || 0}
             />
           )}
+
         </div>
       </main>
 
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 w-full z-50 bg-[#0f111a]/95 backdrop-blur-xl border-t border-white/10 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-around max-w-lg mx-auto p-2">
-            {tabs.map(tab => (
+            {[
+                { id: Tab.ARENA, icon: LayoutDashboard, label: t('nav_arena') },
+                { id: Tab.AGENTS, icon: BrainCircuit, label: t('nav_agents') },
+                { id: Tab.LEADERBOARD, icon: Trophy, label: t('nav_leaderboard') },
+                { id: Tab.LIQUIDITY, icon: Droplets, label: t('nav_liquidity') },
+                { id: Tab.WALLET, icon: WalletIcon, label: t('nav_wallet') },
+            ].map((tab) => (
                 <button 
                   key={tab.id}
                   onClick={() => {
@@ -639,6 +637,16 @@ const AppContent: React.FC = () => {
             ))}
         </div>
       </div>
+
+      {/* Wallet Generation Modal */}
+      {showWalletGeneration && (
+        <WalletGenerationModal 
+          onComplete={() => {
+            setShowWalletGeneration(false);
+            connect();
+          }}
+        />
+      )}
 
     </div>
   );

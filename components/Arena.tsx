@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MarketState, Agent, BattleLog, LootEvent, AssetSymbol } from '../types';
 import { ResponsiveContainer, AreaChart, Area, YAxis } from 'recharts';
 import { Battlefield } from './Battlefield';
-import { Sword, Zap, Activity, ChevronDown, Shield, Skull, Crosshair } from 'lucide-react';
+import { Sword, Zap, Activity, Shield, Skull, Crosshair } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface ArenaProps {
@@ -64,7 +64,7 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
                             {agent.name}
                         </span>
                         <span className={`font-mono text-[10px] font-bold ${agent.pnl >= 0 ? 'text-[#00FF9D]' : 'text-[#FF0055]'}`}>
-                            {agent.pnl >= 0 ? '+' : ''}{agent.pnl.toFixed(0)} <span className="text-[8px] opacity-60">USDT</span>
+                            {agent.pnl >= 0 ? '+' : ''}{agent.pnl.toFixed(0)} <span className="text-[8px] opacity-60">MON</span>
                         </span>
                     </div>
 
@@ -78,7 +78,7 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
 
                     <div className="flex justify-between text-[9px] text-slate-500 font-mono">
                         <span className="truncate max-w-[60px]">{agent.strategy}</span>
-                        <span>{agent.balance.toFixed(0)} USDT</span>
+                        <span>{agent.balance.toFixed(0)} MON</span>
                     </div>
                 </div>
             </div>
@@ -111,16 +111,14 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
 });
 
 
-export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEvent, selectedAsset, onAssetChange }) => {
+export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEvent }) => {
   const { t } = useLanguage();
   const [mobileListTab, setMobileListTab] = useState<'LONG' | 'SHORT'>('LONG');
-  const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
   const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
-  const [isSwitchingAsset, setIsSwitchingAsset] = useState(false);
 
-  // Filter agents by current selected asset and active status
-  const activeAgents = agents.filter(a => a.status === 'ACTIVE' && a.asset === selectedAsset);
-  
+  // Filter agents by MON asset only
+  const activeAgents = agents.filter(a => a.status === 'ACTIVE' && a.asset === 'MON');
+
   // Sort Logic: User Agents First, then by Balance descending
   const sortAgents = (a: Agent, b: Agent) => {
       if (a.owner === 'USER') return -1;
@@ -134,8 +132,6 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
   // Calculate Total Staked (Pool Size)
   const totalLongStaked = longs.reduce((acc, a) => acc + a.balance, 0);
   const totalShortStaked = shorts.reduce((acc, a) => acc + a.balance, 0);
-
-  const ASSETS: AssetSymbol[] = ['BTC', 'ETH', 'SOL', 'MON'];
   
   const handleItemClick = (id: string) => {
       setExpandedAgentId(prev => prev === id ? null : id);
@@ -156,7 +152,7 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
              </div>
              <div className="flex justify-between items-end">
                  <span className="text-[10px] text-[#00FF9D]/60 uppercase">{t('total_staked')}</span>
-                 <span className="text-sm font-mono font-bold text-white">{totalLongStaked.toLocaleString()} <span className="text-[10px] text-slate-400">USDT</span></span>
+                 <span className="text-sm font-mono font-bold text-white">{totalLongStaked.toLocaleString()} <span className="text-[10px] text-slate-400">MON</span></span>
              </div>
         </div>
         
@@ -177,47 +173,16 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
       <div className="lg:col-span-6 flex flex-col gap-4">
         {/* Price Header & Asset Selector */}
         <div className="glass-panel p-4 lg:p-5 rounded-2xl relative overflow-visible z-20">
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#836EF9] blur-[80px] opacity-20 pointer-events-none rounded-full" />
+
 
             <div className="relative z-10 flex items-center">
-              {/* Left: Asset Selector & Price - 固定宽度 */}
+              {/* Left: Asset Display & Price - 固定宽度 */}
               <div className="flex-shrink-0 w-[140px] lg:w-[180px]">
                 <div className="relative mb-1">
-                    <button
-                      onClick={() => !isSwitchingAsset && setAssetDropdownOpen(!assetDropdownOpen)}
-                      disabled={isSwitchingAsset}
-                      className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
                         <Activity className="w-4 h-4 text-[#836EF9]" />
-                        {isSwitchingAsset ? (
-                            <span className="animate-pulse">Switching...</span>
-                        ) : (
-                            <>{selectedAsset}{t('asset_perp')}</>
-                        )}
-                        {!isSwitchingAsset && <ChevronDown size={14} />}
-                    </button>
-
-                    {assetDropdownOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-32 bg-[#0f111a] border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
-                            {ASSETS.map(asset => (
-                                <button
-                                  key={asset}
-                                  disabled={isSwitchingAsset || asset === selectedAsset}
-                                  onClick={async () => {
-                                      if (isSwitchingAsset || asset === selectedAsset) return;
-                                      setIsSwitchingAsset(true);
-                                      setAssetDropdownOpen(false);
-                                      await onAssetChange(asset);
-                                      setIsSwitchingAsset(false);
-                                  }}
-                                  className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${selectedAsset === asset ? 'text-[#836EF9]' : 'text-slate-400'}`}
-                                >
-                                    {asset} {asset === selectedAsset && '✓'}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                        <span>MON{t('asset_perp')}</span>
+                    </div>
                 </div>
 
                 <div className="text-lg lg:text-2xl font-mono font-bold tracking-tighter text-white">
@@ -343,7 +308,7 @@ export const Arena: React.FC<ArenaProps> = ({ market, agents, logs, lastLootEven
              </div>
              <div className="flex justify-between items-end">
                  <span className="text-[10px] text-[#FF0055]/60 uppercase">{t('total_staked')}</span>
-                 <span className="text-sm font-mono font-bold text-white">{totalShortStaked.toLocaleString()} <span className="text-[10px] text-slate-400">USDT</span></span>
+                 <span className="text-sm font-mono font-bold text-white">{totalShortStaked.toLocaleString()} <span className="text-[10px] text-slate-400">MON</span></span>
              </div>
         </div>
 

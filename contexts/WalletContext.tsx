@@ -1,19 +1,29 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { WalletState } from '../types';
+import { getOrCreateUser, updateUserBalance, updateUserPnL } from '../lib/api/users';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface WalletContextType {
   wallet: WalletState;
   isConnected: boolean;
   isConnecting: boolean;
+  userId: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
   updateBalance: (delta: number) => void;
+  updateMonBalance: (delta: number) => void;
   updatePnl: (delta: number) => void;
+  swapMonToUsdc: (monAmount: number) => number;
+  swapUsdcToMon: (usdcAmount: number) => number;
+  refreshWallet: () => Promise<void>;
 }
+
+import { INITIAL_BALANCE, INITIAL_MON_BALANCE } from '../constants';
 
 const INITIAL_WALLET: WalletState = {
   address: '',
-  balance: 10000, // 初始 10,000 USDT
+  balance: 0,
+  monBalance: INITIAL_MON_BALANCE,
   totalPnl: 0,
   referralEarnings: 0,
   referralCount: 0,
@@ -27,32 +37,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [wallet, setWallet] = useState<WalletState>(INITIAL_WALLET);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // 从 localStorage 恢复钱包状态
-  useEffect(() => {
-    const savedWallet = localStorage.getItem('aiperp_wallet');
-    const savedConnected = localStorage.getItem('aiperp_connected');
-    
-    if (savedWallet && savedConnected === 'true') {
-      try {
-        const parsed = JSON.parse(savedWallet);
-        setWallet(prev => ({ ...prev, ...parsed }));
-        setIsConnected(true);
-      } catch (e) {
-        console.error('Failed to restore wallet:', e);
-      }
-    }
-  }, []);
-
-  // 保存钱包状态到 localStorage
-  useEffect(() => {
-    if (isConnected) {
-      localStorage.setItem('aiperp_wallet', JSON.stringify(wallet));
-      localStorage.setItem('aiperp_connected', 'true');
-    }
-  }, [wallet, isConnected]);
-
-  // 生成随机钱包地址
+  // Generate random wallet address
   const generateAddress = () => {
     const chars = '0123456789abcdef';
     let address = '0x';
@@ -62,17 +49,70 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return address;
   };
 
+  // Load wallet from localStorage on mount
+  useEffect(() => {
+    const savedWallet = localStorage.getItem('aiperp_wallet');
+    const savedConnected = localStorage.getItem('aiperp_connected');
+    const savedUserId = localStorage.getItem('aiperp_user_id');
+    
+    if (savedWallet && savedConnected === 'true') {
+      try {
+        const parsed = JSON.parse(savedWallet);
+        setWallet(prev => ({ ...prev, ...parsed }));
+        setIsConnected(true);
+        if (savedUserId) {
+          setUserId(savedUserId);
+        }
+      } catch (e) {
+        console.error('Failed to restore wallet:', e);
+      }
+    }
+  }, []);
+
+  // Save wallet state to localStorage
+  useEffect(() => {
+    if (isConnected) {
+      localStorage.setItem('aiperp_wallet', JSON.stringify(wallet));
+      localStorage.setItem('aiperp_connected', 'true');
+      if (userId) {
+        localStorage.setItem('aiperp_user_id', userId);
+      }
+    }
+  }, [wallet, isConnected, userId]);
+
   const connect = useCallback(async () => {
     setIsConnecting(true);
     
-    // 模拟连接延迟
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Simulate wallet generation process
+    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 400));
     
     const address = generateAddress();
-    setWallet(prev => ({
-      ...prev,
-      address
-    }));
+    
+    // Create or get user from Supabase
+    if (isSupabaseConfigured()) {
+      const user = await getOrCreateUser(address);
+      if (user) {
+        setUserId(user.id);
+        setWallet({
+          address: user.wallet_address,
+          balance: user.usdc_balance,
+          monBalance: user.mon_balance,
+          totalPnl: user.total_pnl,
+          referralEarnings: user.referral_earnings,
+          referralCount: user.referral_count,
+          energy: user.energy,
+          totalEnergyEarned: user.total_energy_earned
+        });
+      } else {
+        // Fallback to local state if Supabase fails
+        setWallet(prev => ({ ...prev, address }));
+      }
+    } else {
+      setWallet(prev => ({ ...prev, address }));
+    }
+    
     setIsConnected(true);
     setIsConnecting(false);
   }, []);
@@ -80,33 +120,110 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const disconnect = useCallback(() => {
     setIsConnected(false);
     setWallet(INITIAL_WALLET);
+    setUserId(null);
     localStorage.removeItem('aiperp_wallet');
     localStorage.removeItem('aiperp_connected');
+    localStorage.removeItem('aiperp_user_id');
   }, []);
 
-  const updateBalance = useCallback((delta: number) => {
+  const refreshWallet = useCallback(async () => {
+    if (!userId || !isSupabaseConfigured()) return;
+    
+    const { getUserByWalletAddress } = await import('../lib/api/users');
+    const user = await getUserByWalletAddress(wallet.address);
+    if (user) {
+      setWallet({
+        address: user.wallet_address,
+        balance: user.usdc_balance,
+        monBalance: user.mon_balance,
+        totalPnl: user.total_pnl,
+        referralEarnings: user.referral_earnings,
+        referralCount: user.referral_count,
+        energy: user.energy,
+        totalEnergyEarned: user.total_energy_earned
+      });
+    }
+  }, [userId, wallet.address]);
+
+  const updateBalance = useCallback(async (delta: number) => {
     setWallet(prev => ({
       ...prev,
       balance: Math.max(0, prev.balance + delta)
     }));
-  }, []);
+    
+    if (userId && isSupabaseConfigured()) {
+      await updateUserBalance(userId, 0, delta);
+    }
+  }, [userId]);
 
-  const updatePnl = useCallback((delta: number) => {
+  const updateMonBalance = useCallback(async (delta: number) => {
+    setWallet(prev => ({
+      ...prev,
+      monBalance: Math.max(0, prev.monBalance + delta)
+    }));
+    
+    if (userId && isSupabaseConfigured()) {
+      await updateUserBalance(userId, delta, 0);
+    }
+  }, [userId]);
+
+  const updatePnl = useCallback(async (delta: number) => {
     setWallet(prev => ({
       ...prev,
       totalPnl: prev.totalPnl + delta
     }));
-  }, []);
+    
+    if (userId && isSupabaseConfigured()) {
+      await updateUserPnL(userId, delta);
+    }
+  }, [userId]);
+
+  // Swap MON to USDC - Rate: 1 MON = 0.02 USDC
+  const swapMonToUsdc = useCallback(async (monAmount: number) => {
+    const usdcAmount = monAmount * 0.02;
+    setWallet(prev => ({
+      ...prev,
+      monBalance: Math.max(0, prev.monBalance - monAmount),
+      balance: prev.balance + usdcAmount
+    }));
+    
+    if (userId && isSupabaseConfigured()) {
+      await updateUserBalance(userId, -monAmount, usdcAmount);
+    }
+    
+    return usdcAmount;
+  }, [userId]);
+
+  // Swap USDC to MON - Rate: 1 USDC = 50 MON
+  const swapUsdcToMon = useCallback(async (usdcAmount: number) => {
+    const monAmount = usdcAmount * 50;
+    setWallet(prev => ({
+      ...prev,
+      balance: Math.max(0, prev.balance - usdcAmount),
+      monBalance: prev.monBalance + monAmount
+    }));
+    
+    if (userId && isSupabaseConfigured()) {
+      await updateUserBalance(userId, monAmount, -usdcAmount);
+    }
+    
+    return monAmount;
+  }, [userId]);
 
   return (
     <WalletContext.Provider value={{
       wallet,
       isConnected,
       isConnecting,
+      userId,
       connect,
       disconnect,
       updateBalance,
-      updatePnl
+      updateMonBalance,
+      updatePnl,
+      swapMonToUsdc,
+      swapUsdcToMon,
+      refreshWallet
     }}>
       {children}
     </WalletContext.Provider>

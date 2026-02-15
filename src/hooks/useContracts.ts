@@ -7,21 +7,21 @@ export const CONTRACT_ADDRESSES = {
     ARENA: '0x...' as `0x${string}`,
     AGENT_NFT: '0x...' as `0x${string}`,
     PRICE_ORACLE: '0x...' as `0x${string}`,
-    USDT: '0x...' as `0x${string}`,
+    USDC: '0x...' as `0x${string}`,
   }
 };
 
-// USDT decimals
-const USDT_DECIMALS = 6;
+// USDC decimals
+const USDC_DECIMALS = 6;
 
-// Helper function to parse USDT amount
-export function parseUSDT(amount: string): bigint {
-  return parseUnits(amount, USDT_DECIMALS);
+// Helper function to parse USDC amount
+export function parseUSDC(amount: string): bigint {
+  return parseUnits(amount, USDC_DECIMALS);
 }
 
-// Helper function to format USDT amount
-export function formatUSDT(amount: bigint): string {
-  return formatUnits(amount, USDT_DECIMALS);
+// Helper function to format USDC amount
+export function formatUSDC(amount: bigint): string {
+  return formatUnits(amount, USDC_DECIMALS);
 }
 
 // Simplified hooks for now - will be fully implemented after contract deployment
@@ -51,7 +51,7 @@ export function useNFTContract() {
   };
 }
 
-export function useUSDTContract() {
+export function useUSDCContract() {
   const { address } = useAccount();
   
   return {

@@ -2,7 +2,7 @@
  * Financial Utilities - Unified Asset & Number System
  * 
  * Rules:
- * 1. All monetary values are stored in base units (e.g., USDT)
+ * 1. All monetary values are stored in base units (e.g., USDC)
  * 2. Display functions handle formatting only, never calculation
  * 3. All calculations use precise decimal arithmetic
  * 4. Negative values are protected at calculation level
@@ -14,8 +14,8 @@ export const DECIMAL_PLACES = 2;
 export const DISPLAY_DECIMALS = 0;
 export const PERCENT_DECIMALS = 2;
 
-// USDT Conversion rate (mock)
-export const USDT_RATE = 0.85;
+// USDC Conversion rate (mock)
+export const USDC_RATE = 0.85;
 
 // ==================== Type Guards ====================
 export const isValidNumber = (value: unknown): value is number => {
@@ -95,18 +95,18 @@ export const formatNumber = (value: number, decimals: number = DISPLAY_DECIMALS)
  */
 export const formatCurrency = (
   value: number,
-  symbol: string = 'USDT',
+  symbol: string = 'USDC',
   decimals: number = DISPLAY_DECIMALS
 ): string => {
   return `${formatNumber(value, decimals)} ${symbol}`;
 };
 
 /**
- * Format USDT value
+ * Format USDC value
  */
-export const formatUSDT = (value: number, rate: number = USDT_RATE): string => {
-  const usdtValue = safeMultiply(value, rate);
-  return `$${formatNumber(usdtValue, 2)}`;
+export const formatUSDC = (value: number, rate: number = USDC_RATE): string => {
+  const usdcValue = safeMultiply(value, rate);
+  return `$${formatNumber(usdcValue, 2)}`;
 };
 
 /**
@@ -254,7 +254,7 @@ export const validateDeployment = (
   minCollateral: number = 100
 ): { valid: boolean; error?: string } => {
   if (!isValidNumber(collateral) || collateral < minCollateral) {
-    return { valid: false, error: `Minimum collateral is ${minCollateral} USDT` };
+    return { valid: false, error: `Minimum collateral is ${minCollateral} USDC` };
   }
   if (collateral > availableBalance) {
     return { valid: false, error: 'Insufficient balance for deployment' };

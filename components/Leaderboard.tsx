@@ -38,7 +38,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ agents }) => {
             
             <div className="hidden md:block text-right">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('season_pool')}</p>
-                <p className="text-2xl font-mono font-bold text-[#836EF9] text-shadow-glow">2,500,000 USDT</p>
+                <p className="text-2xl font-mono font-bold text-[#836EF9] text-shadow-glow">2,500,000 MON</p>
             </div>
        </div>
 
@@ -48,7 +48,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ agents }) => {
                <div className="col-span-1 text-center">{t('rank')}</div>
                <div className="col-span-5 md:col-span-4">{t('agent_commander')}</div>
                <div className="col-span-2 hidden md:block">{t('status')}</div>
-               <div className="col-span-3 md:col-span-2 text-right">{t('pnl')} (USDT)</div>
+               <div className="col-span-3 md:col-span-2 text-right">{t('pnl')} (MON)</div>
                <div className="col-span-3 text-right">{t('roi')}</div>
            </div>
 
