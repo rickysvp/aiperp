@@ -9,27 +9,43 @@ export type UserUpdate = Database['public']['Tables']['users']['Update'];
  * Get or create a user by wallet address
  */
 export async function getOrCreateUser(walletAddress: string): Promise<User | null> {
-  const { data, error } = await supabase
-    .rpc('get_or_create_user', { p_wallet_address: walletAddress });
+  console.log('[API] getOrCreateUser called with:', walletAddress);
+  
+  try {
+    const { data, error } = await supabase
+      .rpc('get_or_create_user', { p_wallet_address: walletAddress });
 
-  if (error) {
-    console.error('Error getting or creating user:', error);
+    console.log('[API] RPC result:', { data, error });
+
+    if (error) {
+      console.error('[API] Error getting or creating user:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.error('[API] No user ID returned from RPC');
+      return null;
+    }
+
+    // Fetch the full user record
+    console.log('[API] Fetching user record with ID:', data);
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data)
+      .single();
+
+    if (fetchError) {
+      console.error('[API] Error fetching user:', fetchError);
+      return null;
+    }
+
+    console.log('[API] User record fetched:', user);
+    return user;
+  } catch (err) {
+    console.error('[API] Exception in getOrCreateUser:', err);
     return null;
   }
-
-  // Fetch the full user record
-  const { data: user, error: fetchError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', data)
-    .single();
-
-  if (fetchError) {
-    console.error('Error fetching user:', fetchError);
-    return null;
-  }
-
-  return user;
 }
 
 /**

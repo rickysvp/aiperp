@@ -89,11 +89,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await new Promise(resolve => setTimeout(resolve, 400));
     
     const address = generateAddress();
+    console.log('[Wallet] Generated address:', address);
     
     // Create or get user from Supabase
-    if (isSupabaseConfigured()) {
+    const supabaseReady = isSupabaseConfigured();
+    console.log('[Wallet] Supabase configured:', supabaseReady);
+    
+    if (supabaseReady) {
+      console.log('[Wallet] Calling getOrCreateUser...');
       const user = await getOrCreateUser(address);
+      console.log('[Wallet] getOrCreateUser result:', user);
+      
       if (user) {
+        console.log('[Wallet] User created/found:', user.id);
         setUserId(user.id);
         setWallet({
           address: user.wallet_address,
@@ -106,10 +114,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           totalEnergyEarned: user.total_energy_earned
         });
       } else {
+        console.warn('[Wallet] Failed to create/get user from Supabase, using local state');
         // Fallback to local state if Supabase fails
         setWallet(prev => ({ ...prev, address }));
       }
     } else {
+      console.warn('[Wallet] Supabase not configured, using local state');
       setWallet(prev => ({ ...prev, address }));
     }
     
