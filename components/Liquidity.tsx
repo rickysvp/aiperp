@@ -153,8 +153,15 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   
   const handleStake = async () => {
     const amount = parseFloat(stakeAmount);
-    if (isNaN(amount) || amount <= 0) return;
-    if (amount > wallet.monBalance) return;
+    console.log('[Liquidity] handleStake called:', { amount, stakeAmount, monBalance: wallet.monBalance, userId });
+    if (isNaN(amount) || amount <= 0) {
+      console.log('[Liquidity] Invalid amount:', amount);
+      return;
+    }
+    if (amount > wallet.monBalance) {
+      console.log('[Liquidity] Amount exceeds balance:', amount, '>', wallet.monBalance);
+      return;
+    }
     
     updateMonBalance(-amount);
     
@@ -423,7 +430,10 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
                 )}
                 
                 <button
-                  onClick={handleStake}
+                  onClick={() => {
+                    console.log('[Liquidity] Button clicked', { stakeAmount, maxStake, disabled: !stakeAmount || parseFloat(stakeAmount) <= 0 || parseFloat(stakeAmount) > maxStake });
+                    handleStake();
+                  }}
                   disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || parseFloat(stakeAmount) > maxStake}
                   className="w-full py-3 bg-[#00FF9D] text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(0,255,157,0.3)] transition-all flex items-center justify-center gap-2"
                 >

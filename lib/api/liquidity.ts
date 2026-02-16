@@ -161,15 +161,22 @@ export async function upsertUserStake(
   rewards: number = 0,
   pendingRewards: number = 0
 ): Promise<UserLiquidityStake | null> {
-  const { data: existing } = await supabase
+  console.log('[API] upsertUserStake called:', { userId, poolId, amount, rewards, pendingRewards });
+  
+  const { data: existing, error: existingError } = await supabase
     .from('user_liquidity_stakes')
     .select('id, amount, rewards')
     .eq('user_id', userId)
     .eq('pool_id', poolId)
     .single();
+  
+  if (existingError && existingError.code !== 'PGRST116') {
+    console.error('[API] Error fetching existing stake:', existingError);
+  }
 
   if (existing) {
     // Update existing stake
+    console.log('[API] Updating existing stake:', existing.id);
     const { data, error } = await supabase
       .from('user_liquidity_stakes')
       .update({
@@ -182,13 +189,15 @@ export async function upsertUserStake(
       .single();
 
     if (error) {
-      console.error('Error updating stake:', error);
+      console.error('[API] Error updating stake:', error);
       return null;
     }
 
+    console.log('[API] Stake updated successfully:', data);
     return data;
   } else {
     // Create new stake
+    console.log('[API] Creating new stake for user:', userId);
     const { data, error } = await supabase
       .from('user_liquidity_stakes')
       .insert({
@@ -202,10 +211,11 @@ export async function upsertUserStake(
       .single();
 
     if (error) {
-      console.error('Error creating stake:', error);
+      console.error('[API] Error creating stake:', error);
       return null;
     }
 
+    console.log('[API] Stake created successfully:', data);
     return data;
   }
 }
