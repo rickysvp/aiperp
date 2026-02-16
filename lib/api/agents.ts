@@ -113,6 +113,25 @@ export async function updateAgent(agentId: string, updates: AgentUpdate): Promis
 }
 
 /**
+ * Batch update multiple agents PnL (for game loop)
+ */
+export async function batchUpdateAgentsPnL(updates: Array<{ id: string; pnl: number; status?: string; balance?: number }>): Promise<void> {
+  if (updates.length === 0) return;
+
+  for (const update of updates) {
+    const { id, pnl, status, balance } = update;
+    const updateData: AgentUpdate = { pnl };
+    if (status !== undefined) updateData.status = status as any;
+    if (balance !== undefined) updateData.balance = balance;
+
+    await supabase
+      .from('agents')
+      .update(updateData)
+      .eq('id', id);
+  }
+}
+
+/**
  * Deploy an agent (set to ACTIVE)
  */
 export async function deployAgent(
@@ -121,7 +140,9 @@ export async function deployAgent(
   asset: string,
   direction: string,
   leverage: number,
-  entryPrice: number
+  entryPrice: number,
+  takeProfit?: number,
+  stopLoss?: number
 ): Promise<Agent | null> {
   const { data, error } = await supabase
     .from('agents')
@@ -132,6 +153,8 @@ export async function deployAgent(
       direction: direction as any,
       leverage,
       entry_price: entryPrice,
+      take_profit: takeProfit,
+      stop_loss: stopLoss,
       pnl: 0,
       effective_direction: direction === 'AUTO' 
         ? (Math.random() > 0.5 ? 'LONG' : 'SHORT')
@@ -152,16 +175,16 @@ export async function deployAgent(
 /**
  * Withdraw an agent (set to IDLE)
  */
-export async function withdrawAgent(agentId: string): Promise<Agent | null> {
+export async function withdrawAgent(agentId: string): Promise<{ agent: Agent | null; finalBalance: number }> {
   const { data: agent } = await supabase
     .from('agents')
     .select('pnl, balance, wins, losses')
     .eq('id', agentId)
     .single();
 
-  if (!agent) return null;
+  if (!agent) return { agent: null, finalBalance: 0 };
 
-  // Record win/loss based on PnL
+  const finalBalance = agent.balance + agent.pnl;
   const isWin = agent.pnl > 0;
   const isLoss = agent.pnl < 0;
 
@@ -180,22 +203,30 @@ export async function withdrawAgent(agentId: string): Promise<Agent | null> {
 
   if (error) {
     console.error('Error withdrawing agent:', error);
-    return null;
+    return { agent: null, finalBalance: 0 };
   }
 
-  return data;
+  return { agent: data, finalBalance };
 }
 
 /**
  * Liquidate an agent
  */
 export async function liquidateAgent(agentId: string): Promise<Agent | null> {
+  const { data: agent } = await supabase
+    .from('agents')
+    .select('balance')
+    .eq('id', agentId)
+    .single();
+
+  if (!agent) return null;
+
   const { data, error } = await supabase
     .from('agents')
     .update({
       status: 'LIQUIDATED',
       balance: 0,
-      pnl: 0
+      pnl: -agent.balance
     })
     .eq('id', agentId)
     .select()
@@ -232,7 +263,6 @@ export async function updateAgentPnL(agentId: string, pnl: number): Promise<Agen
  * Record PnL history for an agent
  */
 export async function recordAgentPnLHistory(agentId: string, value: number): Promise<void> {
-  // Skip PnL recording for generated agents (non-UUID IDs like "bot-xxx")
   if (agentId.startsWith('bot-')) {
     return;
   }
@@ -246,6 +276,27 @@ export async function recordAgentPnLHistory(agentId: string, value: number): Pro
 
   if (error) {
     console.error('Error recording PnL history:', error);
+  }
+}
+
+/**
+ * Batch record PnL history for multiple agents
+ */
+export async function batchRecordPnLHistory(records: Array<{ agentId: string; value: number }>): Promise<void> {
+  if (records.length === 0) return;
+
+  const validRecords = records.filter(r => !r.agentId.startsWith('bot-'));
+  if (validRecords.length === 0) return;
+
+  const { error } = await supabase
+    .from('agent_pnl_history')
+    .insert(validRecords.map(r => ({
+      agent_id: r.agentId,
+      value: r.value
+    })));
+
+  if (error) {
+    console.error('Error batch recording PnL history:', error);
   }
 }
 
@@ -268,4 +319,27 @@ export async function getAgentPnLHistory(agentId: string): Promise<{ time: strin
     time: item.recorded_at,
     value: item.value
   }));
+}
+
+/**
+ * Create system bot agents (for initial setup)
+ */
+export async function createSystemAgents(agents: Array<Omit<AgentInsert, 'owner_id' | 'minter'>>): Promise<Agent[]> {
+  const systemAgents = agents.map(agent => ({
+    ...agent,
+    owner_id: null,
+    minter: 'Protocol'
+  }));
+
+  const { data, error } = await supabase
+    .from('agents')
+    .insert(systemAgents)
+    .select();
+
+  if (error) {
+    console.error('Error creating system agents:', error);
+    return [];
+  }
+
+  return data || [];
 }

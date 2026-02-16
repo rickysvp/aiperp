@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { WalletState } from '../types';
-import { getOrCreateUser, updateUserBalance, updateUserPnL } from '../lib/api/users';
+import { getOrCreateUser, updateUserBalance, updateUserPnL, getUserByWalletAddress } from '../lib/api/users';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 interface WalletContextType {
@@ -10,11 +10,11 @@ interface WalletContextType {
   userId: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  updateBalance: (delta: number) => void;
-  updateMonBalance: (delta: number) => void;
-  updatePnl: (delta: number) => void;
-  swapMonToUsdc: (monAmount: number) => number;
-  swapUsdcToMon: (usdcAmount: number) => number;
+  updateBalance: (delta: number) => Promise<void>;
+  updateMonBalance: (delta: number) => Promise<void>;
+  updatePnl: (delta: number) => Promise<void>;
+  swapMonToUsdc: (monAmount: number) => Promise<number>;
+  swapUsdcToMon: (usdcAmount: number) => Promise<number>;
   refreshWallet: () => Promise<void>;
 }
 
@@ -38,8 +38,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const pendingUpdatesRef = useRef<Array<{ type: 'balance' | 'monBalance' | 'pnl'; delta: number }>>([]);
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Generate random wallet address
   const generateAddress = () => {
     const chars = '0123456789abcdef';
     let address = '0x';
@@ -49,7 +50,44 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return address;
   };
 
-  // Load wallet from localStorage on mount
+  const flushPendingUpdates = useCallback(async () => {
+    if (!userId || !isSupabaseConfigured() || pendingUpdatesRef.current.length === 0) return;
+
+    const updates = [...pendingUpdatesRef.current];
+    pendingUpdatesRef.current = [];
+
+    try {
+      let monDelta = 0;
+      let usdcDelta = 0;
+      let pnlDelta = 0;
+
+      for (const update of updates) {
+        if (update.type === 'monBalance') monDelta += update.delta;
+        else if (update.type === 'balance') usdcDelta += update.delta;
+        else if (update.type === 'pnl') pnlDelta += update.delta;
+      }
+
+      if (monDelta !== 0 || usdcDelta !== 0) {
+        await updateUserBalance(userId, monDelta, usdcDelta);
+      }
+      if (pnlDelta !== 0) {
+        await updateUserPnL(userId, pnlDelta);
+      }
+    } catch (err) {
+      console.error('Error flushing pending wallet updates:', err);
+      pendingUpdatesRef.current = [...updates, ...pendingUpdatesRef.current];
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    flushTimerRef.current = setInterval(flushPendingUpdates, 2000);
+    return () => {
+      if (flushTimerRef.current) {
+        clearInterval(flushTimerRef.current);
+      }
+    };
+  }, [flushPendingUpdates]);
+
   useEffect(() => {
     const savedWallet = localStorage.getItem('aiperp_wallet');
     const savedConnected = localStorage.getItem('aiperp_connected');
@@ -69,7 +107,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  // Save wallet state to localStorage
   useEffect(() => {
     if (isConnected) {
       localStorage.setItem('aiperp_wallet', JSON.stringify(wallet));
@@ -83,15 +120,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connect = useCallback(async () => {
     setIsConnecting(true);
     
-    // Simulate wallet generation process
     await new Promise(resolve => setTimeout(resolve, 600));
     await new Promise(resolve => setTimeout(resolve, 500));
     await new Promise(resolve => setTimeout(resolve, 400));
     
-    const address = generateAddress();
-    console.log('[Wallet] Generated address:', address);
+    const savedAddress = localStorage.getItem('aiperp_wallet_address');
+    const address = savedAddress || generateAddress();
     
-    // Create or get user from Supabase
+    if (!savedAddress) {
+      localStorage.setItem('aiperp_wallet_address', address);
+    }
+    
+    console.log('[Wallet] Using address:', address, savedAddress ? '(restored)' : '(new)');
+    
     const supabaseReady = isSupabaseConfigured();
     console.log('[Wallet] Supabase configured:', supabaseReady);
     
@@ -115,7 +156,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
       } else {
         console.warn('[Wallet] Failed to create/get user from Supabase, using local state');
-        // Fallback to local state if Supabase fails
         setWallet(prev => ({ ...prev, address }));
       }
     } else {
@@ -128,18 +168,20 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const disconnect = useCallback(() => {
+    flushPendingUpdates();
     setIsConnected(false);
     setWallet(INITIAL_WALLET);
     setUserId(null);
+    pendingUpdatesRef.current = [];
     localStorage.removeItem('aiperp_wallet');
     localStorage.removeItem('aiperp_connected');
     localStorage.removeItem('aiperp_user_id');
-  }, []);
+    localStorage.removeItem('aiperp_wallet_address');
+  }, [flushPendingUpdates]);
 
   const refreshWallet = useCallback(async () => {
     if (!userId || !isSupabaseConfigured()) return;
     
-    const { getUserByWalletAddress } = await import('../lib/api/users');
     const user = await getUserByWalletAddress(wallet.address);
     if (user) {
       setWallet({
@@ -156,26 +198,28 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [userId, wallet.address]);
 
   const updateBalance = useCallback(async (delta: number) => {
+    const newBalance = Math.max(0, wallet.balance + delta);
     setWallet(prev => ({
       ...prev,
-      balance: Math.max(0, prev.balance + delta)
+      balance: newBalance
     }));
     
     if (userId && isSupabaseConfigured()) {
-      await updateUserBalance(userId, 0, delta);
+      pendingUpdatesRef.current.push({ type: 'balance', delta });
     }
-  }, [userId]);
+  }, [wallet.balance, userId]);
 
   const updateMonBalance = useCallback(async (delta: number) => {
+    const newMonBalance = Math.max(0, wallet.monBalance + delta);
     setWallet(prev => ({
       ...prev,
-      monBalance: Math.max(0, prev.monBalance + delta)
+      monBalance: newMonBalance
     }));
     
     if (userId && isSupabaseConfigured()) {
-      await updateUserBalance(userId, delta, 0);
+      pendingUpdatesRef.current.push({ type: 'monBalance', delta });
     }
-  }, [userId]);
+  }, [wallet.monBalance, userId]);
 
   const updatePnl = useCallback(async (delta: number) => {
     setWallet(prev => ({
@@ -184,11 +228,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
     
     if (userId && isSupabaseConfigured()) {
-      await updateUserPnL(userId, delta);
+      pendingUpdatesRef.current.push({ type: 'pnl', delta });
     }
   }, [userId]);
 
-  // Swap MON to USDC - Rate: 1 MON = 0.02 USDC
   const swapMonToUsdc = useCallback(async (monAmount: number) => {
     const usdcAmount = monAmount * 0.02;
     setWallet(prev => ({
@@ -198,13 +241,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
     
     if (userId && isSupabaseConfigured()) {
-      await updateUserBalance(userId, -monAmount, usdcAmount);
+      pendingUpdatesRef.current.push({ type: 'monBalance', delta: -monAmount });
+      pendingUpdatesRef.current.push({ type: 'balance', delta: usdcAmount });
     }
     
     return usdcAmount;
   }, [userId]);
 
-  // Swap USDC to MON - Rate: 1 USDC = 50 MON
   const swapUsdcToMon = useCallback(async (usdcAmount: number) => {
     const monAmount = usdcAmount * 50;
     setWallet(prev => ({
@@ -214,7 +257,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
     
     if (userId && isSupabaseConfigured()) {
-      await updateUserBalance(userId, monAmount, -usdcAmount);
+      pendingUpdatesRef.current.push({ type: 'balance', delta: -usdcAmount });
+      pendingUpdatesRef.current.push({ type: 'monBalance', delta: monAmount });
     }
     
     return monAmount;

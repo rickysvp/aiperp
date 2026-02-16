@@ -5,6 +5,67 @@ export type MarketData = Database['public']['Tables']['market_data']['Row'];
 export type MarketDataInsert = Database['public']['Tables']['market_data']['Insert'];
 export type MarketDataUpdate = Database['public']['Tables']['market_data']['Update'];
 
+let pendingMarketUpdates: Array<{ symbol: string; updates: MarketDataUpdate }> = [];
+let pendingPriceHistory: Array<{ symbol: string; price: number }> = [];
+let flushTimer: NodeJS.Timeout | null = null;
+let isFlushing = false;
+
+const flushMarketUpdates = async () => {
+  if (isFlushing || pendingMarketUpdates.length === 0 && pendingPriceHistory.length === 0) return;
+  
+  isFlushing = true;
+  
+  const updates = [...pendingMarketUpdates];
+  const priceHistory = [...pendingPriceHistory];
+  pendingMarketUpdates = [];
+  pendingPriceHistory = [];
+  
+  try {
+    for (const update of updates) {
+      await updateMarketDataDirect(update.symbol, update.updates);
+    }
+    
+    if (priceHistory.length > 0) {
+      const { error } = await supabase
+        .from('market_price_history')
+        .insert(priceHistory.map(p => ({
+          symbol: p.symbol as any,
+          price: p.price
+        })));
+      
+      if (error) {
+        console.error('Error batch recording price history:', error);
+        pendingPriceHistory = [...priceHistory, ...pendingPriceHistory];
+      }
+    }
+  } catch (err) {
+    console.error('Error flushing market updates:', err);
+    pendingMarketUpdates = [...updates, ...pendingMarketUpdates];
+    pendingPriceHistory = [...priceHistory, ...pendingPriceHistory];
+  } finally {
+    isFlushing = false;
+  }
+};
+
+const updateMarketDataDirect = async (
+  symbol: string,
+  updates: MarketDataUpdate
+): Promise<MarketData | null> => {
+  const { data, error } = await supabase
+    .from('market_data')
+    .update(updates)
+    .eq('symbol', symbol)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating market data:', error);
+    return null;
+  }
+
+  return data;
+};
+
 /**
  * Get market data for all assets
  */
@@ -32,11 +93,9 @@ export async function getMarketData(symbol: string): Promise<MarketData | null> 
     .single();
 
   if (error) {
-    // If no data found, initialize it
     if (error.code === 'PGRST116') {
       console.warn(`Market data not found for ${symbol}, initializing...`);
       await initializeMarketData();
-      // Try again after initialization
       const { data: retryData, error: retryError } = await supabase
         .from('market_data')
         .select('*')
@@ -56,41 +115,31 @@ export async function getMarketData(symbol: string): Promise<MarketData | null> 
 }
 
 /**
- * Update market data
+ * Update market data (batched for performance)
  */
 export async function updateMarketData(
   symbol: string,
   updates: MarketDataUpdate
-): Promise<MarketData | null> {
-  const { data, error } = await supabase
-    .from('market_data')
-    .update(updates)
-    .eq('symbol', symbol)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating market data:', error);
-    return null;
+): Promise<void> {
+  pendingMarketUpdates.push({ symbol, updates });
+  
+  if (!flushTimer) {
+    flushTimer = setInterval(flushMarketUpdates, 1000);
   }
-
-  return data;
 }
 
 /**
- * Record price history
+ * Force flush pending market updates
+ */
+export async function forceFlushMarketUpdates(): Promise<void> {
+  await flushMarketUpdates();
+}
+
+/**
+ * Record price history (batched for performance)
  */
 export async function recordPriceHistory(symbol: string, price: number): Promise<void> {
-  const { error } = await supabase
-    .from('market_price_history')
-    .insert({
-      symbol: symbol as any,
-      price
-    });
-
-  if (error) {
-    console.error('Error recording price history:', error);
-  }
+  pendingPriceHistory.push({ symbol, price });
 }
 
 /**
@@ -127,7 +176,7 @@ export async function initializeMarketData(): Promise<void> {
     BTC: 65000,
     ETH: 3500,
     SOL: 150,
-    MON: 1
+    MON: 0.02
   };
 
   for (const symbol of assets) {
@@ -150,4 +199,15 @@ export async function initializeMarketData(): Promise<void> {
       console.error(`Error initializing ${symbol} market data:`, error);
     }
   }
+}
+
+/**
+ * Cleanup function to be called on app unmount
+ */
+export function cleanupMarketData() {
+  if (flushTimer) {
+    clearInterval(flushTimer);
+    flushTimer = null;
+  }
+  forceFlushMarketUpdates();
 }

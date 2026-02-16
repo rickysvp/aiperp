@@ -4,14 +4,12 @@ export type Language = 'en' | 'zh';
 
 export const translations = {
   en: {
-    // Nav
     app_title_root: "AIperp",
     app_title_suffix: ".fun",
     nav_subtitle: "Demo Mode",
     net_equity: "Net Equity",
     top_profit: "Top Profit",
     
-    // Tabs
     tab_arena: "ARENA",
     tab_agents: "AGENTS",
     tab_legends: "LEGENDS",
@@ -22,7 +20,6 @@ export const translations = {
     nav_leaderboard: "LEGENDS",
     nav_wallet: "WALLET",
 
-    // Arena
     alliance: "ALLIANCE",
     syndicate: "SYNDICATE",
     units: "UNITS",
@@ -34,7 +31,6 @@ export const translations = {
     asset_perp: "-USD PERP",
     earnings_per_second: "Earnings/s",
 
-    // Agents
     my_fleet: "MY AGENTS",
     new_fabrication: "Mint a New Agent",
     deployed: "Deployed",
@@ -77,13 +73,11 @@ export const translations = {
     auto: "AUTO",
     auto_desc: "Agent decides direction based on market AI.",
     
-    // Funding
     assign_funds: "Assign Funds",
     collateral_amount: "Collateral Amount",
     available_balance: "Available",
     min_funds: "Min 100 USDC",
 
-    // Strategy Chat
     neural_link: "NEURAL LINK",
     win_rate: "Win Rate",
     strategy_console: "Strategy Console",
@@ -92,7 +86,6 @@ export const translations = {
     update_strategy: "Update Strategy",
     current_strategy: "Current Protocol",
 
-    // Wallet
     embedded_account: "Embedded Wallet Account",
     disconnect: "Disconnect",
     total_equity: "Total Equity",
@@ -114,13 +107,10 @@ export const translations = {
     protocol: "Protocol",
     referral_copied: "Referral code copied!",
 
-    // WalletV2 - New Wallet Module
     wallet_overview: "Overview",
     wallet_history: "History",
     wallet_analytics: "Analytics",
     wallet_referrals: "Referrals",
-    wallet_total_equity: "Total Equity",
-    wallet_available: "Available",
     wallet_staked_agents: "Staked in Agents",
     wallet_total_pnl: "Total PnL",
     wallet_deposit: "Deposit",
@@ -129,7 +119,6 @@ export const translations = {
     wallet_copied: "Copied!",
     wallet_portfolio_alloc: "Portfolio Allocation",
     wallet_no_positions: "No active positions",
-    wallet_active_agents: "Active Agents",
     wallet_no_active: "No active agents",
     wallet_deploy_hint: "Deploy agents to start trading",
     wallet_tx_history: "Transaction History",
@@ -137,11 +126,8 @@ export const translations = {
     wallet_daily_pnl: "Daily PnL (Last 7 Days)",
     wallet_total_wins: "Total Wins",
     wallet_total_losses: "Total Losses",
-    wallet_win_rate: "Win Rate",
-    wallet_avg_leverage: "Avg Leverage",
     wallet_partner_program: "Partner Program",
     wallet_total_recruits: "Total Recruits",
-    wallet_total_earnings: "Total Earnings",
     wallet_your_ref_code: "Your Referral Code",
     wallet_share_twitter: "Share on Twitter",
     wallet_how_it_works: "How It Works",
@@ -153,7 +139,6 @@ export const translations = {
     wallet_step3_desc: "Get 10% of their minting fees and trading profits",
     wallet_connected: "Connected Wallet",
     wallet_legal: "Legal",
-    wallet_disconnect: "Disconnect",
     wallet_deposit_title: "Deposit",
     wallet_your_address: "Your Wallet Address",
     wallet_send_mon: "Send USDC to this address to deposit",
@@ -163,7 +148,6 @@ export const translations = {
     wallet_coming_soon: "Withdrawal feature coming soon",
     wallet_close: "Close",
 
-    // WalletV2 Additional
     wallet_balance_account: "BALANCE ACCOUNT",
     wallet_over_allocated: "Over-allocated",
     wallet_native_token: "Native Token Balance",
@@ -180,20 +164,15 @@ export const translations = {
     wallet_equity: "Equity",
     wallet_pnl: "PnL",
     wallet_performance: "Performance",
-    wallet_total_equity: "Total Equity",
-    wallet_available: "Available",
-    wallet_allocated: "Allocated",
     wallet_agent_assets: "Agent Assets",
     wallet_total_allocated: "Total Allocated",
     wallet_active: "Active",
     wallet_inactive: "Inactive",
-    wallet_win_rate: "Win Rate",
     wallet_direction_allocation: "Direction Allocation",
     wallet_no_transactions: "No transactions yet",
     wallet_equity_history: "Equity History",
     wallet_title: "Wallet",
     wallet_subtitle: "Manage your portfolio",
-    wallet_total_equity: "Total Equity",
     wallet_trading_pnl: "Trading PnL",
     wallet_liquidity: "Liquidity",
     wallet_pnl_chart: "PnL Chart",
@@ -205,20 +184,19 @@ export const translations = {
     wallet_no_data: "No Data",
     wallet_start_trading: "Start trading to see chart",
     wallet_trading_stats: "Trading Stats",
-    wallet_wins: "Wins",
-    wallet_losses: "Losses",
     wallet_agent_accounts: "Agent Accounts",
-    wallet_active: "Active",
     wallet_allocated: "Allocated",
-    wallet_pnl: "PnL",
     wallet_leverage: "Leverage",
     wallet_entry_price: "Entry Price",
     wallet_liquidity_position: "Liquidity Position",
+    wallet_show: "Show",
+    wallet_hide: "Hide",
+    wallet_total_trades: "Total Trades",
     liquidity_staked: "Staked",
     liquidity_earned: "Earned",
     liquidity_pending: "Pending",
+    liquidity_go_to_stake: "Go to Liquidity Module to Stake",
 
-    // Liquidity
     liquidity_title: "Liquidity Mining",
     liquidity_subtitle: "Stake MON to earn trading fees",
     liquidity_total_staked: "Total Staked",
@@ -229,11 +207,13 @@ export const translations = {
     liquidity_of_fees: "of trading fees",
     liquidity_total_rewards: "Total Rewards",
     liquidity_distributed: "distributed",
+    liquidity_success_title: "Success!",
+    liquidity_success_desc: "You are now earning rewards from trading fees",
+    liquidity_success_confirm: "Awesome!",
     liquidity_stake: "Stake",
     liquidity_unstake: "Unstake",
     liquidity_amount: "Amount",
     liquidity_balance: "Balance",
-    liquidity_staked: "Staked",
     liquidity_confirm_stake: "Confirm Stake",
     liquidity_confirm_unstake: "Confirm Unstake",
     liquidity_estimated_daily: "Est. Daily Earnings",
@@ -255,7 +235,6 @@ export const translations = {
     liquidity_unstake_success: "Successfully unstaked MON!",
     liquidity_claim_success: "Rewards claimed successfully!",
 
-    // Leaderboard
     hall_of_legends: "Hall of Legends",
     legends_subtitle: "Top commanders battling for liquidity supremacy",
     season_pool: "Season 1 Pool",
@@ -267,7 +246,6 @@ export const translations = {
     live: "LIVE",
     rekt: "REKT",
 
-    // Auth
     welcome: "Welcome to AIperp.fun",
     auth_subtitle: "Create an embedded wallet to start battling.",
     continue_google: "Continue with Google",
@@ -279,7 +257,6 @@ export const translations = {
     terms: "By connecting, you agree to our Terms of Service.",
     legal_link: "Terms & Privacy Policy",
 
-    // AgentCard
     commander: "COMMANDER",
     terminated: "TERMINATED",
     share_replay: "Share Replay",
@@ -295,12 +272,10 @@ export const translations = {
     final_pnl: "Final PnL",
     share_results: "Share Results",
 
-    // Roster
     roi_24h: "24h ROI",
     session_pnl: "Session PnL",
     margin: "Margin",
 
-    // Legal
     legal_required_notice: "You must accept our Terms of Service and Privacy Policy to continue",
     legal_title: "Terms & Privacy Policy",
     legal_subtitle: "Legal agreements and disclosures",
@@ -313,7 +288,6 @@ export const translations = {
     legal_last_updated_value: "February 12, 2026",
     legal_contact: "Contact",
     
-    // Terms of Service
     legal_terms_1_title: "Acceptance of Terms",
     legal_terms_1_text: "By accessing or using AIperp.fun, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, you must not access or use the platform.",
     legal_terms_2_title: "Prohibited Jurisdictions",
@@ -330,7 +304,6 @@ export const translations = {
     legal_terms_5_title: "Intellectual Property",
     legal_terms_5_text: "All content, designs, graphics, and software on AIperp.fun are the exclusive property of AIperp.fun and are protected by international copyright, trademark, and other intellectual property laws. Users are granted a limited, non-exclusive, non-transferable license to use the platform for personal, non-commercial purposes.",
     
-    // Privacy Policy
     legal_privacy_commitment: "Our Commitment",
     legal_privacy_commitment_text: "AIperp.fun is committed to protecting your privacy and handling your data with transparency and care.",
     legal_privacy_1_title: "Information We Collect",
@@ -345,7 +318,6 @@ export const translations = {
     legal_privacy_4_title: "Your Rights",
     legal_privacy_4_text: "You have the right to access, correct, or delete your personal information. Since most data is stored locally, you can clear your browser data at any time. For additional requests, contact our support team.",
     
-    // Risk Disclosure
     legal_risk_warning_title: "IMPORTANT RISK WARNING",
     legal_risk_warning_text: "Please read this risk disclosure carefully. By using AIperp.fun, you acknowledge that you understand and accept the following risks.",
     legal_risk_1_title: "No Investment Advice",
@@ -359,14 +331,12 @@ export const translations = {
     legal_risk_5_title: "No Liability",
     legal_risk_5_text: "To the maximum extent permitted by law, AIperp.fun and its team shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from your use of the platform.",
     
-    // Legal Actions
     legal_accept_checkbox: "I have read and agree to the Terms of Service, Privacy Policy, and Risk Disclosure",
     legal_accept: "Accept & Continue",
     legal_decline: "Decline",
     legal_close: "Agree & Close",
     legal_scroll_notice: "Please scroll through all sections to enable acceptance",
 
-    // Onboarding
     ob_welcome_title: "Welcome, Commander",
     ob_welcome_text: "The Arena awaits. AIperp.fun is a visual battleground where AI agents fight for liquidity.",
     ob_step1_title: "Fabricate Agent",
@@ -379,7 +349,6 @@ export const translations = {
     ob_finish: "Enter Arena",
     ob_skip: "Skip Tutorial",
 
-    // MintingLoader
     minting_title: "AIperp Agent Fabrication Engine v2.0",
     minting_init: "Initializing neural synthesis protocol...",
     minting_target: "Target",
@@ -391,29 +360,24 @@ export const translations = {
     minting_status_ready: "STATUS: READY",
     minting_executing: "EXECUTING",
 
-    // AIGenerating
     ai_synthesis: "AI Synthesis",
     ai_generating: "Generating neural agent...",
     ai_ready: "Ready to mint",
     ai_processing: "Processing...",
     ai_synthesis_complete: "Synthesis complete",
 
-    // NFTReveal
     nft_legendary: "Legendary",
     nft_strategy: "Strategy",
     nft_deploy_arena: "Deploy to Arena",
 
-    // PnLChart
     no_data: "No data available",
     time_24h_ago: "24h ago",
     time_now: "Now",
 
-    // VersionInfo
     version: "Version",
     prod: "Prod",
     dev: "DEV",
 
-    // Agents Page - Fabrication
     agent_name: "Agent Name",
     agent_name_placeholder: "e.g. CyberWolf...",
     twitter_optional: "Twitter (Optional)",
@@ -423,10 +387,7 @@ export const translations = {
     mint_agent: "Mint Agent",
     enter_name: "Enter Name",
 
-    // Agent Detail
-
     final_status: "Final Status",
-
     collateral_health: "Collateral Health",
     agent_config: "Agent Configuration",
     risk_level: "Risk Level",
@@ -435,26 +396,20 @@ export const translations = {
     deploy_section: "Deploy to Arena",
     direction: "Direction",
     leverage: "Leverage",
-
     insufficient_balance: "Insufficient Balance",
     deploy_with: "Deploy",
-
     share_agent: "Share Agent",
-
     withdraw: "Withdraw",
     back_to_list: "Back to List",
 
-    // Withdraw Modal
     confirm_withdraw: "Confirm Withdraw",
     current_balance: "Current Balance",
     to_receive: "To Receive",
     withdraw_warning: "Withdrawing will exit your agent from the arena. You can redeploy later.",
     cancel: "Cancel",
     confirm: "Confirm",
-
     withdraw_success: "Withdrawal Successful!",
 
-    // NFT3DCard - Deploy Page
     strategy: "Strategy",
     deploy_to_arena: "Deploy to Arena"
   },
@@ -500,7 +455,7 @@ export const translations = {
     insufficient_funds: "余额不足",
     init_fabrication: "开始制造",
     gemini_terminal: "GEMINI-3 终端",
-
+    processing: "_PROCESSING_",
     fabrication_complete: "制造完成",
     generated_strategy: "生成策略",
     add_to_fleet: "加入舰队",
@@ -512,15 +467,15 @@ export const translations = {
     est_liquidation: "预估强平价",
     away: "距离",
     deploy_unit: "部署单位",
-
+    live_pnl: "实时盈亏",
     health_collateral: "生命值 / 抵押",
     wins: "胜",
     losses: "负",
-
+    share_status: "分享状态",
     signal_lost: "信号丢失",
     liquidated_msg: "在上一次波动高峰中被强平。",
     final_collateral: "最终抵押",
-
+    share_report: "分享战斗报告",
     back_to_fleet: "返回舰队",
     standby: "待命",
     long: "做多",
@@ -562,7 +517,6 @@ export const translations = {
     protocol: "协议",
     referral_copied: "邀请码已复制!",
 
-    // WalletV2 - New Wallet Module
     wallet_overview: "概览",
     wallet_history: "历史",
     wallet_analytics: "分析",
@@ -577,7 +531,6 @@ export const translations = {
     wallet_copied: "已复制!",
     wallet_portfolio_alloc: "资产配置",
     wallet_no_positions: "无活跃仓位",
-    wallet_active_agents: "活跃特工",
     wallet_no_active: "无活跃特工",
     wallet_deploy_hint: "部署特工开始交易",
     wallet_tx_history: "交易历史",
@@ -585,11 +538,8 @@ export const translations = {
     wallet_daily_pnl: "每日盈亏 (最近7天)",
     wallet_total_wins: "总胜场",
     wallet_total_losses: "总败场",
-    wallet_win_rate: "胜率",
-    wallet_avg_leverage: "平均杠杆",
     wallet_partner_program: "合伙人计划",
     wallet_total_recruits: "总招募",
-    wallet_total_earnings: "总收益",
     wallet_your_ref_code: "你的推荐码",
     wallet_share_twitter: "分享到 Twitter",
     wallet_how_it_works: "如何运作",
@@ -601,7 +551,6 @@ export const translations = {
     wallet_step3_desc: "获得他们铸造费用和交易利润的10%",
     wallet_connected: "已连接钱包",
     wallet_legal: "法律条款",
-    wallet_disconnect: "断开连接",
     wallet_deposit_title: "充值",
     wallet_your_address: "你的钱包地址",
     wallet_send_mon: "发送 USDC 到此地址进行充值",
@@ -611,7 +560,6 @@ export const translations = {
     wallet_coming_soon: "提现功能即将上线",
     wallet_close: "关闭",
 
-    // WalletV2 Additional
     wallet_balance_account: "余额账户",
     wallet_over_allocated: "超额分配",
     wallet_native_token: "原生代币余额",
@@ -628,35 +576,40 @@ export const translations = {
     wallet_equity: "权益",
     wallet_pnl: "盈亏",
     wallet_performance: "业绩表现",
-    wallet_total_equity: "总权益",
-    wallet_available: "可用",
-    wallet_allocated: "已分配",
     wallet_agent_assets: "特工资产",
     wallet_total_allocated: "总分配额",
     wallet_active: "活跃",
     wallet_inactive: "闲置",
-    wallet_win_rate: "胜率",
     wallet_direction_allocation: "方向分配",
     wallet_no_transactions: "暂无交易记录",
     wallet_equity_history: "权益历史",
     wallet_title: "钱包",
     wallet_subtitle: "管理您的投资组合",
     wallet_total_balance: "总资产",
-    wallet_allocated: "已分配",
     wallet_trading_pnl: "交易盈亏",
     wallet_liquidity: "流动性",
+    wallet_pnl_chart: "盈亏图表",
+    wallet_week: "周",
+    wallet_month: "月",
+    wallet_best: "最佳",
+    wallet_worst: "最差",
+    wallet_data_points: "数据点",
+    wallet_no_data: "暂无数据",
+    wallet_start_trading: "开始交易查看数据",
     wallet_trading_stats: "交易统计",
-    wallet_wins: "盈利",
-    wallet_losses: "亏损",
-    wallet_info: "钱包信息",
-    wallet_asset_breakdown: "资产分布",
-    wallet_earnings: "总收益",
+    wallet_agent_accounts: "特工账户",
+    wallet_allocated: "已分配",
+    wallet_leverage: "杠杆",
+    wallet_entry_price: "入场价格",
+    wallet_liquidity_position: "流动性仓位",
+    wallet_show: "显示",
+    wallet_hide: "隐藏",
+    wallet_total_trades: "总交易数",
     liquidity_staked: "已质押",
     liquidity_earned: "已赚取",
     liquidity_pending: "待领取",
     liquidity_go_to_stake: "前往流动性模块质押",
 
-    // Liquidity
     liquidity_title: "流动性挖矿",
     liquidity_subtitle: "质押 MON 赚取交易手续费",
     liquidity_total_staked: "总质押量",
@@ -667,11 +620,13 @@ export const translations = {
     liquidity_of_fees: "交易手续费",
     liquidity_total_rewards: "总奖励",
     liquidity_distributed: "已分配",
+    liquidity_success_title: "质押成功！",
+    liquidity_success_desc: "您现在可以赚取交易手续费收益",
+    liquidity_success_confirm: "太棒了！",
     liquidity_stake: "质押",
     liquidity_unstake: "解押",
     liquidity_amount: "金额",
     liquidity_balance: "余额",
-    liquidity_staked: "已质押",
     liquidity_confirm_stake: "确认质押",
     liquidity_confirm_unstake: "确认解押",
     liquidity_estimated_daily: "预估日收益",
@@ -693,7 +648,6 @@ export const translations = {
     liquidity_unstake_success: "解押 MON 成功！",
     liquidity_claim_success: "奖励领取成功！",
 
-    // Leaderboard
     hall_of_legends: "传奇殿堂",
     legends_subtitle: "争夺流动性霸权的顶级指挥官",
     season_pool: "S1 赛季奖池",
@@ -719,7 +673,7 @@ export const translations = {
     commander: "指挥官",
     terminated: "已终结",
     share_replay: "分享回放",
-
+    collateral: "抵押",
     unrealized_pnl: "未实现盈亏",
     recruit: "招募",
     deactivate: "停用单位",
@@ -728,7 +682,7 @@ export const translations = {
     minted_by: "铸造者",
     edition: "版本",
     agent_exited: "特工已退出",
-
+    final_pnl: "最终盈亏",
     share_results: "分享结果",
 
     roi_24h: "24H 收益率",
@@ -747,7 +701,6 @@ export const translations = {
     legal_last_updated_value: "2026年2月12日",
     legal_contact: "联系方式",
     
-    // 服务条款
     legal_terms_1_title: "条款接受",
     legal_terms_1_text: "访问或使用 AIperp.fun，即表示您确认已阅读、理解并同意受这些服务条款的约束。如果您不同意这些条款，则不得访问或使用本平台。",
     legal_terms_2_title: "禁止访问地区",
@@ -764,7 +717,6 @@ export const translations = {
     legal_terms_5_title: "知识产权",
     legal_terms_5_text: "AIperp.fun 上的所有内容、设计、图形和软件均为 AIperp.fun 的专有财产，受国际版权、商标和其他知识产权法律的保护。用户被授予有限的、非排他性的、不可转让的许可，仅可将本平台用于个人非商业目的。",
     
-    // 隐私政策
     legal_privacy_commitment: "我们的承诺",
     legal_privacy_commitment_text: "AIperp.fun 致力于保护您的隐私，并以透明和谨慎的方式处理您的数据。",
     legal_privacy_1_title: "我们收集的信息",
@@ -779,7 +731,6 @@ export const translations = {
     legal_privacy_4_title: "您的权利",
     legal_privacy_4_text: "您有权访问、更正或删除您的个人信息。由于大多数数据存储在本地，您可以随时清除浏览器数据。如需其他请求，请联系我们的支持团队。",
     
-    // 风险披露
     legal_risk_warning_title: "重要风险警告",
     legal_risk_warning_text: "请仔细阅读此风险披露。使用 AIperp.fun，即表示您确认理解并接受以下风险。",
     legal_risk_1_title: "非投资建议",
@@ -793,7 +744,6 @@ export const translations = {
     legal_risk_5_title: "免责声明",
     legal_risk_5_text: "在法律允许的最大范围内，AIperp.fun 及其团队不对因您使用本平台而产生的任何直接、间接、附带、特殊、后果性或惩罚性损害承担责任。",
     
-    // 法律操作
     legal_accept_checkbox: "我已阅读并同意服务条款、隐私政策和风险披露",
     legal_accept: "接受并继续",
     legal_decline: "拒绝",
@@ -812,7 +762,6 @@ export const translations = {
     ob_finish: "进入竞技场",
     ob_skip: "跳过教程",
 
-    // MintingLoader
     minting_title: "AIperp 特工制造引擎 v2.0",
     minting_init: "初始化神经合成协议...",
     minting_target: "目标",
@@ -824,29 +773,24 @@ export const translations = {
     minting_status_ready: "状态: 就绪",
     minting_executing: "执行中",
 
-    // AIGenerating
     ai_synthesis: "AI 合成",
     ai_generating: "生成神经特工...",
     ai_ready: "准备铸造",
     ai_processing: "处理中...",
     ai_synthesis_complete: "合成完成",
 
-    // NFTReveal
     nft_legendary: "传说",
     nft_strategy: "策略",
     nft_deploy_arena: "部署到竞技场",
 
-    // PnLChart
     no_data: "暂无数据",
     time_24h_ago: "24小时前",
     time_now: "现在",
 
-    // VersionInfo
     version: "版本",
     prod: "生产",
     dev: "开发",
 
-    // Agents Page - Fabrication
     agent_name: "特工名称",
     agent_name_placeholder: "例如: CyberWolf...",
     twitter_optional: "推特 (可选)",
@@ -856,10 +800,7 @@ export const translations = {
     mint_agent: "铸造特工",
     enter_name: "输入名称",
 
-    // Agent Detail
-
     final_status: "最终状态",
-
     collateral_health: "抵押健康度",
     agent_config: "特工配置",
     risk_level: "风险等级",
@@ -868,26 +809,20 @@ export const translations = {
     deploy_section: "部署到竞技场",
     direction: "方向",
     leverage: "杠杆",
-
     insufficient_balance: "余额不足",
     deploy_with: "部署",
-
     share_agent: "分享特工",
-
     withdraw: "收回",
     back_to_list: "返回列表",
 
-    // Withdraw Modal
     confirm_withdraw: "确认收回",
     current_balance: "当前余额",
     to_receive: "将收到",
     withdraw_warning: "收回将让您的特工退出竞技场。您可以稍后重新部署。",
     cancel: "取消",
     confirm: "确认",
-
     withdraw_success: "收回成功!",
 
-    // NFT3DCard - Deploy Page
     strategy: "策略",
     deploy_to_arena: "部署到竞技场"
   }

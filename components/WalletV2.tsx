@@ -10,7 +10,14 @@ import {
   Droplets,
   Zap,
   Target,
-  Activity
+  Activity,
+  Coins,
+  PiggyBank,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
+  Copy,
+  CheckCircle2
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatNumber } from '../utils/financialUtils';
@@ -35,6 +42,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
   const { t } = useLanguage();
   const [hideBalance, setHideBalance] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const [copied, setCopied] = useState(false);
 
   // User agents data
   const userAgents = useMemo(() => agents.filter(a => a.owner === 'USER'), [agents]);
@@ -55,7 +63,6 @@ export const WalletV2: React.FC<WalletV2Props> = ({
 
   // Build real chart data from agents' pnlHistory
   const chartData = useMemo(() => {
-    // Collect all pnl history points from user agents
     const allHistory: { time: number; pnl: number }[] = [];
     
     userAgents.forEach(agent => {
@@ -67,20 +74,16 @@ export const WalletV2: React.FC<WalletV2Props> = ({
       });
     });
     
-    // Sort by time
     allHistory.sort((a, b) => a.time - b.time);
     
-    // If no history data, return empty array
     if (allHistory.length === 0) {
       return [];
     }
     
-    // Group by time range
     const now = Date.now();
     const groupedData: { label: string; pnl: number }[] = [];
     
     if (timeRange === '24h') {
-      // Last 24 hours, group by 4 hours
       for (let i = 0; i < 24; i += 4) {
         const startTime = now - (24 - i) * 60 * 60 * 1000;
         const endTime = now - (24 - i - 4) * 60 * 60 * 1000;
@@ -91,7 +94,6 @@ export const WalletV2: React.FC<WalletV2Props> = ({
         groupedData.push({ label: `${i}:00`, pnl: avgPnl });
       }
     } else if (timeRange === 'week') {
-      // Last 7 days
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now - i * 24 * 60 * 60 * 1000);
@@ -104,7 +106,6 @@ export const WalletV2: React.FC<WalletV2Props> = ({
         groupedData.push({ label: days[date.getDay()], pnl: avgPnl });
       }
     } else {
-      // Last 30 days, group by 5 days
       for (let i = 25; i >= 0; i -= 5) {
         const startTime = now - (i + 5) * 24 * 60 * 60 * 1000;
         const endTime = now - i * 24 * 60 * 60 * 1000;
@@ -127,33 +128,60 @@ export const WalletV2: React.FC<WalletV2Props> = ({
 
   const copyAddress = () => {
     navigator.clipboard.writeText(wallet.address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="h-full flex flex-col bg-[#0a0c14]">
       {/* Header */}
       <div className="bg-[#0f111a] border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#836EF9] to-[#00D4AA] flex items-center justify-center">
-            <Wallet size={20} className="text-white" />
+        <div className="flex items-center gap-4">
+          {/* Wallet Avatar */}
+          <div className="relative">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#836EF9] via-[#00D4AA] to-[#00FF9D] p-[2px]">
+              <div className="w-full h-full rounded-2xl bg-[#0a0c14] flex items-center justify-center">
+                <Wallet size={26} className="text-[#00FF9D]" />
+              </div>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#00FF9D] flex items-center justify-center border-2 border-[#0f111a]">
+              <div className="w-2 h-2 rounded-full bg-[#0a0c14]" />
+            </div>
           </div>
+          
           <div>
-            <h1 className="text-lg font-bold text-white">{t('wallet_title')}</h1>
-            <p className="text-xs text-slate-500">{wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}</p>
+            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              {t('wallet_title')}
+              <span className="px-2 py-0.5 rounded-full bg-[#00FF9D]/10 text-[#00FF9D] text-xs font-medium border border-[#00FF9D]/20">
+                Pro
+              </span>
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-xs text-slate-500 font-mono">{wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}</p>
+              <button
+                onClick={copyAddress}
+                className="p-1 rounded hover:bg-slate-800 transition-colors"
+              >
+                {copied ? <CheckCircle2 size={12} className="text-[#00FF9D]" /> : <Copy size={12} className="text-slate-500" />}
+              </button>
+            </div>
           </div>
         </div>
+        
         <div className="flex items-center gap-2">
           <button
             onClick={() => setHideBalance(!hideBalance)}
-            className="p-2.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
           >
-            {hideBalance ? <EyeOff size={18} /> : <Eye size={18} />}
+            {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
+            <span className="text-sm font-medium">{hideBalance ? t('wallet_show') : t('wallet_hide')}</span>
           </button>
           <button
             onClick={onLogout}
-            className="p-2.5 rounded-xl bg-[#FF4757]/10 text-[#FF4757] hover:bg-[#FF4757]/20 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF4757]/10 text-[#FF4757] hover:bg-[#FF4757]/20 transition-all"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
+            <span className="text-sm font-medium">{t('wallet_disconnect')}</span>
           </button>
         </div>
       </div>
@@ -162,37 +190,78 @@ export const WalletV2: React.FC<WalletV2Props> = ({
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto p-6 space-y-6">
           
-          {/* Top Stats Row */}
-          <div className="grid grid-cols-4 gap-4">
-            <StatCard
-              label={t('wallet_total_equity')}
-              value={hideBalance ? '•••••' : formatNumber(totalEquity)}
-              subValue="MON"
-              icon={Wallet}
-              color="text-white"
-            />
-            <StatCard
+          {/* Total Equity Card - Hero Section */}
+          <div className="bg-gradient-to-r from-[#836EF9]/10 via-[#00D4AA]/10 to-[#00FF9D]/10 rounded-3xl p-8 border border-[#836EF9]/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#836EF9]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#00FF9D]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#836EF9] to-[#00D4AA] flex items-center justify-center shadow-lg shadow-[#836EF9]/20">
+                  <PiggyBank size={24} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">{t('wallet_total_equity')}</p>
+                  <p className="text-4xl font-bold text-white mt-1">
+                    {hideBalance ? '•••••' : `${formatNumber(totalEquity)} MON`}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-6 mt-6">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${totalEarnings >= 0 ? 'bg-[#00D4AA]/20' : 'bg-[#FF4757]/20'}`}>
+                    {totalEarnings >= 0 ? <ArrowUpRight size={16} className="text-[#00D4AA]" /> : <ArrowDownRight size={16} className="text-[#FF4757]" />}
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">{t('wallet_total_earnings')}</p>
+                    <p className={`text-sm font-bold ${totalEarnings >= 0 ? 'text-[#00D4AA]' : 'text-[#FF4757]'}`}>
+                      {hideBalance ? '•••' : `${totalEarnings >= 0 ? '+' : ''}${formatNumber(totalEarnings)} MON`}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#836EF9]/20 flex items-center justify-center">
+                    <BarChart3 size={16} className="text-[#836EF9]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">{t('wallet_win_rate')}</p>
+                    <p className="text-sm font-bold text-white">{winRate}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Asset Breakdown Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <AssetCard
               label={t('wallet_available')}
               value={hideBalance ? '•••' : formatNumber(wallet.monBalance)}
               subValue="MON"
-              icon={Zap}
-              color="text-slate-400"
+              icon={Coins}
+              color="from-[#FFD700] to-[#FFA500]"
+              bgColor="bg-[#FFD700]/5"
+              borderColor="border-[#FFD700]/20"
             />
-            <StatCard
+            <AssetCard
               label={t('wallet_trading_pnl')}
               value={hideBalance ? '•••' : `${tradingPnl >= 0 ? '+' : ''}${formatNumber(tradingPnl)}`}
               subValue="MON"
               icon={tradingPnl >= 0 ? TrendingUp : TrendingDown}
-              color={tradingPnl >= 0 ? 'text-[#00D4AA]' : 'text-[#FF4757]'}
-              bgColor={tradingPnl >= 0 ? 'bg-[#00D4AA]/10' : 'bg-[#FF4757]/10'}
+              color={tradingPnl >= 0 ? 'from-[#00D4AA] to-[#00FF9D]' : 'from-[#FF4757] to-[#FF6B8A]'}
+              bgColor={tradingPnl >= 0 ? 'bg-[#00D4AA]/5' : 'bg-[#FF4757]/5'}
+              borderColor={tradingPnl >= 0 ? 'border-[#00D4AA]/20' : 'border-[#FF4757]/20'}
             />
-            <StatCard
+            <AssetCard
               label={t('wallet_liquidity')}
               value={hideBalance ? '•••' : `+${formatNumber(liquidityEarnings)}`}
               subValue={`APR ${poolApr.toFixed(0)}%`}
               icon={Droplets}
-              color="text-[#00D4AA]"
-              bgColor="bg-[#00D4AA]/10"
+              color="from-[#00D4AA] to-[#00B4D8]"
+              bgColor="bg-[#00D4AA]/5"
+              borderColor="border-[#00D4AA]/20"
             />
           </div>
 
@@ -202,131 +271,54 @@ export const WalletV2: React.FC<WalletV2Props> = ({
             {/* Left: PnL Line Chart */}
             <div className="lg:col-span-2 bg-[#0f111a] rounded-2xl border border-slate-800 p-6">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <TrendingUp size={18} className="text-[#836EF9]" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#836EF9]/10 flex items-center justify-center">
+                    <TrendingUp size={20} className="text-[#836EF9]" />
+                  </div>
                   <span className="font-semibold text-white">{t('wallet_pnl_chart')}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Time Range Tabs */}
-                  <button
-                    onClick={() => setTimeRange('24h')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      timeRange === '24h' 
-                        ? 'bg-[#836EF9] text-white' 
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    24H
-                  </button>
-                  <button
-                    onClick={() => setTimeRange('week')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      timeRange === 'week' 
-                        ? 'bg-[#836EF9] text-white' 
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {t('wallet_week')}
-                  </button>
-                  <button
-                    onClick={() => setTimeRange('month')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      timeRange === 'month' 
-                        ? 'bg-[#836EF9] text-white' 
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {t('wallet_month')}
-                  </button>
+                  {(['24h', 'week', 'month'] as TimeRange[]).map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => setTimeRange(range)}
+                      className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
+                        timeRange === range 
+                          ? 'bg-[#836EF9] text-white shadow-lg shadow-[#836EF9]/20' 
+                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                      }`}
+                    >
+                      {range === '24h' ? '24H' : range === 'week' ? t('wallet_week') : t('wallet_month')}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* Chart Stats */}
               <div className="flex items-center gap-6 mb-4 text-xs">
-                <span className="text-slate-500">
-                  {t('wallet_best')}: <span className="text-[#00D4AA]">+{formatNumber(maxPnL)}</span>
-                </span>
-                <span className="text-slate-500">
-                  {t('wallet_worst')}: <span className="text-[#FF4757]">{formatNumber(minPnL)}</span>
-                </span>
-                <span className="text-slate-500">
-                  {t('wallet_data_points')}: <span className="text-white">{chartData.length}</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#00D4AA]" />
+                  <span className="text-slate-500">{t('wallet_best')}:</span>
+                  <span className="text-[#00D4AA] font-bold">+{formatNumber(maxPnL)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#FF4757]" />
+                  <span className="text-slate-500">{t('wallet_worst')}:</span>
+                  <span className="text-[#FF4757] font-bold">{formatNumber(minPnL)}</span>
+                </div>
               </div>
 
-              {/* Line Chart */}
-              <div className="relative h-48">
+              {/* Professional Chart */}
+              <div className="relative h-56">
                 {chartData.length > 0 ? (
-                  <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
-                    {/* Grid lines */}
-                    <line x1="0" y1="25" x2="100" y2="25" stroke="#1e293b" strokeWidth="0.5" strokeDasharray="2,2" />
-                    <line x1="0" y1="12.5" x2="100" y2="12.5" stroke="#1e293b" strokeWidth="0.3" strokeDasharray="2,2" />
-                    <line x1="0" y1="37.5" x2="100" y2="37.5" stroke="#1e293b" strokeWidth="0.3" strokeDasharray="2,2" />
-                    
-                    {/* Area fill */}
-                    <defs>
-                      <linearGradient id="pnlGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#00D4AA" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#00D4AA" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    
-                    {/* Area path */}
-                    <path
-                      d={chartData.map((d, i) => {
-                        const x = (i / (chartData.length - 1)) * 100;
-                        const y = 25 - ((d.pnl / chartRange) * 20);
-                        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                      }).join(' ') + ` L 100 50 L 0 50 Z`}
-                      fill="url(#pnlGradient)"
-                    />
-                    
-                    {/* Line path */}
-                    <path
-                      d={chartData.map((d, i) => {
-                        const x = (i / (chartData.length - 1)) * 100;
-                        const y = 25 - ((d.pnl / chartRange) * 20);
-                        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-                      }).join(' ')}
-                      fill="none"
-                      stroke="#00D4AA"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    
-                    {/* Data points */}
-                    {chartData.map((d, i) => {
-                      const x = (i / (chartData.length - 1)) * 100;
-                      const y = 25 - ((d.pnl / chartRange) * 20);
-                      return (
-                        <g key={i}>
-                          <circle
-                            cx={x}
-                            cy={y}
-                            r="1.5"
-                            fill="#00D4AA"
-                            stroke="#0f111a"
-                            strokeWidth="0.3"
-                          />
-                        </g>
-                      );
-                    })}
-                  </svg>
+                  <PnLChart data={chartData} />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-slate-500">
-                    <TrendingUp size={32} className="mb-2 opacity-30" />
+                    <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mb-3">
+                      <TrendingUp size={32} className="opacity-30" />
+                    </div>
                     <p className="text-sm">{t('wallet_no_data')}</p>
                     <p className="text-xs mt-1">{t('wallet_start_trading')}</p>
-                  </div>
-                )}
-                
-                {/* X-axis labels */}
-                {chartData.length > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-slate-500 px-2">
-                    {chartData.map((d, i) => (
-                      <span key={i}>{d.label}</span>
-                    ))}
                   </div>
                 )}
               </div>
@@ -334,32 +326,26 @@ export const WalletV2: React.FC<WalletV2Props> = ({
 
             {/* Right: Trading Stats */}
             <div className="bg-[#0f111a] rounded-2xl border border-slate-800 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Activity size={18} className="text-[#836EF9]" />
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-[#836EF9]/10 flex items-center justify-center">
+                  <Activity size={20} className="text-[#836EF9]" />
+                </div>
                 <span className="font-semibold text-white">{t('wallet_trading_stats')}</span>
               </div>
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-slate-800">
-                  <span className="text-sm text-slate-400">{t('wallet_total_trades')}</span>
-                  <span className="text-xl font-bold text-white">{totalTrades}</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-slate-800">
-                  <span className="text-sm text-slate-400">{t('wallet_wins')}</span>
-                  <span className="text-xl font-bold text-[#00D4AA]">{wins}</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-slate-800">
-                  <span className="text-sm text-slate-400">{t('wallet_losses')}</span>
-                  <span className="text-xl font-bold text-[#FF4757]">{losses}</span>
-                </div>
-                <div className="pt-2">
-                  <div className="flex items-center justify-between mb-2">
+                <StatRow label={t('wallet_total_trades')} value={totalTrades.toString()} color="white" />
+                <StatRow label={t('wallet_wins')} value={wins.toString()} color="[#00D4AA]" />
+                <StatRow label={t('wallet_losses')} value={losses.toString()} color="[#FF4757]" />
+                
+                <div className="pt-4 border-t border-slate-800">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-slate-400">{t('wallet_win_rate')}</span>
                     <span className="text-2xl font-bold text-[#00D4AA]">{winRate}%</span>
                   </div>
-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-[#00D4AA] to-[#836EF9] rounded-full transition-all"
+                      className="h-full bg-gradient-to-r from-[#00D4AA] to-[#836EF9] rounded-full transition-all duration-500"
                       style={{ width: `${winRate}%` }}
                     />
                   </div>
@@ -372,47 +358,53 @@ export const WalletV2: React.FC<WalletV2Props> = ({
           {activeAgents.length > 0 && (
             <div className="bg-[#0f111a] rounded-2xl border border-slate-800 p-6">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Target size={18} className="text-[#836EF9]" />
-                  <span className="font-semibold text-white">{t('wallet_agent_accounts')}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#836EF9]/10 flex items-center justify-center">
+                    <Target size={20} className="text-[#836EF9]" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-white">{t('wallet_agent_accounts')}</span>
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-[#836EF9]/10 text-[#836EF9] text-xs">
+                      {activeAgents.length} {t('wallet_active')}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-xs text-slate-500">{activeAgents.length} {t('wallet_active')}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeAgents.map(agent => (
-                  <div key={agent.id} className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          agent.direction === 'LONG' ? 'bg-[#00D4AA]' : 
-                          agent.direction === 'SHORT' ? 'bg-[#FF4757]' : 'bg-[#836EF9]'
-                        }`} />
-                        <span className="font-semibold text-white">{agent.name}</span>
+                  <div key={agent.id} className="bg-slate-900/50 rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition-all group">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          agent.direction === 'LONG' ? 'bg-[#00D4AA]/10' : 
+                          agent.direction === 'SHORT' ? 'bg-[#FF4757]/10' : 'bg-[#836EF9]/10'
+                        }`}>
+                          {agent.direction === 'LONG' ? <TrendingUp size={18} className="text-[#00D4AA]" /> : 
+                           agent.direction === 'SHORT' ? <TrendingDown size={18} className="text-[#FF4757]" /> : 
+                           <Zap size={18} className="text-[#836EF9]" />}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-white block">{agent.name}</span>
+                          <span className="text-xs text-slate-500">{agent.asset}</span>
+                        </div>
                       </div>
-                      <span className="text-xs text-slate-500">{agent.asset}</span>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-lg ${
+                        agent.pnl >= 0 ? 'bg-[#00D4AA]/10 text-[#00D4AA]' : 'bg-[#FF4757]/10 text-[#FF4757]'
+                      }`}>
+                        {agent.pnl >= 0 ? '+' : ''}{formatNumber(agent.pnl)}
+                      </span>
                     </div>
                     
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">{t('wallet_allocated')}</span>
-                        <span className="text-white font-medium">{formatNumber(agent.balance)} MON</span>
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">{t('wallet_allocated')}</p>
+                        <p className="text-sm font-bold text-white">{formatNumber(agent.balance)} MON</p>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">{t('wallet_pnl')}</span>
-                        <span className={`font-medium ${agent.pnl >= 0 ? 'text-[#00D4AA]' : 'text-[#FF4757]'}`}>
-                          {agent.pnl >= 0 ? '+' : ''}{formatNumber(agent.pnl)}
-                        </span>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">{t('wallet_leverage')}</p>
+                        <p className="text-sm font-bold text-[#836EF9]">{agent.leverage}x</p>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">{t('wallet_leverage')}</span>
-                        <span className="text-[#836EF9] font-medium">{agent.leverage}x</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between">
-                      <span className="text-xs text-slate-500">{t('wallet_entry_price')}</span>
-                      <span className="text-xs text-white">${agent.entryPrice.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -422,30 +414,23 @@ export const WalletV2: React.FC<WalletV2Props> = ({
 
           {/* Liquidity Position */}
           {userStake && userStake.amount > 0 && (
-            <div className="bg-[#0f111a] rounded-2xl border border-slate-800 p-6">
+            <div className="bg-gradient-to-r from-[#00D4AA]/5 to-[#00B4D8]/5 rounded-2xl border border-[#00D4AA]/20 p-6">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Droplets size={18} className="text-[#00D4AA]" />
-                  <span className="font-semibold text-white">{t('wallet_liquidity_position')}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00D4AA] to-[#00B4D8] flex items-center justify-center shadow-lg shadow-[#00D4AA]/20">
+                    <Droplets size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-white block">{t('wallet_liquidity_position')}</span>
+                    <span className="text-xs text-[#00D4AA]">APR {poolApr.toFixed(0)}%</span>
+                  </div>
                 </div>
-                <span className="text-xs text-[#00D4AA] bg-[#00D4AA]/10 px-3 py-1 rounded-full">
-                  APR {poolApr.toFixed(0)}%
-                </span>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">{t('liquidity_staked')}</p>
-                  <p className="text-2xl font-bold text-white">{formatNumber(userStake.amount)} <span className="text-sm text-slate-500">MON</span></p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">{t('liquidity_earned')}</p>
-                  <p className="text-2xl font-bold text-[#00D4AA]">+{formatNumber(userStake.rewards)} <span className="text-sm text-slate-500">MON</span></p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">{t('liquidity_pending')}</p>
-                  <p className="text-2xl font-bold text-[#FFD700]">{userStake.pendingRewards.toFixed(4)} <span className="text-sm text-slate-500">MON</span></p>
-                </div>
+                <LiquidityStat label={t('liquidity_staked')} value={formatNumber(userStake.amount)} suffix="MON" />
+                <LiquidityStat label={t('liquidity_earned')} value={`+${formatNumber(userStake.rewards)}`} suffix="MON" highlight />
+                <LiquidityStat label={t('liquidity_pending')} value={userStake.pendingRewards.toFixed(4)} suffix="MON" pending />
               </div>
             </div>
           )}
@@ -457,27 +442,237 @@ export const WalletV2: React.FC<WalletV2Props> = ({
 };
 
 // Sub-components
-const StatCard = ({ 
+const AssetCard = ({ 
   label, 
   value, 
   subValue,
   icon: Icon,
   color,
-  bgColor = 'bg-slate-800/50'
+  bgColor,
+  borderColor
 }: { 
   label: string; 
   value: string;
   subValue: string;
   icon: React.ElementType;
   color: string;
-  bgColor?: string;
+  bgColor: string;
+  borderColor: string;
 }) => (
-  <div className={`${bgColor} rounded-2xl p-5 border border-slate-800/50`}>
-    <div className="flex items-center gap-2 mb-3">
-      <Icon size={16} className={color} />
-      <span className="text-xs text-slate-400">{label}</span>
+  <div className={`${bgColor} ${borderColor} border rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 group`}>
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-xs text-slate-400 mb-1">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+        <p className="text-xs text-slate-500 mt-1">{subValue}</p>
+      </div>
+      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+        <Icon size={24} className="text-white" />
+      </div>
     </div>
-    <p className={`text-2xl font-bold ${color}`}>{value}</p>
-    <p className="text-xs text-slate-500 mt-1">{subValue}</p>
   </div>
 );
+
+const StatRow = ({ 
+  label, 
+  value, 
+  color 
+}: { 
+  label: string; 
+  value: string;
+  color: string;
+}) => (
+  <div className="flex items-center justify-between py-3 border-b border-slate-800/50 last:border-0">
+    <span className="text-sm text-slate-400">{label}</span>
+    <span className={`text-lg font-bold text-${color}`}>{value}</span>
+  </div>
+);
+
+const LiquidityStat = ({
+  label,
+  value,
+  suffix,
+  highlight = false,
+  pending = false
+}: {
+  label: string;
+  value: string;
+  suffix: string;
+  highlight?: boolean;
+  pending?: boolean;
+}) => (
+  <div>
+    <p className="text-xs text-slate-500 mb-2">{label}</p>
+    <p className={`text-2xl font-bold ${highlight ? 'text-[#00D4AA]' : pending ? 'text-[#FFD700]' : 'text-white'}`}>
+      {value} <span className="text-sm text-slate-500">{suffix}</span>
+    </p>
+  </div>
+);
+
+// PnL Chart Component
+const PnLChart = ({ data }: { data: { label: string; pnl: number }[] }) => {
+  const maxPnL = Math.max(...data.map(d => d.pnl));
+  const minPnL = Math.min(...data.map(d => d.pnl));
+  const range = Math.max(Math.abs(maxPnL), Math.abs(minPnL)) || 1;
+
+  // Calculate SVG path
+  const width = 100;
+  const height = 50;
+  const padding = 5;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  const getX = (index: number) => padding + (index / (data.length - 1)) * chartWidth;
+  const getY = (pnl: number) => {
+    const normalized = pnl / range;
+    return height / 2 - normalized * (chartHeight / 2);
+  };
+
+  // Build smooth curve path
+  const buildPath = () => {
+    if (data.length === 0) return '';
+
+    let path = `M ${getX(0)} ${getY(data[0].pnl)}`;
+
+    for (let i = 1; i < data.length; i++) {
+      const x = getX(i);
+      const y = getY(data[i].pnl);
+      const prevX = getX(i - 1);
+      const prevY = getY(data[i - 1].pnl);
+
+      // Control points for smooth curve
+      const cp1x = prevX + (x - prevX) / 3;
+      const cp1y = prevY;
+      const cp2x = x - (x - prevX) / 3;
+      const cp2y = y;
+
+      path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+    }
+
+    return path;
+  };
+
+  // Build area path (for gradient fill)
+  const buildAreaPath = () => {
+    const linePath = buildPath();
+    if (!linePath) return '';
+
+    const lastX = getX(data.length - 1);
+    const firstX = getX(0);
+
+    return `${linePath} L ${lastX} ${height} L ${firstX} ${height} Z`;
+  };
+
+  // Determine line color based on overall trend
+  const isPositive = data[data.length - 1]?.pnl >= data[0]?.pnl;
+  const lineColor = isPositive ? '#00D4AA' : '#FF4757';
+  const gradientColor = isPositive ? '#00D4AA' : '#FF4757';
+
+  return (
+    <div className="w-full h-full relative">
+      <svg className="w-full h-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        {/* Grid lines */}
+        <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#1e293b" strokeWidth="0.3" strokeDasharray="2,2" />
+        <line x1="0" y1={height / 4} x2={width} y2={height / 4} stroke="#1e293b" strokeWidth="0.2" strokeDasharray="2,2" opacity="0.5" />
+        <line x1="0" y1={height * 3 / 4} x2={width} y2={height * 3 / 4} stroke="#1e293b" strokeWidth="0.2" strokeDasharray="2,2" opacity="0.5" />
+
+        {/* Gradient definition */}
+        <defs>
+          <linearGradient id={`pnlGradient-${isPositive ? 'up' : 'down'}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={gradientColor} stopOpacity="0.4" />
+            <stop offset="50%" stopColor={gradientColor} stopOpacity="0.1" />
+            <stop offset="100%" stopColor={gradientColor} stopOpacity="0" />
+          </linearGradient>
+
+          {/* Glow filter */}
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Area fill */}
+        <path
+          d={buildAreaPath()}
+          fill={`url(#pnlGradient-${isPositive ? 'up' : 'down'})`}
+        />
+
+        {/* Line */}
+        <path
+          d={buildPath()}
+          fill="none"
+          stroke={lineColor}
+          strokeWidth="0.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#glow)"
+        />
+
+        {/* Data points */}
+        {data.map((d, i) => {
+          const x = getX(i);
+          const y = getY(d.pnl);
+          const isMax = d.pnl === maxPnL;
+          const isMin = d.pnl === minPnL;
+
+          return (
+            <g key={i}>
+              {/* Regular point */}
+              <circle
+                cx={x}
+                cy={y}
+                r="1.2"
+                fill={lineColor}
+                stroke="#0f111a"
+                strokeWidth="0.3"
+              />
+
+              {/* Highlight max/min points */}
+              {(isMax || isMin) && (
+                <>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="2.5"
+                    fill={isMax ? '#00D4AA' : '#FF4757'}
+                    opacity="0.3"
+                  />
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="1.5"
+                    fill={isMax ? '#00D4AA' : '#FF4757'}
+                    stroke="#0f111a"
+                    strokeWidth="0.3"
+                  />
+                </>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* X-axis labels */}
+      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-slate-500 px-2">
+        {data.map((d, i) => (
+          <span key={i} className={i % 2 === 0 ? '' : 'hidden sm:inline'}>{d.label}</span>
+        ))}
+      </div>
+
+      {/* Tooltip on hover (simplified) */}
+      <div className="absolute top-2 right-2 flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#00D4AA]" />
+          <span className="text-[10px] text-slate-400">Max: +{formatNumber(maxPnL)}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#FF4757]" />
+          <span className="text-[10px] text-slate-400">Min: {formatNumber(minPnL)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};

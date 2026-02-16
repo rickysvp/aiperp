@@ -35,12 +35,13 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   // APR = (Daily Fees * 365 / Total Staked) * Fee Share
   const [pool, setPool] = useState<LiquidityPool>({
     id: 'mon-lp-1',
-    totalStaked: 2500000,
-    totalRewards: 125000,
+    totalStaked: 0,
+    totalRewards: 0,
     apr: BASE_APR,
     feeShare: 0.7,
     dailyVolume: 0
   });
+  const [isPoolLoading, setIsPoolLoading] = useState(true);
   
   // Update APR based on trading fees
   useEffect(() => {
@@ -58,7 +59,10 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   
   // Load liquidity pool data from Supabase
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) {
+      setIsPoolLoading(false);
+      return;
+    }
     
     const loadPoolData = async () => {
       console.log('[Liquidity] Loading pool data from Supabase...');
@@ -71,7 +75,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
         setPool({
           id: updatedPool.pool_id,
           totalStaked: updatedPool.total_staked,
-          totalRewards: updatedPool.total_rewards,
+          totalRewards: updatedPool.total_rewards || 0,
           apr: updatedPool.apr,
           feeShare: updatedPool.fee_share,
           dailyVolume: updatedPool.daily_volume
@@ -84,13 +88,14 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
           setPool({
             id: dbPool.pool_id,
             totalStaked: dbPool.total_staked,
-            totalRewards: dbPool.total_rewards,
+            totalRewards: dbPool.total_rewards || 0,
             apr: dbPool.apr,
             feeShare: dbPool.fee_share,
             dailyVolume: dbPool.daily_volume
           });
         }
       }
+      setIsPoolLoading(false);
     };
     
     loadPoolData();
@@ -141,7 +146,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   
   // Calculate estimated daily earnings
   const estimatedDailyEarnings = useMemo(() => {
-    const amount = parseFloat(stakeAmount) || 0;
+    const amount = Number(stakeAmount) || 0;
     return (amount * (pool.apr / 100)) / 365;
   }, [stakeAmount, pool.apr]);
   
@@ -152,7 +157,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   }, [userStake, pool.totalStaked]);
   
   const handleStake = async () => {
-    const amount = parseFloat(stakeAmount);
+    const amount = Number(stakeAmount);
     console.log('[Liquidity] handleStake called:', { amount, stakeAmount, monBalance: wallet.monBalance, userId });
     if (isNaN(amount) || amount <= 0) {
       console.log('[Liquidity] Invalid amount:', amount);
@@ -214,7 +219,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
   };
   
   const handleUnstake = async () => {
-    const amount = parseFloat(unstakeAmount);
+    const amount = Number(unstakeAmount);
     if (isNaN(amount) || amount <= 0) return;
     if (!userStake || amount > userStake.amount) return;
     
@@ -303,17 +308,40 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-xs text-slate-500">{t('liquidity_total_staked')}</p>
-            <p className="text-lg font-bold text-[#00FF9D]">{formatNumber(pool.totalStaked)} MON</p>
+            <p className="text-lg font-bold text-[#00FF9D]">
+              {isPoolLoading ? (
+                <span className="inline-block w-20 h-6 bg-slate-700 rounded animate-pulse" />
+              ) : (
+                <>{formatNumber(pool.totalStaked)} MON</>
+              )}
+            </p>
           </div>
         </div>
       </div>
       
-      {/* Success Toast */}
+      {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fadeIn">
-          <div className="bg-[#00FF9D] text-black px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg">
-            <CheckCircle2 size={18} />
-            <span className="font-bold text-sm">{successMessage}</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-gradient-to-br from-[#0f111a] to-[#1a1d2e] border border-[#00FF9D]/30 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-[0_0_60px_rgba(0,255,157,0.3)] animate-scaleIn">
+            <div className="text-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00D4AA] flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(0,255,157,0.5)]">
+                <CheckCircle2 size={40} className="text-black" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">{t('liquidity_success_title')}</h3>
+              <p className="text-[#00FF9D] font-semibold text-lg mb-4">{successMessage}</p>
+              <div className="bg-slate-800/50 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+                  <Droplets size={16} className="text-[#00FF9D]" />
+                  <span>{t('liquidity_success_desc')}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSuccess(false)}
+                className="w-full py-3 bg-gradient-to-r from-[#00FF9D] to-[#00D4AA] text-black font-bold rounded-lg hover:shadow-[0_0_30px_rgba(0,255,157,0.4)] transition-all"
+              >
+                {t('liquidity_success_confirm')}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -326,7 +354,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
             <span className="text-xs text-slate-500">{t('liquidity_apr')}</span>
           </div>
           <p className="text-xl font-bold text-[#00FF9D]">{formatPercentage(pool.apr)}</p>
-          <p className="text-[10px] text-slate-600">{t('liquidity_dynamic')}</p>
+          <p className="text-[10px] text-slate-600">{t('liquidity_annual_yield')}</p>
         </div>
         
         <div className="bg-[#0f111a] border border-slate-800 rounded-xl p-3">
@@ -352,7 +380,13 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
             <Zap size={14} className="text-[#FF0055]" />
             <span className="text-xs text-slate-500">{t('liquidity_total_rewards')}</span>
           </div>
-          <p className="text-xl font-bold text-[#FF0055]">{formatNumber(pool.totalRewards)}</p>
+          <p className="text-xl font-bold text-[#FF0055]">
+            {isPoolLoading ? (
+              <span className="inline-block w-16 h-6 bg-slate-700 rounded animate-pulse" />
+            ) : (
+              formatNumber(pool.totalRewards)
+            )}
+          </p>
           <p className="text-[10px] text-slate-600">MON {t('liquidity_distributed')}</p>
         </div>
       </div>
@@ -416,7 +450,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
                   </div>
                 </div>
                 
-                {parseFloat(stakeAmount) > 0 && (
+                {Number(stakeAmount) > 0 && (
                   <div className="bg-[#00FF9D]/5 border border-[#00FF9D]/20 rounded-lg p-3 mb-4">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-slate-500">{t('liquidity_estimated_daily')}</span>
@@ -431,10 +465,10 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
                 
                 <button
                   onClick={() => {
-                    console.log('[Liquidity] Button clicked', { stakeAmount, maxStake, disabled: !stakeAmount || parseFloat(stakeAmount) <= 0 || parseFloat(stakeAmount) > maxStake });
+                    console.log('[Liquidity] Button clicked', { stakeAmount, maxStake });
                     handleStake();
                   }}
-                  disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || parseFloat(stakeAmount) > maxStake}
+                  disabled={!stakeAmount || Number(stakeAmount) <= 0 || Number(stakeAmount) > maxStake}
                   className="w-full py-3 bg-[#00FF9D] text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(0,255,157,0.3)] transition-all flex items-center justify-center gap-2"
                 >
                   <Lock size={18} />
@@ -470,7 +504,7 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
                 
                 <button
                   onClick={handleUnstake}
-                  disabled={!unstakeAmount || parseFloat(unstakeAmount) <= 0 || parseFloat(unstakeAmount) > maxUnstake}
+                  disabled={!unstakeAmount || Number(unstakeAmount) <= 0 || Number(unstakeAmount) > maxUnstake}
                   className="w-full py-3 bg-[#FF0055] text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(255,0,85,0.3)] transition-all flex items-center justify-center gap-2"
                 >
                   <Unlock size={18} />
