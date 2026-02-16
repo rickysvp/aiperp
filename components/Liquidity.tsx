@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useWallet } from '../contexts/WalletContext';
 import { LiquidityPool, UserLiquidityStake, Agent } from '../types';
 import { formatNumber, formatPercentage } from '../utils/financialUtils';
-import { getUserLiquidityStakes, upsertUserStake, claimRewards, updateLiquidityPool, getLiquidityPool } from '../lib/api/liquidity';
+import { getUserLiquidityStakes, upsertUserStake, claimRewards, updateLiquidityPool, getLiquidityPool, recalculateTotalStaked } from '../lib/api/liquidity';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 interface LiquidityProps {
@@ -61,22 +61,45 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
     if (!isSupabaseConfigured()) return;
     
     const loadPoolData = async () => {
-      const dbPool = await getLiquidityPool('mon-lp-1');
-      if (dbPool) {
-        console.log('[Liquidity] Loaded pool data from Supabase:', dbPool);
+      console.log('[Liquidity] Loading pool data from Supabase...');
+      
+      // Recalculate total staked to ensure accuracy
+      const updatedPool = await recalculateTotalStaked('mon-lp-1');
+      
+      if (updatedPool) {
+        console.log('[Liquidity] Loaded pool data from Supabase:', updatedPool);
         setPool({
-          id: dbPool.pool_id,
-          totalStaked: dbPool.total_staked,
-          totalRewards: dbPool.total_rewards,
-          apr: dbPool.apr,
-          feeShare: dbPool.fee_share,
-          dailyVolume: dbPool.daily_volume
+          id: updatedPool.pool_id,
+          totalStaked: updatedPool.total_staked,
+          totalRewards: updatedPool.total_rewards,
+          apr: updatedPool.apr,
+          feeShare: updatedPool.fee_share,
+          dailyVolume: updatedPool.daily_volume
         });
+      } else {
+        // Fallback to getLiquidityPool if recalculate failed
+        const dbPool = await getLiquidityPool('mon-lp-1');
+        if (dbPool) {
+          console.log('[Liquidity] Loaded pool data from Supabase:', dbPool);
+          setPool({
+            id: dbPool.pool_id,
+            totalStaked: dbPool.total_staked,
+            totalRewards: dbPool.total_rewards,
+            apr: dbPool.apr,
+            feeShare: dbPool.fee_share,
+            dailyVolume: dbPool.daily_volume
+          });
+        }
       }
     };
     
     loadPoolData();
-  }, []);
+    
+    // Also set up a refresh every 30 seconds
+    const refreshInterval = setInterval(loadPoolData, 30000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [userId]);
   
   // Load user stake from Supabase
   useEffect(() => {
@@ -150,22 +173,31 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
     
     setUserStake(newStake);
     
-    const newTotalStaked = pool.totalStaked + amount;
-    setPool(prev => ({
-      ...prev,
-      totalStaked: newTotalStaked
-    }));
-    
     // Sync to Supabase
     if (userId && isSupabaseConfigured()) {
       console.log('[Liquidity] Syncing stake to Supabase...');
       await upsertUserStake(userId, 'mon-lp-1', amount, 0, newStake.pendingRewards);
       
-      // Sync pool total staked
-      console.log('[Liquidity] Syncing pool total staked:', newTotalStaked);
-      await updateLiquidityPool('mon-lp-1', {
-        total_staked: newTotalStaked
-      });
+      // Recalculate total staked from all users
+      console.log('[Liquidity] Recalculating total staked...');
+      const updatedPool = await recalculateTotalStaked('mon-lp-1');
+      if (updatedPool) {
+        setPool(prev => ({
+          ...prev,
+          totalStaked: updatedPool.total_staked,
+          totalRewards: updatedPool.total_rewards,
+          apr: updatedPool.apr,
+          feeShare: updatedPool.fee_share,
+          dailyVolume: updatedPool.daily_volume
+        }));
+      }
+    } else {
+      // Fallback to local calculation
+      const newTotalStaked = pool.totalStaked + amount;
+      setPool(prev => ({
+        ...prev,
+        totalStaked: newTotalStaked
+      }));
     }
     
     setStakeAmount('');
@@ -188,22 +220,31 @@ export const Liquidity: React.FC<LiquidityProps> = ({ agents }) => {
       pendingRewards: newAmount <= 0 ? 0 : prev.pendingRewards
     } : null);
     
-    const newTotalStaked = Math.max(0, pool.totalStaked - amount);
-    setPool(prev => ({
-      ...prev,
-      totalStaked: newTotalStaked
-    }));
-    
     // Sync to Supabase
     if (userId && isSupabaseConfigured() && userStake) {
       console.log('[Liquidity] Syncing unstake to Supabase...');
       await upsertUserStake(userId, 'mon-lp-1', -amount, 0, newAmount <= 0 ? 0 : userStake.pendingRewards);
       
-      // Sync pool total staked
-      console.log('[Liquidity] Syncing pool total staked after unstake:', newTotalStaked);
-      await updateLiquidityPool('mon-lp-1', {
-        total_staked: newTotalStaked
-      });
+      // Recalculate total staked from all users
+      console.log('[Liquidity] Recalculating total staked after unstake...');
+      const updatedPool = await recalculateTotalStaked('mon-lp-1');
+      if (updatedPool) {
+        setPool(prev => ({
+          ...prev,
+          totalStaked: updatedPool.total_staked,
+          totalRewards: updatedPool.total_rewards,
+          apr: updatedPool.apr,
+          feeShare: updatedPool.fee_share,
+          dailyVolume: updatedPool.daily_volume
+        }));
+      }
+    } else {
+      // Fallback to local calculation
+      const newTotalStaked = Math.max(0, pool.totalStaked - amount);
+      setPool(prev => ({
+        ...prev,
+        totalStaked: newTotalStaked
+      }));
     }
     
     setUnstakeAmount('');

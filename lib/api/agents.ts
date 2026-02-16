@@ -232,6 +232,11 @@ export async function updateAgentPnL(agentId: string, pnl: number): Promise<Agen
  * Record PnL history for an agent
  */
 export async function recordAgentPnLHistory(agentId: string, value: number): Promise<void> {
+  // Skip PnL recording for generated agents (non-UUID IDs like "bot-xxx")
+  if (agentId.startsWith('bot-')) {
+    return;
+  }
+
   const { error } = await supabase
     .from('agent_pnl_history')
     .insert({

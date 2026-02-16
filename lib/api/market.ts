@@ -32,6 +32,22 @@ export async function getMarketData(symbol: string): Promise<MarketData | null> 
     .single();
 
   if (error) {
+    // If no data found, initialize it
+    if (error.code === 'PGRST116') {
+      console.warn(`Market data not found for ${symbol}, initializing...`);
+      await initializeMarketData();
+      // Try again after initialization
+      const { data: retryData, error: retryError } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('symbol', symbol)
+        .single();
+      if (retryError) {
+        console.error('Error fetching market data after init:', retryError);
+        return null;
+      }
+      return retryData;
+    }
     console.error('Error fetching market data:', error);
     return null;
   }

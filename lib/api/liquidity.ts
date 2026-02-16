@@ -63,6 +63,56 @@ export async function updateLiquidityPool(
 }
 
 /**
+ * Recalculate total staked from all user stakes
+ */
+export async function recalculateTotalStaked(poolId: string): Promise<LiquidityPool | null> {
+  // First ensure pool exists
+  let pool = await getLiquidityPool(poolId);
+  
+  if (!pool) {
+    // Create pool if it doesn't exist
+    const { data: newPool, error } = await supabase
+      .from('liquidity_pools')
+      .insert({
+        pool_id: poolId,
+        total_staked: 0,
+        total_rewards: 0,
+        apr: 100,
+        fee_share: 0.7,
+        daily_volume: 0
+      })
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating liquidity pool:', error);
+      return null;
+    }
+    pool = newPool;
+  }
+  
+  // Calculate total staked from all user stakes
+  const { data: allStakes, error: stakesError } = await supabase
+    .from('user_liquidity_stakes')
+    .select('amount')
+    .eq('pool_id', poolId);
+    
+  if (stakesError) {
+    console.error('Error fetching stakes for recalculation:', stakesError);
+    return pool;
+  }
+  
+  const totalStaked = allStakes?.reduce((sum, stake) => sum + (stake.amount || 0), 0) || 0;
+  
+  console.log('[API] Recalculated total staked:', totalStaked, 'from', allStakes?.length, 'stakes');
+  
+  // Update pool with correct total
+  return await updateLiquidityPool(poolId, {
+    total_staked: totalStaked
+  });
+}
+
+/**
  * Get user liquidity stakes
  */
 export async function getUserLiquidityStakes(userId: string): Promise<UserLiquidityStake[]> {

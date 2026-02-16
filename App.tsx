@@ -320,6 +320,8 @@ const AppContent: React.FC = () => {
         
         if (dbAgents && dbAgents.length > 0) {
           console.log('[App] Loaded', dbAgents.length, 'agents from Supabase');
+          console.log('[App] First agent sample:', dbAgents[0]);
+          
           // Transform database format to app format
           const transformedAgents: Agent[] = dbAgents.map(dbAgent => ({
             id: dbAgent.id,
@@ -347,6 +349,12 @@ const AppContent: React.FC = () => {
             effectiveDirection: dbAgent.effective_direction || undefined,
             pnlHistory: []
           }));
+          
+          console.log('[App] Transformed agents:', transformedAgents);
+          console.log('[App] Filtered by status=ACTIVE:', transformedAgents.filter(a => a.status === 'ACTIVE').length);
+          console.log('[App] Filtered by asset=MON:', transformedAgents.filter(a => a.asset === 'MON').length);
+          console.log('[App] Filtered by both:', transformedAgents.filter(a => a.status === 'ACTIVE' && a.asset === 'MON').length);
+          
           setAgents(transformedAgents);
           setAgentsLoaded(true);
           addLog(`Loaded ${transformedAgents.length} agents from database`, 'MINT');
