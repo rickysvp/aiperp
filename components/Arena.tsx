@@ -29,8 +29,9 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
     const barColor = isAuto ? 'bg-[#836EF9]' : isLong ? 'bg-[#00FF9D]' : 'bg-[#FF0055]';
     
     // Health / Collateral Percentage (Visually capped at 1000 MON for scale)
-    const hpPercent = Math.min(100, (agent.balance / 1000) * 100);
-    const roi = agent.balance > 0 ? (agent.pnl / (agent.balance - agent.pnl + 0.001)) * 100 : 0;
+    const currentEquity = agent.balance + agent.pnl;
+    const hpPercent = Math.min(100, (Math.max(0, currentEquity) / 1000) * 100);
+    const roi = agent.balance > 0 ? (agent.pnl / agent.balance) * 100 : 0;
 
     return (
         <div 
@@ -78,7 +79,7 @@ const BattleRosterItem = React.memo(({ agent, expanded, onClick }: { agent: Agen
 
                     <div className="flex justify-between text-[9px] text-slate-500 font-mono">
                         <span className="truncate max-w-[60px]">{agent.strategy}</span>
-                        <span>{agent.balance.toFixed(0)} MON</span>
+                        <span>{Math.max(0, currentEquity).toFixed(0)} MON</span>
                     </div>
                 </div>
             </div>

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Tab, Agent, MarketState, BattleLog, Direction, LootEvent, AssetSymbol } from './types';
 import { INITIAL_BALANCE, MINT_COST, GAME_TICK_MS } from './constants';
 import { generateAgentPersona } from './services/kimiService';
 import { Arena } from './components/Arena';
 import { Agents } from './components/Agents';
-import { WalletV2 } from './components/WalletV2';
+// WalletV2 is lazy-loaded for performance
+const WalletV2 = React.lazy(() => import('./components/WalletV2').then((m) => ({ default: m.WalletV2 })));
 import { Leaderboard } from './components/Leaderboard';
 import { Liquidity } from './components/Liquidity';
 import { Onboarding } from './components/Onboarding';
@@ -19,6 +20,7 @@ import { UserMenu } from './components/UserMenu';
 import { useWallet } from './contexts/WalletContext';
 import { useSupabaseAgents } from './hooks/useSupabaseAgents';
 import { isSupabaseConfigured } from './lib/supabase';
+import { initializeLiquidityPool } from './lib/api/liquidity';
 
 const AGENT_FABRICATION_COST = 100;
 
@@ -67,7 +69,7 @@ const Marquee = ({ agents }: { agents: Agent[] }) => {
 
 const AppContent: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
-  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updateMonBalance, updatePnl, userId } = useWallet();
+  const { wallet, isConnected, isConnecting, connect, disconnect, updateBalance, updateMonBalance, updatePnl, userId, userStake } = useWallet();
   
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
@@ -108,6 +110,9 @@ const AppContent: React.FC = () => {
   marketRef.current = market;
   
   const assetRef = useRef(selectedAsset);
+  
+  const agentsRef = useRef(agents);
+  agentsRef.current = agents;
   
   const handleAssetChange = (asset: AssetSymbol) => {
       setSelectedAsset(asset);
@@ -201,7 +206,6 @@ const AppContent: React.FC = () => {
         const dbAgents = await loadAgents(true);
         if (agents.length > 0) {
           addLog(`Loaded ${agents.length} agents from database`, 'MINT');
-          return;
         }
       }
       
@@ -229,7 +233,15 @@ const AppContent: React.FC = () => {
       addLog(`120 SHORT agents entered the MON arena`, 'MINT');
     };
     
+    const initLiquidity = async () => {
+      if (isSupabaseConfigured()) {
+        console.log('[App] Initializing liquidity pool...');
+        await initializeLiquidityPool();
+      }
+    };
+    
     initAgents();
+    initLiquidity();
   }, []);
 
   useEffect(() => {
@@ -299,6 +311,7 @@ const AppContent: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    console.log('[App] Price update effect started, interval:', GAME_TICK_MS, 'ms');
     const interval = setInterval(async () => {
       const currentAsset = assetRef.current;
       const assetConfig = ASSETS[currentAsset];
@@ -308,7 +321,9 @@ const AppContent: React.FC = () => {
       const newPrice = Math.max(minPrice, marketRef.current.price * (1 + change));
       const trend: 'UP' | 'DOWN' | 'FLAT' = change > 0.001 ? 'UP' : change < -0.001 ? 'DOWN' : 'FLAT';
       
-      const currentAgents = agents.filter(a => a.status === 'ACTIVE' && a.asset === currentAsset);
+      console.log('[App] Price update:', { currentAsset, oldPrice: marketRef.current.price, newPrice, change: (change * 100).toFixed(4) + '%', trend });
+      
+      const currentAgents = agentsRef.current.filter(a => a.status === 'ACTIVE' && a.asset === currentAsset);
       const longAgents = currentAgents.filter(a => a.direction === 'LONG' || (a.direction === 'AUTO' && trend === 'UP'));
       const shortAgents = currentAgents.filter(a => a.direction === 'SHORT' || (a.direction === 'AUTO' && trend === 'DOWN'));
       
@@ -350,7 +365,7 @@ const AppContent: React.FC = () => {
 
       const pnlUpdates: Array<{ id: string; pnl: number; status?: string; balance?: number; pnlHistory?: number }> = [];
       
-      agents.forEach(agent => {
+      agentsRef.current.forEach(agent => {
         if (agent.status !== 'ACTIVE' || agent.asset !== currentAsset) return;
         
         const priceDiff = (newPrice - agent.entryPrice) / agent.entryPrice;
@@ -410,7 +425,7 @@ const AppContent: React.FC = () => {
     }, GAME_TICK_MS);
 
     return () => clearInterval(interval);
-  }, [agents, batchUpdateAgents, updateLocalAgents]);
+  }, []);
 
   const handleMintAgent = async (twitterHandle?: string, nameHint?: string): Promise<Agent | null> => {
     console.log('=== App.handleMintAgent called ===', { twitterHandle, nameHint, monBalance: wallet.monBalance });
@@ -593,12 +608,15 @@ const AppContent: React.FC = () => {
             <Liquidity agents={agents} />
           )}
           {activeTab === Tab.WALLET && (
-            <WalletV2 
+            <Suspense fallback={<div>Loading wallet...</div>}>
+              <WalletV2 
                 wallet={wallet} 
                 agents={agents}
+                userStake={userStake}
                 onLogout={handleLogout} 
                 onShowLegal={() => setShowLegal(true)}
-            />
+              />
+            </Suspense>
           )}
 
         </div>

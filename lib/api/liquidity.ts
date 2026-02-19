@@ -105,10 +105,12 @@ export async function recalculateTotalStaked(poolId: string): Promise<LiquidityP
   const totalStaked = allStakes?.reduce((sum, stake) => sum + (stake.amount || 0), 0) || 0;
   
   console.log('[API] Recalculated total staked:', totalStaked, 'from', allStakes?.length, 'stakes');
+  console.log('[API] Preserving total_rewards:', pool?.total_rewards);
   
-  // Update pool with correct total
+  // Update pool with correct total, preserving total_rewards
   return await updateLiquidityPool(poolId, {
-    total_staked: totalStaked
+    total_staked: totalStaked,
+    total_rewards: pool?.total_rewards || 0
   });
 }
 
@@ -277,7 +279,7 @@ export async function updatePendingRewards(
 /**
  * Claim rewards
  */
-export async function claimRewards(stakeId: string): Promise<UserLiquidityStake | null> {
+export async function claimRewards(stakeId: string, poolId: string = 'mon-lp-1'): Promise<UserLiquidityStake | null> {
   const { data: stake } = await supabase
     .from('user_liquidity_stakes')
     .select('rewards, pending_rewards')
@@ -286,6 +288,9 @@ export async function claimRewards(stakeId: string): Promise<UserLiquidityStake 
 
   if (!stake) return null;
 
+  const claimedAmount = stake.pending_rewards;
+
+  // Update user stake
   const { data, error } = await supabase
     .from('user_liquidity_stakes')
     .update({
@@ -301,6 +306,37 @@ export async function claimRewards(stakeId: string): Promise<UserLiquidityStake 
     return null;
   }
 
+  // Update pool total rewards
+  const { data: pool } = await supabase
+    .from('liquidity_pools')
+    .select('total_rewards')
+    .eq('pool_id', poolId)
+    .single();
+
+  if (pool) {
+    const newTotalRewards = (pool.total_rewards || 0) + claimedAmount;
+    console.log('[claimRewards] Updating total_rewards:', { 
+      oldValue: pool.total_rewards, 
+      claimedAmount, 
+      newValue: newTotalRewards 
+    });
+    
+    const { error: poolError } = await supabase
+      .from('liquidity_pools')
+      .update({
+        total_rewards: newTotalRewards
+      })
+      .eq('pool_id', poolId);
+      
+    if (poolError) {
+      console.error('[claimRewards] Error updating pool total_rewards:', poolError);
+    } else {
+      console.log('[claimRewards] Successfully updated total_rewards to:', newTotalRewards);
+    }
+  } else {
+    console.warn('[claimRewards] Pool not found:', poolId);
+  }
+
   return data;
 }
 
@@ -308,20 +344,27 @@ export async function claimRewards(stakeId: string): Promise<UserLiquidityStake 
  * Initialize default liquidity pool
  */
 export async function initializeLiquidityPool(): Promise<void> {
-  const { error } = await supabase
-    .from('liquidity_pools')
-    .upsert({
-      pool_id: 'mon-lp-1',
-      total_staked: 2500000,
-      total_rewards: 125000,
-      apr: 100,
-      fee_share: 0.7,
-      daily_volume: 0
-    }, {
-      onConflict: 'pool_id'
+  const existingPool = await getLiquidityPool('mon-lp-1');
+  
+  if (existingPool) {
+    console.log('[API] Resetting total_rewards to 0...');
+    await updateLiquidityPool('mon-lp-1', {
+      total_rewards: 0
     });
+  } else {
+    const { error } = await supabase
+      .from('liquidity_pools')
+      .insert({
+        pool_id: 'mon-lp-1',
+        total_staked: 0,
+        total_rewards: 0,
+        apr: 100,
+        fee_share: 0.7,
+        daily_volume: 0
+      });
 
-  if (error) {
-    console.error('Error initializing liquidity pool:', error);
+    if (error) {
+      console.error('Error initializing liquidity pool:', error);
+    }
   }
 }

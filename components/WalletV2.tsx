@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { WalletState, Agent, UserLiquidityStake } from '../types';
+import { WalletState, Agent } from '../types';
+import { UserLiquidityStake } from '../lib/api/liquidity';
 import {
   Wallet,
   TrendingUp,
@@ -51,7 +52,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
   // Calculations
   const tradingPnl = userAgents.reduce((acc, agent) => acc + agent.pnl, 0);
   const totalAllocated = activeAgents.reduce((acc, agent) => acc + agent.balance, 0);
-  const liquidityEarnings = userStake ? userStake.rewards + userStake.pendingRewards : 0;
+  const liquidityEarnings = userStake ? userStake.rewards + userStake.pending_rewards : 0;
   const totalEquity = wallet.monBalance + totalAllocated + tradingPnl;
   const totalEarnings = tradingPnl + liquidityEarnings;
 
@@ -134,58 +135,6 @@ export const WalletV2: React.FC<WalletV2Props> = ({
 
   return (
     <div className="h-full flex flex-col bg-[#0a0c14]">
-      {/* Header */}
-      <div className="bg-[#0f111a] border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          {/* Wallet Avatar */}
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#836EF9] via-[#00D4AA] to-[#00FF9D] p-[2px]">
-              <div className="w-full h-full rounded-2xl bg-[#0a0c14] flex items-center justify-center">
-                <Wallet size={26} className="text-[#00FF9D]" />
-              </div>
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#00FF9D] flex items-center justify-center border-2 border-[#0f111a]">
-              <div className="w-2 h-2 rounded-full bg-[#0a0c14]" />
-            </div>
-          </div>
-          
-          <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              {t('wallet_title')}
-              <span className="px-2 py-0.5 rounded-full bg-[#00FF9D]/10 text-[#00FF9D] text-xs font-medium border border-[#00FF9D]/20">
-                Pro
-              </span>
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-xs text-slate-500 font-mono">{wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}</p>
-              <button
-                onClick={copyAddress}
-                className="p-1 rounded hover:bg-slate-800 transition-colors"
-              >
-                {copied ? <CheckCircle2 size={12} className="text-[#00FF9D]" /> : <Copy size={12} className="text-slate-500" />}
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setHideBalance(!hideBalance)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-          >
-            {hideBalance ? <EyeOff size={16} /> : <Eye size={16} />}
-            <span className="text-sm font-medium">{hideBalance ? t('wallet_show') : t('wallet_hide')}</span>
-          </button>
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF4757]/10 text-[#FF4757] hover:bg-[#FF4757]/20 transition-all"
-          >
-            <LogOut size={16} />
-            <span className="text-sm font-medium">{t('wallet_disconnect')}</span>
-          </button>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -218,16 +167,6 @@ export const WalletV2: React.FC<WalletV2Props> = ({
                     <p className={`text-sm font-bold ${totalEarnings >= 0 ? 'text-[#00D4AA]' : 'text-[#FF4757]'}`}>
                       {hideBalance ? '•••' : `${totalEarnings >= 0 ? '+' : ''}${formatNumber(totalEarnings)} MON`}
                     </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#836EF9]/20 flex items-center justify-center">
-                    <BarChart3 size={16} className="text-[#836EF9]" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">{t('wallet_win_rate')}</p>
-                    <p className="text-sm font-bold text-white">{winRate}%</p>
                   </div>
                 </div>
               </div>
@@ -430,7 +369,7 @@ export const WalletV2: React.FC<WalletV2Props> = ({
               <div className="grid grid-cols-3 gap-6">
                 <LiquidityStat label={t('liquidity_staked')} value={formatNumber(userStake.amount)} suffix="MON" />
                 <LiquidityStat label={t('liquidity_earned')} value={`+${formatNumber(userStake.rewards)}`} suffix="MON" highlight />
-                <LiquidityStat label={t('liquidity_pending')} value={userStake.pendingRewards.toFixed(4)} suffix="MON" pending />
+                <LiquidityStat label={t('liquidity_pending')} value={userStake.pending_rewards.toFixed(4)} suffix="MON" pending />
               </div>
             </div>
           )}

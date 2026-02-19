@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { WalletState } from '../types';
+import { UserLiquidityStake } from '../lib/api/liquidity';
 import { getOrCreateUser, updateUserBalance, updateUserPnL, getUserByWalletAddress } from '../lib/api/users';
+import { getUserLiquidityStakes } from '../lib/api/liquidity';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 interface WalletContextType {
@@ -8,6 +10,7 @@ interface WalletContextType {
   isConnected: boolean;
   isConnecting: boolean;
   userId: string | null;
+  userStake: UserLiquidityStake | null;
   connect: () => Promise<void>;
   disconnect: () => void;
   updateBalance: (delta: number) => Promise<void>;
@@ -16,6 +19,7 @@ interface WalletContextType {
   swapMonToUsdc: (monAmount: number) => Promise<number>;
   swapUsdcToMon: (usdcAmount: number) => Promise<number>;
   refreshWallet: () => Promise<void>;
+  refreshUserStake: () => Promise<void>;
 }
 
 import { INITIAL_BALANCE, INITIAL_MON_BALANCE } from '../constants';
@@ -38,6 +42,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userStake, setUserStake] = useState<UserLiquidityStake | null>(null);
   const pendingUpdatesRef = useRef<Array<{ type: 'balance' | 'monBalance' | 'pnl'; delta: number }>>([]);
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -76,6 +81,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err) {
       console.error('Error flushing pending wallet updates:', err);
       pendingUpdatesRef.current = [...updates, ...pendingUpdatesRef.current];
+    }
+  }, [userId]);
+
+  const refreshUserStake = useCallback(async () => {
+    if (!userId || !isSupabaseConfigured()) return;
+    
+    const stakes = await getUserLiquidityStakes(userId);
+    if (stakes && stakes.length > 0) {
+      setUserStake(stakes[0]);
+    } else {
+      setUserStake(null);
     }
   }, [userId]);
 
@@ -154,6 +170,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           energy: user.energy,
           totalEnergyEarned: user.total_energy_earned
         });
+        
+        await refreshUserStake();
       } else {
         console.warn('[Wallet] Failed to create/get user from Supabase, using local state');
         setWallet(prev => ({ ...prev, address }));
@@ -165,13 +183,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     setIsConnected(true);
     setIsConnecting(false);
-  }, []);
+  }, [refreshUserStake]);
 
   const disconnect = useCallback(() => {
     flushPendingUpdates();
     setIsConnected(false);
     setWallet(INITIAL_WALLET);
     setUserId(null);
+    setUserStake(null);
     pendingUpdatesRef.current = [];
     localStorage.removeItem('aiperp_wallet');
     localStorage.removeItem('aiperp_connected');
@@ -270,6 +289,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isConnected,
       isConnecting,
       userId,
+      userStake,
       connect,
       disconnect,
       updateBalance,
@@ -277,7 +297,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updatePnl,
       swapMonToUsdc,
       swapUsdcToMon,
-      refreshWallet
+      refreshWallet,
+      refreshUserStake
     }}>
       {children}
     </WalletContext.Provider>
